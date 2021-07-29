@@ -1,5 +1,5 @@
-space-shooter.c
-===============
+space-shooter.c [WIP]
+=====================
 A top-down space shooter written in C with minimal dependencies.
 
 Uses:
