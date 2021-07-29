@@ -193,8 +193,8 @@ static void killBullet(uint8_t i) {
 }
 
 void game_init(void) {
-    music = platform_loadSound("../audio/music.wav");
-    shipBulletSound = platform_loadSound("../audio/Laser_002.wav");
+    music = platform_loadSound("assets/audio/music.wav");
+    shipBulletSound = platform_loadSound("assets/audio/Laser_002.wav");
 
     platform_playSound(music);
 
@@ -293,7 +293,7 @@ void game_init(void) {
     glEnableVertexAttribArray(0);
 
     int imageWidth, imageHeight, imageChannels;
-    uint8_t *imageData = stbi_load("../img/ship.png", &imageWidth, &imageHeight, &imageChannels, 4);
+    uint8_t *imageData = stbi_load("assets/img/ship.png", &imageWidth, &imageHeight, &imageChannels, 4);
 
     glGenTextures(1, &shipSprite.texture);
     glActiveTexture(GL_TEXTURE0);
@@ -307,7 +307,7 @@ void game_init(void) {
 
     stbi_image_free(imageData);
 
-    imageData = stbi_load("../img/laser-bolts.png", &imageWidth, &imageHeight, &imageChannels, 4);
+    imageData = stbi_load("assets/img/laser-bolts.png", &imageWidth, &imageHeight, &imageChannels, 4);
 
     glGenTextures(1, &bulletSprite.texture);
     glActiveTexture(GL_TEXTURE0);
