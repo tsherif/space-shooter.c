@@ -10,20 +10,18 @@ static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 static GLuint spriteScaleLocation;
 
-void renderer_drawCharacters(Character* list, uint8_t count) {
+void renderer_draw(RenderList* list, uint8_t count) {
     if (count == 0) {
         return;
     }
 
-    Sprite* sprite = list[0].sprite;
-
-    glBindTexture(GL_TEXTURE_2D, sprite->texture);
-    glUniform2fv(panelPixelSizeLocation, 1, sprite->panelDims);
-    glUniform2fv(spriteSheetDimensionsLocation, 1, sprite->sheetDims);
+    glBindTexture(GL_TEXTURE_2D, list->texture);
+    glUniform2fv(panelPixelSizeLocation, 1, list->panelDims);
+    glUniform2fv(spriteSheetDimensionsLocation, 1, list->sheetDims);
 
     for (uint8_t i = 0; i < count; ++i) {
-        glUniform2fv(pixelOffsetLocation, 1, list[i].position);
-        glUniform3f(panelIndexLocation, (float) list[i].currentSpritePanel[0], list[i].currentSpritePanel[1], (float) list[i].faceLeft);
+        glUniform2fv(pixelOffsetLocation, 1, list->objects[i].position);
+        glUniform3f(panelIndexLocation, (float) list->objects[i].currentSpritePanel[0], list->objects[i].currentSpritePanel[1], (float) list->objects[i].flipX);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
@@ -53,15 +51,15 @@ bool renderer_loadTexture(const char* fileName, GLuint* texture) {
 }
 
 void renderer_resize(int width, int height) {
-    glViewport(0, 0, width, height);
-    glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
+     glViewport(0, 0, width, height);
+     glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
 }
 
 void renderer_init() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    
+
     const char* vsSource = "#version 450\n"
     "layout (location=0) in vec2 position;\n"
     "uniform vec2 pixelOffset;\n"

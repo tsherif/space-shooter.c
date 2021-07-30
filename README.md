@@ -30,3 +30,4 @@ Current State
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score
+- [ ] Scale using a framebuffer

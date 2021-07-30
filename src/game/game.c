@@ -30,14 +30,6 @@
 #include "../shared/platform-interface.h"
 #include "game-renderer.h"
 
-PlatformSound* music;
-PlatformSound* shipBulletSound;
-
-static struct {
-    uint16_t width;
-    uint16_t height;
-} canvas;
-
 // Animations
 #define SHIP_CENTER       0
 #define SHIP_CENTER_LEFT  1
@@ -45,13 +37,39 @@ static struct {
 #define SHIP_CENTER_RIGHT 3
 #define SHIP_RIGHT        4
 
-#define MAX_LARGE_ENEMIES 16
 #define LARGE_ENEMY_VELOCITY 1.0f
 #define LARGE_ENEMY_SPAWN_PROBABILITY 0.002f
 
-#define MAX_BULLETS 255
 #define BULLET_VELOCITY (-5.0f)
 #define BULLET_THROTTLE_SHIP 20
+
+typedef struct {
+    uint8_t frames[32][2];
+    uint8_t numFrames;
+} Animation;
+
+typedef struct {
+    Animation* animations;
+    uint8_t numAnimations;
+    RenderList renderList;
+} Sprite;
+
+typedef struct {
+    RenderObject renderObject;
+    float velocity[2];
+    uint8_t currentAnimation;
+    uint8_t animationTick;
+    Sprite* sprite;
+    uint16_t bulletThrottle;
+} Character;
+
+PlatformSound* music;
+PlatformSound* shipBulletSound;
+
+static struct {
+    uint16_t width;
+    uint16_t height;
+} canvas;
 
 static Animation shipAnimations[]  = {
     // Center
@@ -82,15 +100,15 @@ static Animation shipAnimations[]  = {
 };
 
 static Sprite shipSprite = {
-    .panelDims = { 16.0f, 24.0f },
-    .sheetDims = { 5.0f, 2.0f },
+    .renderList = {
+        .panelDims = { 16.0f, 24.0f },
+        .sheetDims = { 5.0f, 2.0f },
+    },
     .animations = shipAnimations,
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
 static Character ship = {
-    .position = { 100.0f, 200.0f },
-    .velocity = { 0.0f, 0.0f },
     .sprite = &shipSprite
 };
 
@@ -102,13 +120,15 @@ static Animation enemyAnimations[]  = {
 };
 
 static Sprite largeEnemySprite = {
-    .panelDims = { 32.0f, 32.0f },
-    .sheetDims = { 2.0f, 1.0f },
+    .renderList = {
+        .panelDims = { 32.0f, 32.0f },
+        .sheetDims = { 2.0f, 1.0f },
+    },
     .animations = enemyAnimations,
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-static Character largeEnemies[MAX_LARGE_ENEMIES];
+static Character largeEnemies[DRAWLIST_MAX];
 static uint8_t numLargeEnemies;
 
 static Animation bulletAnimations[]  = {
@@ -123,13 +143,15 @@ static Animation bulletAnimations[]  = {
 };
 
 static Sprite bulletSprite = {
-    .panelDims = { 16.0f, 16.0f },
-    .sheetDims = { 2.0f, 2.0f },
+    .renderList = {
+        .panelDims = { 16.0f, 16.0f },
+        .sheetDims = { 2.0f, 2.0f },
+    },
     .animations = bulletAnimations,
     .numAnimations = sizeof(bulletAnimations) / sizeof(bulletAnimations[0])
 };
 
-static Character bullets[MAX_BULLETS];
+static Character bullets[DRAWLIST_MAX];
 static uint8_t numBullets;
 static float shipBulletOffset[2];
 
@@ -141,8 +163,8 @@ static float randomRange(float min, float max) {
 static void updateAnimationPanel(Character* character) {
     uint8_t* panel = character->sprite->animations[character->currentAnimation].frames[character->animationTick];
 
-    character->currentSpritePanel[0] = panel[0];
-    character->currentSpritePanel[1] = panel[1];
+    character->renderObject.currentSpritePanel[0] = panel[0];
+    character->renderObject.currentSpritePanel[1] = panel[1];
 }
 
 static void setCharacterAnimation(Character* character, uint8_t animation) {
@@ -156,7 +178,7 @@ static void setCharacterAnimation(Character* character, uint8_t animation) {
 }
 
 static void spawnLargeEnemy() {
-    if (numLargeEnemies == MAX_LARGE_ENEMIES) {
+    if (numLargeEnemies == DRAWLIST_MAX) {
         return;
     }
 
@@ -164,8 +186,8 @@ static void spawnLargeEnemy() {
         return;
     }
 
-    largeEnemies[numLargeEnemies].position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.panelDims[0] * SPRITE_SCALE);
-    largeEnemies[numLargeEnemies].position[1] = -largeEnemySprite.panelDims[1] * SPRITE_SCALE;
+    largeEnemies[numLargeEnemies].renderObject.position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.renderList.panelDims[0] * SPRITE_SCALE);
+    largeEnemies[numLargeEnemies].renderObject.position[1] = -largeEnemySprite.renderList.panelDims[1] * SPRITE_SCALE;
     largeEnemies[numLargeEnemies].velocity[0] = 0.0f;
     largeEnemies[numLargeEnemies].velocity[1] = LARGE_ENEMY_VELOCITY;
     largeEnemies[numLargeEnemies].sprite = &largeEnemySprite;
@@ -178,12 +200,12 @@ static void spawnLargeEnemy() {
 }
 
 static void fireBullet(float x, float y) {
-    if (numBullets == MAX_BULLETS) {
+    if (numBullets == DRAWLIST_MAX) {
         return;
     }
 
-    bullets[numBullets].position[0] = x;
-    bullets[numBullets].position[1] = y;
+    bullets[numBullets].renderObject.position[0] = x;
+    bullets[numBullets].renderObject.position[1] = y;
     bullets[numBullets].velocity[0] = 0.0f;
     bullets[numBullets].velocity[1] = BULLET_VELOCITY;
     bullets[numBullets].sprite = &bulletSprite;
@@ -207,10 +229,10 @@ static void killCharacter(Character* list, uint8_t* count, uint8_t i) {
 
 static void updateCharacterPositions(Character* list, uint8_t* count) {
     for (uint8_t i = 0; i < *count; ++i) {
-        list[i].position[0] += list[i].velocity[0];
-        list[i].position[1] += list[i].velocity[1];
+        list[i].renderObject.position[0] += list[i].velocity[0];
+        list[i].renderObject.position[1] += list[i].velocity[1];
 
-        if (list[i].position[1] + list[i].sprite->panelDims[1] * SPRITE_SCALE < 0) {
+        if (list[i].renderObject.position[1] + list[i].sprite->renderList.panelDims[1] * SPRITE_SCALE < 0) {
             killCharacter(list, count, i);
         }
     }
@@ -232,17 +254,17 @@ void game_init(void) {
 
     platform_playSound(music);
 
-    shipBulletOffset[0] = (shipSprite.panelDims[0] - bulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
-    shipBulletOffset[1] =  -bulletSprite.panelDims[1] * SPRITE_SCALE;
+    shipBulletOffset[0] = (shipSprite.renderList.panelDims[0] - bulletSprite.renderList.panelDims[0]) * SPRITE_SCALE / 2;
+    shipBulletOffset[1] =  -bulletSprite.renderList.panelDims[1] * SPRITE_SCALE;
 
-    ship.position[0] = canvas.width / 2 - ship.sprite->panelDims[0] * SPRITE_SCALE / 2;
-    ship.position[1] = canvas.height - 150.0f;
+    ship.renderObject.position[0] = canvas.width / 2 - ship.sprite->renderList.panelDims[0] * SPRITE_SCALE / 2;
+    ship.renderObject.position[1] = canvas.height - 150.0f;
 
     renderer_init();
 
-    renderer_loadTexture("assets/img/ship.png", &shipSprite.texture);
-    renderer_loadTexture("assets/img/enemy-big.png", &largeEnemySprite.texture);
-    renderer_loadTexture("assets/img/laser-bolts.png", &bulletSprite.texture);
+    renderer_loadTexture("assets/img/ship.png", &shipSprite.renderList.texture);
+    renderer_loadTexture("assets/img/enemy-big.png", &largeEnemySprite.renderList.texture);
+    renderer_loadTexture("assets/img/laser-bolts.png", &bulletSprite.renderList.texture);
 
 
     setCharacterAnimation(&ship, SHIP_CENTER);
@@ -250,23 +272,23 @@ void game_init(void) {
 
 static int tick = 0;
 void game_update(void) {
-    ship.position[0] += ship.velocity[0];
-    ship.position[1] += ship.velocity[1];
+    ship.renderObject.position[0] += ship.velocity[0];
+    ship.renderObject.position[1] += ship.velocity[1];
 
-    if (ship.position[0] < 0.0f) {
-        ship.position[0] = 0.0f;
+    if (ship.renderObject.position[0] < 0.0f) {
+        ship.renderObject.position[0] = 0.0f;
     }
 
-    if (ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE > canvas.width) {
-        ship.position[0] = canvas.width - ship.sprite->panelDims[0] * SPRITE_SCALE;
+    if (ship.renderObject.position[0] + ship.sprite->renderList.panelDims[0] * SPRITE_SCALE > canvas.width) {
+        ship.renderObject.position[0] = canvas.width - ship.sprite->renderList.panelDims[0] * SPRITE_SCALE;
     }
 
-    if (ship.position[1] < 0.0f) {
-        ship.position[1] = 0.0f;
+    if (ship.renderObject.position[1] < 0.0f) {
+        ship.renderObject.position[1] = 0.0f;
     }
 
-    if (ship.position[1] + ship.sprite->panelDims[1] * SPRITE_SCALE > canvas.height) {
-        ship.position[1] = canvas.height - ship.sprite->panelDims[1] * SPRITE_SCALE;
+    if (ship.renderObject.position[1] + ship.sprite->renderList.panelDims[1] * SPRITE_SCALE > canvas.height) {
+        ship.renderObject.position[1] = canvas.height - ship.sprite->renderList.panelDims[1] * SPRITE_SCALE;
     }
 
     if (ship.bulletThrottle > 0) {
@@ -319,7 +341,7 @@ void game_keyboard(GameKeyboard* inputKeys) {
     }
 
     if (inputKeys->space && ship.bulletThrottle == 0) {
-        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
+        fireBullet(ship.renderObject.position[0] + shipBulletOffset[0], ship.renderObject.position[1] + shipBulletOffset[1]);
         ship.bulletThrottle = BULLET_THROTTLE_SHIP;
     }
 }
@@ -341,15 +363,24 @@ void game_controller(GameController* controllerInput) {
     }
 
     if (controllerInput->aButton && ship.bulletThrottle == 0) {
-        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
+        fireBullet(ship.renderObject.position[0] + shipBulletOffset[0], ship.renderObject.position[1] + shipBulletOffset[1]);
         ship.bulletThrottle = BULLET_THROTTLE_SHIP;
     }
 }
 
 void game_draw(void) {
     glClear(GL_COLOR_BUFFER_BIT);
-    
-    renderer_drawCharacters(&ship, 1);
-    renderer_drawCharacters(largeEnemies, numLargeEnemies);
-    renderer_drawCharacters(bullets, numBullets);
+
+    shipSprite.renderList.objects[0] = ship.renderObject;
+    renderer_draw(&shipSprite.renderList, 1);
+
+    for (uint8_t i = 0; i < numLargeEnemies; ++i) {
+        largeEnemySprite.renderList.objects[i] = largeEnemies[i].renderObject;
+    }
+    renderer_draw(&largeEnemySprite.renderList, numLargeEnemies);
+
+    for (uint8_t i = 0; i < numBullets; ++i) {
+        bulletSprite.renderList.objects[i] = bullets[i].renderObject;
+    }
+    renderer_draw(&bulletSprite.renderList, numBullets);
 }
