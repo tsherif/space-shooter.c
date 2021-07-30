@@ -46,7 +46,11 @@ static struct {
 #define SHIP_CENTER_RIGHT 3
 #define SHIP_RIGHT        4
 
-#define MAX_BULLETS 256
+#define MAX_LARGE_ENEMIES 16
+#define LARGE_ENEMY_VELOCITY 1.0f
+#define LARGE_ENEMY_SPAWN_PROBABILITY 0.002f
+
+#define MAX_BULLETS 255
 #define BULLET_VELOCITY (-5.0f)
 #define BULLET_THROTTLE_SHIP 20
 
@@ -117,6 +121,23 @@ static Character ship = {
     .sprite = &shipSprite
 };
 
+static Animation enemyAnimations[]  = {
+    {
+        .frames = {{0, 0}, {1, 0}},
+        .numFrames = 2
+    }
+};
+
+static Sprite largeEnemySprite = {
+    .panelDims = { 32.0f, 32.0f },
+    .sheetDims = { 2.0f, 1.0f },
+    .animations = enemyAnimations,
+    .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
+};
+
+static Character largeEnemies[MAX_LARGE_ENEMIES];
+static uint8_t numLargeEnemies;
+
 static Animation bulletAnimations[]  = {
     {
         .frames = {{0, 0}, {1, 0}},
@@ -136,7 +157,7 @@ static Sprite bulletSprite = {
 };
 
 static Character bullets[MAX_BULLETS];
-static uint16_t numBullets;
+static uint8_t numBullets;
 static float shipBulletOffset[2];
 
 static GLuint pixelSizeLocation;
@@ -146,6 +167,11 @@ static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 static GLuint spriteScaleLocation;
+
+static float randomRange(float min, float max) {
+    float range = max - min;
+    return min + ((float) rand() / (RAND_MAX + 1)) * range;
+}
 
 static void updateAnimationPanel(Character* character) {
     uint8_t* panel = character->sprite->animations[character->currentAnimation].frames[character->animationTick];
@@ -162,6 +188,28 @@ static void setCharacterAnimation(Character* character, uint8_t animation) {
     character->currentAnimation = animation;
     character->animationTick = 0;
     updateAnimationPanel(character);
+}
+
+static void spawnLargeEnemy() {
+    if (numLargeEnemies == MAX_LARGE_ENEMIES) {
+        return;
+    }
+
+    if (randomRange(0.0f, 1.0f) > LARGE_ENEMY_SPAWN_PROBABILITY) {
+        return;
+    }
+
+    largeEnemies[numLargeEnemies].position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.panelDims[0] * SPRITE_SCALE);
+    largeEnemies[numLargeEnemies].position[1] = -largeEnemySprite.panelDims[1] * SPRITE_SCALE;
+    largeEnemies[numLargeEnemies].velocity[0] = 0.0f;
+    largeEnemies[numLargeEnemies].velocity[1] = LARGE_ENEMY_VELOCITY;
+    largeEnemies[numLargeEnemies].sprite = &largeEnemySprite;
+    largeEnemies[numLargeEnemies].currentAnimation = 0;
+    largeEnemies[numLargeEnemies].animationTick = 0;
+
+    updateAnimationPanel(&largeEnemies[numLargeEnemies]);
+
+    ++numLargeEnemies;
 }
 
 static void fireBullet(float x, float y) {
@@ -193,6 +241,8 @@ static void killBullet(uint8_t i) {
 }
 
 void game_init(void) {
+    srand((unsigned int) time(NULL));
+
     music = platform_loadSound("assets/audio/music.wav");
     shipBulletSound = platform_loadSound("assets/audio/Laser_002.wav");
 
@@ -321,6 +371,20 @@ void game_init(void) {
 
     stbi_image_free(imageData);
 
+    imageData = stbi_load("assets/img/enemy-big.png", &imageWidth, &imageHeight, &imageChannels, 4);
+
+    glGenTextures(1, &largeEnemySprite.texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, largeEnemySprite.texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    stbi_image_free(imageData);
+
     glUniform1i(spriteSheetLocation, 0);
 
     setCharacterAnimation(&ship, SHIP_CENTER);
@@ -351,6 +415,17 @@ void game_update(void) {
         --ship.bulletThrottle; 
     }
 
+    spawnLargeEnemy();
+
+    for (uint8_t i = 0; i < numLargeEnemies; ++i) {
+        largeEnemies[i].position[0] += largeEnemies[i].velocity[0];
+        largeEnemies[i].position[1] += largeEnemies[i].velocity[1];
+
+        // if (largeEnemies[i].position[1] + largeEnemies[i].sprite->panelDims[1] * SPRITE_SCALE < 0) {
+        //     killBullet(i);
+        // }
+    }
+
     for (uint8_t i = 0; i < numBullets; ++i) {
         bullets[i].position[0] += bullets[i].velocity[0];
         bullets[i].position[1] += bullets[i].velocity[1];
@@ -365,6 +440,12 @@ void game_update(void) {
         uint8_t count = ship.sprite->animations[ship.currentAnimation].numFrames;
         ship.animationTick = (ship.animationTick + 1) % count;
         updateAnimationPanel(&ship);
+
+        for (uint8_t i = 0; i < numLargeEnemies; ++i) {
+            uint8_t count = largeEnemies[i].sprite->animations[largeEnemies[i].currentAnimation].numFrames;
+            largeEnemies[i].animationTick = (largeEnemies[i].animationTick + 1) % count;
+            updateAnimationPanel(&largeEnemies[i]);
+        }
 
         for (uint8_t i = 0; i < numBullets; ++i) {
             uint8_t count = bullets[i].sprite->animations[bullets[i].currentAnimation].numFrames;
@@ -386,6 +467,16 @@ void game_draw(void) {
     glUniform2fv(pixelOffsetLocation, 1, ship.position);
     glUniform3f(panelIndexLocation, (float) ship.currentSpritePanel[0], ship.currentSpritePanel[1], (float) ship.faceLeft);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBindTexture(GL_TEXTURE_2D, largeEnemySprite.texture);
+    glUniform2fv(panelPixelSizeLocation, 1, largeEnemySprite.panelDims);
+    glUniform2fv(spriteSheetDimensionsLocation, 1, largeEnemySprite.sheetDims);
+
+    for (uint8_t i = 0; i < numLargeEnemies; ++i) {
+        glUniform2fv(pixelOffsetLocation, 1, largeEnemies[i].position);
+        glUniform3f(panelIndexLocation, (float) largeEnemies[i].currentSpritePanel[0], largeEnemies[i].currentSpritePanel[1], (float) largeEnemies[i].faceLeft);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
 
     glBindTexture(GL_TEXTURE_2D, bulletSprite.texture);
     glUniform2fv(panelPixelSizeLocation, 1, bulletSprite.panelDims);
