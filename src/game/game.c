@@ -457,13 +457,7 @@ void game_update(void) {
 void game_draw(void) {
     glClear(GL_COLOR_BUFFER_BIT);
     
-    glBindTexture(GL_TEXTURE_2D, shipSprite.texture);
-    glUniform2fv(panelPixelSizeLocation, 1, shipSprite.panelDims);
-    glUniform2fv(spriteSheetDimensionsLocation, 1, shipSprite.sheetDims);
-    glUniform2fv(pixelOffsetLocation, 1, ship.position);
-    glUniform3f(panelIndexLocation, (float) ship.currentSpritePanel[0], ship.currentSpritePanel[1], (float) ship.faceLeft);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
+    drawCharacters(&ship, 1);
     drawCharacters(largeEnemies, numLargeEnemies);
     drawCharacters(bullets, numBullets);
 }
