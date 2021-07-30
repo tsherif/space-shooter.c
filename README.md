@@ -13,3 +13,20 @@ Asset Credits
 - Sprites: https://ansimuz.itch.io/spaceship-shooter-environment
 - music.wav: https://chiphead64.itch.io/free-game-soundtrack-by-cactusdude-hurry-up
 - Laser_002.wav: https://fallenblood.itch.io/50-sfx
+
+Current State
+-------------
+
+- [x] Sprite rendering
+- [x] Audio engine
+- [x] Controller support
+- [x] Keyboard support
+- [x] Player ship
+- [x] Fire bullets
+- [x] Enemy ships
+- [ ] Multiple enemy ship types
+- [ ] Collisions
+- [ ] Explosions
+- [ ] Multiple levels
+- [ ] Title screen
+- [ ] Keep score
