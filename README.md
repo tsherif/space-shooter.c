@@ -25,6 +25,7 @@ Current State
 - [x] Fire bullets
 - [x] Enemy ships
 - [ ] Multiple enemy ship types
+- [ ] Enemy bullets
 - [ ] Collisions
 - [ ] Explosions
 - [ ] Multiple levels
