@@ -21,38 +21,40 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _PLATFORM_INTERFACE_H_
-#define _PLATFORM_INTERFACE_H_
+#ifndef _GAME_RENDERER_H_
+#define _GAME_RENDERER_H_
 #include <stdbool.h>
+#include "../../lib/simple-opengl-loader.h"
+
+#define SPRITE_SCALE 4.0f
 
 typedef struct {
-	bool left;
-	bool right;
-	bool up;
-	bool down;
-	bool space;
-	bool ctrl;
-	bool changed;
-} GameKeyboard;
+    uint8_t frames[32][2];
+    uint8_t numFrames;
+} Animation;
 
 typedef struct {
-	float leftStickX;
-	float leftStickY;
-	bool aButton;
-} GameController;
+    float panelDims[2];
+    float sheetDims[2];
+    Animation* animations;
+    uint8_t numAnimations;
+    GLuint texture;
+} Sprite;
 
-// Must be implemented by game, to be used by platform layer.
-void game_init(void);
-void game_update(void);
-void game_draw(void);
-void game_resize(int width, int height);
-void game_keyboard(GameKeyboard* inputKeys);
-void game_controller(GameController* controllerInput);
+typedef struct {
+    float position[2];
+    float velocity[2];
+    bool faceLeft;
+    uint8_t currentAnimation;
+    uint8_t animationTick;
+    uint8_t currentSpritePanel[2];
+    Sprite* sprite;
+    uint16_t bulletThrottle;
+} Character;
 
-// Must be implemented by platform layer, to be used by platform game.
-typedef struct PlatformSound PlatformSound;
-bool platform_initAudio(void);
-PlatformSound* platform_loadSound(const char* fileName);
-void platform_playSound(PlatformSound* sound);
+void renderer_drawCharacters(Character* list, uint8_t count);
+bool renderer_loadTexture(const char* fileName, GLuint* texture);
+void renderer_resize(int width, int height);
+void renderer_init();
 
 #endif
