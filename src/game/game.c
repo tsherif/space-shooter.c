@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
+#include "../../lib/simple-opengl-loader.h"
 #include "../shared/platform-interface.h"
 #include "game-renderer.h"
 
