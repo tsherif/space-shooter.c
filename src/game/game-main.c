@@ -74,6 +74,7 @@ typedef enum {
 
 PlatformSound* music;
 PlatformSound* shipBulletSound;
+PlatformSound* enemyBulletSound;
 
 static struct {
     uint16_t width;
@@ -235,6 +236,7 @@ static void fireBullet(float x, float y, BulletType type) {
         bullets[numBullets].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
         bullets[numBullets].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
         bullets[numBullets].currentAnimation = 0;
+        platform_playSound(enemyBulletSound);
     }
 
     updateAnimationPanel(&bullets[numBullets]);
@@ -294,6 +296,7 @@ void game_init(void) {
 
     music = platform_loadSound("assets/audio/music.wav");
     shipBulletSound = platform_loadSound("assets/audio/Laser_002.wav");
+    enemyBulletSound = platform_loadSound("assets/audio/Hit_Hurt2.wav");
 
     platform_playSound(music);
 
