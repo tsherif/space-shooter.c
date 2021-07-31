@@ -20,8 +20,8 @@ void renderer_draw(RenderList* list, uint8_t count) {
     glUniform2fv(spriteSheetDimensionsLocation, 1, list->sheetDims);
 
     for (uint8_t i = 0; i < count; ++i) {
-        glUniform2fv(pixelOffsetLocation, 1, list->objects[i].position);
-        glUniform3f(panelIndexLocation, (float) list->objects[i].currentSpritePanel[0], list->objects[i].currentSpritePanel[1], (float) list->objects[i].flipX);
+        glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
+        glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
@@ -66,13 +66,12 @@ void renderer_init() {
     "uniform vec2 pixelSize;\n"
     "uniform vec2 panelPixelSize;\n"
     "uniform float spriteScale;\n"
-    "uniform vec3 panelIndex;\n" // z is whether to flip horizontally
+    "uniform vec2 panelIndex;\n" // z is whether to flip horizontally
     "uniform vec2 spriteSheetDimensions;\n"
     "out vec2 vUV;\n"
     "void main() {\n"
     "    vec2 uv = position;\n"
-    "    if (panelIndex.z == 1.0) uv.x = 1.0 - position.x;\n"
-    "    vUV = (uv + panelIndex.xy) / spriteSheetDimensions;\n"
+    "    vUV = (uv + panelIndex) / spriteSheetDimensions;\n"
     "    vec2 clipOffset = pixelOffset * pixelSize - 1.0;\n"
     "    gl_Position = vec4((position * panelPixelSize * pixelSize * spriteScale + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
     "}\n";

@@ -108,7 +108,7 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int showWindow) {
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
-        .title = "Win32 Shooter", 
+        .title = "space-shooter.c (win32)", 
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = winProc,
@@ -244,7 +244,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
         if (ticks == 600) {
             char buffer[1024];
-            snprintf(buffer, 1024, "Win32 Shooter: Frame Time Average: %.2fms, Min: %.2fms, Max: %.2fms", averageTime, minTime, maxTime);
+            snprintf(buffer, 1024, "space-shooter.c (win32): Frame Time Average: %.2fms, Min: %.2fms, Max: %.2fms", averageTime, minTime, maxTime);
             SetWindowTextA(window, buffer);
             totalTime = 0.0f;
             ticks = 0;

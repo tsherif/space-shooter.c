@@ -32,5 +32,5 @@ Current State
 - [ ] Title screen
 - [ ] Keep score
 - [ ] Scale using a framebuffer
-- [ ] Get rid of copying into render list
+- [x] Get rid of copying into render list
 - [ ] Instanced draws

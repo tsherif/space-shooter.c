@@ -55,7 +55,8 @@ typedef struct {
 } Sprite;
 
 typedef struct {
-    RenderObject;
+    float* position;           // vec2 pointer into RenderList arrays
+    float* currentSpritePanel; // vec2 pointer into RenderList arrays
     float velocity[2];
     uint8_t currentAnimation;
     uint8_t animationTick;
@@ -180,6 +181,9 @@ static void spawnLargeEnemy() {
         return;
     }
 
+    largeEnemies[numLargeEnemies].position = largeEnemySprite.positions + numLargeEnemies * 2;
+    largeEnemies[numLargeEnemies].currentSpritePanel = largeEnemySprite.currentSpritePanels + numLargeEnemies * 2;
+
     largeEnemies[numLargeEnemies].position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.panelDims[0] * SPRITE_SCALE);
     largeEnemies[numLargeEnemies].position[1] = -largeEnemySprite.panelDims[1] * SPRITE_SCALE;
     largeEnemies[numLargeEnemies].velocity[0] = 0.0f;
@@ -197,6 +201,9 @@ static void fireBullet(float x, float y) {
     if (numBullets == DRAWLIST_MAX) {
         return;
     }
+
+    bullets[numBullets].position = bulletSprite.positions + numBullets * 2;
+    bullets[numBullets].currentSpritePanel = bulletSprite.currentSpritePanels + numBullets * 2;
 
     bullets[numBullets].position[0] = x;
     bullets[numBullets].position[1] = y;
@@ -217,7 +224,21 @@ static void killCharacter(Character* list, uint8_t* count, uint8_t i) {
         return;
     }
 
-    list[i] = list[*count - 1];
+    uint8_t last = *count - 1;
+
+    float* positionPointer = list[i].position;
+    float* currentSpritePanelPointer =  list[i].currentSpritePanel;
+
+    positionPointer[0] = list[last].position[0];
+    positionPointer[1] = list[last].position[1];
+    currentSpritePanelPointer[0] = list[last].currentSpritePanel[0];
+    currentSpritePanelPointer[1] = list[last].currentSpritePanel[1];
+
+    list[i] = list[last];
+
+    list[i].position = positionPointer;
+    list[i].currentSpritePanel = currentSpritePanelPointer;
+
     *count -= 1;
 }
 
@@ -251,6 +272,8 @@ void game_init(void) {
     shipBulletOffset[0] = (shipSprite.panelDims[0] - bulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
     shipBulletOffset[1] =  -bulletSprite.panelDims[1] * SPRITE_SCALE;
 
+    ship.position = shipSprite.positions;
+    ship.currentSpritePanel = shipSprite.currentSpritePanels;
     ship.position[0] = canvas.width / 2 - ship.sprite->panelDims[0] * SPRITE_SCALE / 2;
     ship.position[1] = canvas.height - 150.0f;
 
@@ -365,16 +388,7 @@ void game_controller(GameController* controllerInput) {
 void game_draw(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    shipSprite.objects[0] = *((RenderObject *) &ship);
     renderer_draw((RenderList *) &shipSprite, 1);
-
-    for (uint8_t i = 0; i < numLargeEnemies; ++i) {
-        largeEnemySprite.objects[i] = *((RenderObject *) &largeEnemies[i]);
-    }
     renderer_draw((RenderList *) &largeEnemySprite, numLargeEnemies);
-
-    for (uint8_t i = 0; i < numBullets; ++i) {
-        bulletSprite.objects[i] = *((RenderObject *) &bullets[i]);
-    }
     renderer_draw((RenderList *) &bulletSprite, numBullets);
 }

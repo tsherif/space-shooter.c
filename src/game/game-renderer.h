@@ -30,16 +30,11 @@
 #define SPRITE_SCALE 4.0f
 
 typedef struct {
-    float position[2];
-    uint8_t currentSpritePanel[2];
-    bool flipX;
-} RenderObject;
-
-typedef struct {
     float panelDims[2];
     float sheetDims[2];
     GLuint texture;
-    RenderObject objects[DRAWLIST_MAX];
+    float positions[DRAWLIST_MAX * 2];
+    float currentSpritePanels[DRAWLIST_MAX * 2];
 } RenderList;
 
 void renderer_draw(RenderList* list, uint8_t count);
