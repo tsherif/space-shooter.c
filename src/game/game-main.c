@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
 #include "../../lib/simple-opengl-loader.h"
 #include "../shared/platform-interface.h"
 #include "game-renderer.h"
@@ -36,12 +37,14 @@
 #define SHIP_LEFT         2
 #define SHIP_CENTER_RIGHT 3
 #define SHIP_RIGHT        4
+#define SHIP_BULLET_VELOCITY (-5.0f)
+#define SHIP_BULLET_THROTTLE 20
 
 #define LARGE_ENEMY_VELOCITY 1.0f
-#define LARGE_ENEMY_SPAWN_PROBABILITY 0.002f
+#define LARGE_ENEMY_SPAWN_PROBABILITY 0.001f
+#define ENEMY_BULLET_SPEED 1.0f
+#define ENEMY_BULLET_PROBABILITY 0.002f
 
-#define BULLET_VELOCITY (-5.0f)
-#define BULLET_THROTTLE_SHIP 20
 
 typedef struct {
     uint8_t frames[32][2];
@@ -63,6 +66,11 @@ typedef struct {
     Sprite* sprite;
     uint16_t bulletThrottle;
 } Character;
+
+typedef enum {
+    SHIP_BULLET,
+    ENEMY_BULLET
+} BulletType;
 
 PlatformSound* music;
 PlatformSound* shipBulletSound;
@@ -149,6 +157,7 @@ static Sprite bulletSprite = {
 static Character bullets[DRAWLIST_MAX];
 static uint8_t numBullets;
 static float shipBulletOffset[2];
+static float largeEnemyBulletOffset[2];
 
 static float randomRange(float min, float max) {
     float range = max - min;
@@ -197,7 +206,7 @@ static void spawnLargeEnemy() {
     ++numLargeEnemies;
 }
 
-static void fireBullet(float x, float y) {
+static void fireBullet(float x, float y, BulletType type) {
     if (numBullets == DRAWLIST_MAX) {
         return;
     }
@@ -207,14 +216,28 @@ static void fireBullet(float x, float y) {
 
     bullets[numBullets].position[0] = x;
     bullets[numBullets].position[1] = y;
-    bullets[numBullets].velocity[0] = 0.0f;
-    bullets[numBullets].velocity[1] = BULLET_VELOCITY;
     bullets[numBullets].sprite = &bulletSprite;
-    bullets[numBullets].currentAnimation = 1;
     bullets[numBullets].animationTick = 0;
 
+    if (type == SHIP_BULLET) {
+        bullets[numBullets].velocity[0] = 0.0f;
+        bullets[numBullets].velocity[1] = SHIP_BULLET_VELOCITY;
+        bullets[numBullets].currentAnimation = 1;
+        platform_playSound(shipBulletSound);
+    } else {
+        float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE / 2.0f;
+        float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] * SPRITE_SCALE / 2.0f;
+
+        float dx = ship.position[0] - x;
+        float dy = ship.position[1] - y;
+        float d = sqrtf(dx * dx + dy * dy);
+
+        bullets[numBullets].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
+        bullets[numBullets].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
+        bullets[numBullets].currentAnimation = 0;
+    }
+
     updateAnimationPanel(&bullets[numBullets]);
-    platform_playSound(shipBulletSound);
 
     ++numBullets;
 }
@@ -247,7 +270,12 @@ static void updateCharacterPositions(Character* list, uint8_t* count) {
         list[i].position[0] += list[i].velocity[0];
         list[i].position[1] += list[i].velocity[1];
 
-        if (list[i].position[1] + list[i].sprite->panelDims[1] * SPRITE_SCALE < 0) {
+        if (
+            list[i].position[0] + list[i].sprite->panelDims[0] * SPRITE_SCALE < 0 ||
+            list[i].position[1] + list[i].sprite->panelDims[1] * SPRITE_SCALE < 0 ||
+            list[i].position[0] > canvas.width ||
+            list[i].position[1] > canvas.height
+        ) {
             killCharacter(list, count, i);
         }
     }
@@ -271,6 +299,9 @@ void game_init(void) {
 
     shipBulletOffset[0] = (shipSprite.panelDims[0] - bulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
     shipBulletOffset[1] =  -bulletSprite.panelDims[1] * SPRITE_SCALE;
+
+    largeEnemyBulletOffset[0] = (largeEnemySprite.panelDims[0] - bulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
+    largeEnemyBulletOffset[1] =  (largeEnemySprite.panelDims[1] - bulletSprite.panelDims[1]) * SPRITE_SCALE / 2;
 
     ship.position = shipSprite.positions;
     ship.currentSpritePanel = shipSprite.currentSpritePanels;
@@ -317,6 +348,12 @@ void game_update(void) {
     updateCharacterPositions(largeEnemies, &numLargeEnemies);
     updateCharacterPositions(bullets, &numBullets);
 
+    for (uint8_t i = 0; i < numLargeEnemies; ++i) {
+        if (randomRange(0.0f, 1.0f) < ENEMY_BULLET_PROBABILITY) {
+            fireBullet(largeEnemies[i].position[0] + largeEnemyBulletOffset[0], largeEnemies[i].position[1] + largeEnemyBulletOffset[1], ENEMY_BULLET);
+        }
+    }
+
     if (tick == 0) {
         uint8_t count = ship.sprite->animations[ship.currentAnimation].numFrames;
         ship.animationTick = (ship.animationTick + 1) % count;
@@ -358,8 +395,8 @@ void game_keyboard(GameKeyboard* inputKeys) {
     }
 
     if (inputKeys->space && ship.bulletThrottle == 0) {
-        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
-        ship.bulletThrottle = BULLET_THROTTLE_SHIP;
+        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1], SHIP_BULLET);
+        ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
 
@@ -380,8 +417,8 @@ void game_controller(GameController* controllerInput) {
     }
 
     if (controllerInput->aButton && ship.bulletThrottle == 0) {
-        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
-        ship.bulletThrottle = BULLET_THROTTLE_SHIP;
+        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1], SHIP_BULLET);
+        ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
 
