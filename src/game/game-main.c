@@ -72,13 +72,6 @@ typedef struct {
     uint8_t count;
 } EntityList;
 
-
-typedef enum {
-    SHIP_BULLET,
-    ENEMY_BULLET
-} BulletType;
-
-
 PlatformSound* music;
 PlatformSound* shipBulletSound;
 PlatformSound* enemyBulletSound;
@@ -142,26 +135,37 @@ static Sprite largeEnemySprite = {
 };
 
 
-static Animation bulletAnimations[]  = {
-    {
-        .frames = {{0, 0}, {1, 0}},
-        .numFrames = 2
-    },
+static Animation playerBulletAnimations[]  = {
     {
         .frames = {{0, 1}, {1, 1}},
         .numFrames = 2
     }
 };
 
-static Sprite bulletSprite = {
+static Sprite playerBulletSprite = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
-    .animations = bulletAnimations,
-    .numAnimations = sizeof(bulletAnimations) / sizeof(bulletAnimations[0])
+    .animations = playerBulletAnimations,
+    .numAnimations = sizeof(playerBulletAnimations) / sizeof(playerBulletAnimations[0])
+};
+
+static Animation enemyBulletAnimations[]  = {
+    {
+        .frames = {{0, 0}, {1, 0}},
+        .numFrames = 2
+    }
+};
+
+static Sprite enemyBulletSprite = {
+    .panelDims = { 16.0f, 16.0f },
+    .sheetDims = { 2.0f, 2.0f },
+    .animations = enemyBulletAnimations,
+    .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
 };
 
 static EntityList largeEnemies;
-static EntityList bullets;
+static EntityList playerBullets;
+static EntityList enemyBullets;
 static float shipBulletOffset[2];
 static float largeEnemyBulletOffset[2];
 
@@ -212,41 +216,56 @@ static void spawnLargeEnemy() {
     ++largeEnemies.count;
 }
 
-static void fireBullet(float x, float y, BulletType type) {
-    if (bullets.count == DRAWLIST_MAX) {
+static void firePlayerBullet(float x, float y) {
+    if (playerBullets.count == DRAWLIST_MAX) {
         return;
     }
 
-    bullets.entities[bullets.count].position = bulletSprite.positions + bullets.count * 2;
-    bullets.entities[bullets.count].currentSpritePanel = bulletSprite.currentSpritePanels + bullets.count * 2;
+    playerBullets.entities[playerBullets.count].position = playerBulletSprite.positions + playerBullets.count * 2;
+    playerBullets.entities[playerBullets.count].currentSpritePanel = playerBulletSprite.currentSpritePanels + playerBullets.count * 2;
 
-    bullets.entities[bullets.count].position[0] = x;
-    bullets.entities[bullets.count].position[1] = y;
-    bullets.entities[bullets.count].sprite = &bulletSprite;
-    bullets.entities[bullets.count].animationTick = 0;
+    playerBullets.entities[playerBullets.count].position[0] = x;
+    playerBullets.entities[playerBullets.count].position[1] = y;
+    playerBullets.entities[playerBullets.count].velocity[0] = 0.0f;
+    playerBullets.entities[playerBullets.count].velocity[1] = SHIP_BULLET_VELOCITY;
+    playerBullets.entities[playerBullets.count].sprite = &playerBulletSprite;
+    playerBullets.entities[playerBullets.count].animationTick = 0;
+    playerBullets.entities[playerBullets.count].currentAnimation = 0;
 
-    if (type == SHIP_BULLET) {
-        bullets.entities[bullets.count].velocity[0] = 0.0f;
-        bullets.entities[bullets.count].velocity[1] = SHIP_BULLET_VELOCITY;
-        bullets.entities[bullets.count].currentAnimation = 1;
-        platform_playSound(shipBulletSound);
-    } else {
-        float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE / 2.0f;
-        float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] * SPRITE_SCALE / 2.0f;
+    updateAnimationPanel(&playerBullets.entities[playerBullets.count]);
+    platform_playSound(shipBulletSound);
 
-        float dx = ship.position[0] - x;
-        float dy = ship.position[1] - y;
-        float d = sqrtf(dx * dx + dy * dy);
+    ++playerBullets.count;
+}
 
-        bullets.entities[bullets.count].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
-        bullets.entities[bullets.count].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
-        bullets.entities[bullets.count].currentAnimation = 0;
-        platform_playSound(enemyBulletSound);
+static void fireEnemyBullet(float x, float y) {
+    if (enemyBullets.count == DRAWLIST_MAX) {
+        return;
     }
 
-    updateAnimationPanel(&bullets.entities[bullets.count]);
+    enemyBullets.entities[enemyBullets.count].position = enemyBulletSprite.positions + enemyBullets.count * 2;
+    enemyBullets.entities[enemyBullets.count].currentSpritePanel = enemyBulletSprite.currentSpritePanels + enemyBullets.count * 2;
 
-    ++bullets.count;
+    enemyBullets.entities[enemyBullets.count].position[0] = x;
+    enemyBullets.entities[enemyBullets.count].position[1] = y;
+    enemyBullets.entities[enemyBullets.count].sprite = &enemyBulletSprite;
+    enemyBullets.entities[enemyBullets.count].animationTick = 0;
+
+    float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE / 2.0f;
+    float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] * SPRITE_SCALE / 2.0f;
+
+    float dx = ship.position[0] - x;
+    float dy = ship.position[1] - y;
+    float d = sqrtf(dx * dx + dy * dy);
+
+    enemyBullets.entities[enemyBullets.count].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
+    enemyBullets.entities[enemyBullets.count].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
+    enemyBullets.entities[enemyBullets.count].currentAnimation = 0;
+    platform_playSound(enemyBulletSound);
+
+    updateAnimationPanel(&enemyBullets.entities[enemyBullets.count]);
+
+    ++enemyBullets.count;
 }
 
 static void killEntity(EntityList* list, uint8_t i) {
@@ -291,7 +310,7 @@ static void updateEntityPositions(EntityList* list) {
 static void updateEntityAnimations(EntityList* list) {
     for (uint8_t i = 0; i < list->count; ++i) {
         uint8_t numFrames = list->entities[i].sprite->animations[list->entities[i].currentAnimation].numFrames;
-        list->entities[i].animationTick = (list->entities[i].animationTick + 1) % numFrames;
+         list->entities[i].animationTick = (list->entities[i].animationTick + 1) % numFrames;
         updateAnimationPanel(&list->entities[i]);
     }
 }
@@ -305,11 +324,11 @@ void game_init(void) {
 
     platform_playSound(music);
 
-    shipBulletOffset[0] = (shipSprite.panelDims[0] - bulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
-    shipBulletOffset[1] =  -bulletSprite.panelDims[1] * SPRITE_SCALE;
+    shipBulletOffset[0] = (shipSprite.panelDims[0] - playerBulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
+    shipBulletOffset[1] =  -playerBulletSprite.panelDims[1] * SPRITE_SCALE;
 
-    largeEnemyBulletOffset[0] = (largeEnemySprite.panelDims[0] - bulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
-    largeEnemyBulletOffset[1] =  (largeEnemySprite.panelDims[1] - bulletSprite.panelDims[1]) * SPRITE_SCALE / 2;
+    largeEnemyBulletOffset[0] = (largeEnemySprite.panelDims[0] - enemyBulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
+    largeEnemyBulletOffset[1] =  (largeEnemySprite.panelDims[1] - enemyBulletSprite.panelDims[1]) * SPRITE_SCALE / 2;
 
     ship.position = shipSprite.positions;
     ship.currentSpritePanel = shipSprite.currentSpritePanels;
@@ -320,8 +339,11 @@ void game_init(void) {
 
     renderer_loadTexture("assets/img/ship.png", &shipSprite.texture);
     renderer_loadTexture("assets/img/enemy-big.png", &largeEnemySprite.texture);
-    renderer_loadTexture("assets/img/laser-bolts.png", &bulletSprite.texture);
 
+    GLuint bulletTexture; // Shared between player and enemy bullets.
+    renderer_loadTexture("assets/img/laser-bolts.png", &bulletTexture);
+    playerBulletSprite.texture = bulletTexture;
+    enemyBulletSprite.texture = bulletTexture;
 
     setEntityAnimation(&ship, SHIP_CENTER);
 }
@@ -353,12 +375,13 @@ void game_update(void) {
 
     spawnLargeEnemy();
 
+    updateEntityPositions(&playerBullets);
     updateEntityPositions(&largeEnemies);
-    updateEntityPositions(&bullets);
+    updateEntityPositions(&enemyBullets);
 
     for (uint8_t i = 0; i < largeEnemies.count; ++i) {
         if (randomRange(0.0f, 1.0f) < ENEMY_BULLET_PROBABILITY) {
-            fireBullet(largeEnemies.entities[i].position[0] + largeEnemyBulletOffset[0], largeEnemies.entities[i].position[1] + largeEnemyBulletOffset[1], ENEMY_BULLET);
+            fireEnemyBullet(largeEnemies.entities[i].position[0] + largeEnemyBulletOffset[0], largeEnemies.entities[i].position[1] + largeEnemyBulletOffset[1]);
         }
     }
 
@@ -367,8 +390,9 @@ void game_update(void) {
         ship.animationTick = (ship.animationTick + 1) % count;
         updateAnimationPanel(&ship);
 
+        updateEntityAnimations(&playerBullets);  
         updateEntityAnimations(&largeEnemies);
-        updateEntityAnimations(&bullets);  
+        updateEntityAnimations(&enemyBullets);  
 
         tick = 20;
     }
@@ -403,7 +427,7 @@ void game_keyboard(GameKeyboard* inputKeys) {
     }
 
     if (inputKeys->space && ship.bulletThrottle == 0) {
-        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1], SHIP_BULLET);
+        firePlayerBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
         ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
@@ -425,7 +449,7 @@ void game_controller(GameController* controllerInput) {
     }
 
     if (controllerInput->aButton && ship.bulletThrottle == 0) {
-        fireBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1], SHIP_BULLET);
+        firePlayerBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
         ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
@@ -433,7 +457,8 @@ void game_controller(GameController* controllerInput) {
 void game_draw(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    renderer_draw((RenderList *) &shipSprite, 1);
     renderer_draw((RenderList *) &largeEnemySprite, largeEnemies.count);
-    renderer_draw((RenderList *) &bulletSprite, bullets.count);
+    renderer_draw((RenderList *) &shipSprite, 1);
+    renderer_draw((RenderList *) &enemyBulletSprite, enemyBullets.count);
+    renderer_draw((RenderList *) &playerBulletSprite, playerBullets.count);
 }
