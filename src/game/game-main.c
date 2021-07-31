@@ -65,12 +65,19 @@ typedef struct {
     uint8_t animationTick;
     Sprite* sprite;
     uint16_t bulletThrottle;
-} Character;
+} Entity;
+
+typedef struct {
+    Entity entities[DRAWLIST_MAX];
+    uint8_t count;
+} EntityList;
+
 
 typedef enum {
     SHIP_BULLET,
     ENEMY_BULLET
 } BulletType;
+
 
 PlatformSound* music;
 PlatformSound* shipBulletSound;
@@ -116,7 +123,7 @@ static Sprite shipSprite = {
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
-static Character ship = {
+static Entity ship = {
     .sprite = &shipSprite
 };
 
@@ -134,8 +141,6 @@ static Sprite largeEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-static Character largeEnemies[DRAWLIST_MAX];
-static uint8_t numLargeEnemies;
 
 static Animation bulletAnimations[]  = {
     {
@@ -155,8 +160,8 @@ static Sprite bulletSprite = {
     .numAnimations = sizeof(bulletAnimations) / sizeof(bulletAnimations[0])
 };
 
-static Character bullets[DRAWLIST_MAX];
-static uint8_t numBullets;
+static EntityList largeEnemies;
+static EntityList bullets;
 static float shipBulletOffset[2];
 static float largeEnemyBulletOffset[2];
 
@@ -165,14 +170,14 @@ static float randomRange(float min, float max) {
     return min + ((float) rand() / (RAND_MAX + 1)) * range;
 }
 
-static void updateAnimationPanel(Character* character) {
+static void updateAnimationPanel(Entity* character) {
     uint8_t* panel = character->sprite->animations[character->currentAnimation].frames[character->animationTick];
 
     character->currentSpritePanel[0] = panel[0];
     character->currentSpritePanel[1] = panel[1];
 }
 
-static void setCharacterAnimation(Character* character, uint8_t animation) {
+static void setEntityAnimation(Entity* character, uint8_t animation) {
     if (character->currentAnimation == animation) {
         return;
     }
@@ -183,7 +188,7 @@ static void setCharacterAnimation(Character* character, uint8_t animation) {
 }
 
 static void spawnLargeEnemy() {
-    if (numLargeEnemies == DRAWLIST_MAX) {
+    if (largeEnemies.count == DRAWLIST_MAX) {
         return;
     }
 
@@ -191,39 +196,39 @@ static void spawnLargeEnemy() {
         return;
     }
 
-    largeEnemies[numLargeEnemies].position = largeEnemySprite.positions + numLargeEnemies * 2;
-    largeEnemies[numLargeEnemies].currentSpritePanel = largeEnemySprite.currentSpritePanels + numLargeEnemies * 2;
+    largeEnemies.entities[largeEnemies.count].position = largeEnemySprite.positions + largeEnemies.count * 2;
+    largeEnemies.entities[largeEnemies.count].currentSpritePanel = largeEnemySprite.currentSpritePanels + largeEnemies.count * 2;
 
-    largeEnemies[numLargeEnemies].position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.panelDims[0] * SPRITE_SCALE);
-    largeEnemies[numLargeEnemies].position[1] = -largeEnemySprite.panelDims[1] * SPRITE_SCALE;
-    largeEnemies[numLargeEnemies].velocity[0] = 0.0f;
-    largeEnemies[numLargeEnemies].velocity[1] = LARGE_ENEMY_VELOCITY;
-    largeEnemies[numLargeEnemies].sprite = &largeEnemySprite;
-    largeEnemies[numLargeEnemies].currentAnimation = 0;
-    largeEnemies[numLargeEnemies].animationTick = 0;
+    largeEnemies.entities[largeEnemies.count].position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.panelDims[0] * SPRITE_SCALE);
+    largeEnemies.entities[largeEnemies.count].position[1] = -largeEnemySprite.panelDims[1] * SPRITE_SCALE;
+    largeEnemies.entities[largeEnemies.count].velocity[0] = 0.0f;
+    largeEnemies.entities[largeEnemies.count].velocity[1] = LARGE_ENEMY_VELOCITY;
+    largeEnemies.entities[largeEnemies.count].sprite = &largeEnemySprite;
+    largeEnemies.entities[largeEnemies.count].currentAnimation = 0;
+    largeEnemies.entities[largeEnemies.count].animationTick = 0;
 
-    updateAnimationPanel(&largeEnemies[numLargeEnemies]);
+    updateAnimationPanel(&largeEnemies.entities[largeEnemies.count]);
 
-    ++numLargeEnemies;
+    ++largeEnemies.count;
 }
 
 static void fireBullet(float x, float y, BulletType type) {
-    if (numBullets == DRAWLIST_MAX) {
+    if (bullets.count == DRAWLIST_MAX) {
         return;
     }
 
-    bullets[numBullets].position = bulletSprite.positions + numBullets * 2;
-    bullets[numBullets].currentSpritePanel = bulletSprite.currentSpritePanels + numBullets * 2;
+    bullets.entities[bullets.count].position = bulletSprite.positions + bullets.count * 2;
+    bullets.entities[bullets.count].currentSpritePanel = bulletSprite.currentSpritePanels + bullets.count * 2;
 
-    bullets[numBullets].position[0] = x;
-    bullets[numBullets].position[1] = y;
-    bullets[numBullets].sprite = &bulletSprite;
-    bullets[numBullets].animationTick = 0;
+    bullets.entities[bullets.count].position[0] = x;
+    bullets.entities[bullets.count].position[1] = y;
+    bullets.entities[bullets.count].sprite = &bulletSprite;
+    bullets.entities[bullets.count].animationTick = 0;
 
     if (type == SHIP_BULLET) {
-        bullets[numBullets].velocity[0] = 0.0f;
-        bullets[numBullets].velocity[1] = SHIP_BULLET_VELOCITY;
-        bullets[numBullets].currentAnimation = 1;
+        bullets.entities[bullets.count].velocity[0] = 0.0f;
+        bullets.entities[bullets.count].velocity[1] = SHIP_BULLET_VELOCITY;
+        bullets.entities[bullets.count].currentAnimation = 1;
         platform_playSound(shipBulletSound);
     } else {
         float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE / 2.0f;
@@ -233,61 +238,61 @@ static void fireBullet(float x, float y, BulletType type) {
         float dy = ship.position[1] - y;
         float d = sqrtf(dx * dx + dy * dy);
 
-        bullets[numBullets].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
-        bullets[numBullets].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
-        bullets[numBullets].currentAnimation = 0;
+        bullets.entities[bullets.count].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
+        bullets.entities[bullets.count].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
+        bullets.entities[bullets.count].currentAnimation = 0;
         platform_playSound(enemyBulletSound);
     }
 
-    updateAnimationPanel(&bullets[numBullets]);
+    updateAnimationPanel(&bullets.entities[bullets.count]);
 
-    ++numBullets;
+    ++bullets.count;
 }
 
-static void killCharacter(Character* list, uint8_t* count, uint8_t i) {
-    if (i >= *count) {
+static void killEntity(EntityList* list, uint8_t i) {
+    if (i >= list->count) {
         return;
     }
 
-    uint8_t last = *count - 1;
+    uint8_t last = list->count - 1;
 
-    float* positionPointer = list[i].position;
-    float* currentSpritePanelPointer =  list[i].currentSpritePanel;
+    float* positionPointer = list->entities[i].position;
+    float* currentSpritePanelPointer =  list->entities[i].currentSpritePanel;
 
-    positionPointer[0] = list[last].position[0];
-    positionPointer[1] = list[last].position[1];
-    currentSpritePanelPointer[0] = list[last].currentSpritePanel[0];
-    currentSpritePanelPointer[1] = list[last].currentSpritePanel[1];
+    positionPointer[0] = list->entities[last].position[0];
+    positionPointer[1] = list->entities[last].position[1];
+    currentSpritePanelPointer[0] = list->entities[last].currentSpritePanel[0];
+    currentSpritePanelPointer[1] = list->entities[last].currentSpritePanel[1];
 
-    list[i] = list[last];
+    list->entities[i] = list->entities[last];
 
-    list[i].position = positionPointer;
-    list[i].currentSpritePanel = currentSpritePanelPointer;
+    list->entities[i].position = positionPointer;
+    list->entities[i].currentSpritePanel = currentSpritePanelPointer;
 
-    *count -= 1;
+    --list->count;
 }
 
-static void updateCharacterPositions(Character* list, uint8_t* count) {
-    for (uint8_t i = 0; i < *count; ++i) {
-        list[i].position[0] += list[i].velocity[0];
-        list[i].position[1] += list[i].velocity[1];
+static void updateEntityPositions(EntityList* list) {
+    for (uint8_t i = 0; i < list->count; ++i) {
+        list->entities[i].position[0] += list->entities[i].velocity[0];
+        list->entities[i].position[1] += list->entities[i].velocity[1];
 
         if (
-            list[i].position[0] + list[i].sprite->panelDims[0] * SPRITE_SCALE < 0 ||
-            list[i].position[1] + list[i].sprite->panelDims[1] * SPRITE_SCALE < 0 ||
-            list[i].position[0] > canvas.width ||
-            list[i].position[1] > canvas.height
+            list->entities[i].position[0] + list->entities[i].sprite->panelDims[0] * SPRITE_SCALE < 0 ||
+            list->entities[i].position[1] + list->entities[i].sprite->panelDims[1] * SPRITE_SCALE < 0 ||
+            list->entities[i].position[0] > canvas.width ||
+            list->entities[i].position[1] > canvas.height
         ) {
-            killCharacter(list, count, i);
+            killEntity(list, i);
         }
     }
 }
 
-static void updateCharacterAnimations(Character* list, uint8_t count) {
-    for (uint8_t i = 0; i < count; ++i) {
-        uint8_t count = list[i].sprite->animations[list[i].currentAnimation].numFrames;
-        list[i].animationTick = (list[i].animationTick + 1) % count;
-        updateAnimationPanel(&list[i]);
+static void updateEntityAnimations(EntityList* list) {
+    for (uint8_t i = 0; i < list->count; ++i) {
+        uint8_t numFrames = list->entities[i].sprite->animations[list->entities[i].currentAnimation].numFrames;
+        list->entities[i].animationTick = (list->entities[i].animationTick + 1) % numFrames;
+        updateAnimationPanel(&list->entities[i]);
     }
 }
 
@@ -318,7 +323,7 @@ void game_init(void) {
     renderer_loadTexture("assets/img/laser-bolts.png", &bulletSprite.texture);
 
 
-    setCharacterAnimation(&ship, SHIP_CENTER);
+    setEntityAnimation(&ship, SHIP_CENTER);
 }
 
 static int tick = 0;
@@ -348,12 +353,12 @@ void game_update(void) {
 
     spawnLargeEnemy();
 
-    updateCharacterPositions(largeEnemies, &numLargeEnemies);
-    updateCharacterPositions(bullets, &numBullets);
+    updateEntityPositions(&largeEnemies);
+    updateEntityPositions(&bullets);
 
-    for (uint8_t i = 0; i < numLargeEnemies; ++i) {
+    for (uint8_t i = 0; i < largeEnemies.count; ++i) {
         if (randomRange(0.0f, 1.0f) < ENEMY_BULLET_PROBABILITY) {
-            fireBullet(largeEnemies[i].position[0] + largeEnemyBulletOffset[0], largeEnemies[i].position[1] + largeEnemyBulletOffset[1], ENEMY_BULLET);
+            fireBullet(largeEnemies.entities[i].position[0] + largeEnemyBulletOffset[0], largeEnemies.entities[i].position[1] + largeEnemyBulletOffset[1], ENEMY_BULLET);
         }
     }
 
@@ -362,8 +367,8 @@ void game_update(void) {
         ship.animationTick = (ship.animationTick + 1) % count;
         updateAnimationPanel(&ship);
 
-        updateCharacterAnimations(largeEnemies, numLargeEnemies);
-        updateCharacterAnimations(bullets, numBullets);  
+        updateEntityAnimations(&largeEnemies);
+        updateEntityAnimations(&bullets);  
 
         tick = 20;
     }
@@ -380,13 +385,13 @@ void game_resize(int width, int height) {
 void game_keyboard(GameKeyboard* inputKeys) {
     if (inputKeys->left) {
         ship.velocity[0] = -2.0f;
-        setCharacterAnimation(&ship, SHIP_LEFT);
+        setEntityAnimation(&ship, SHIP_LEFT);
     } else if (inputKeys->right) {
         ship.velocity[0] = 2.0f;
-        setCharacterAnimation(&ship, SHIP_RIGHT);
+        setEntityAnimation(&ship, SHIP_RIGHT);
     } else {
         ship.velocity[0] = 0.0f;
-        setCharacterAnimation(&ship, SHIP_CENTER);
+        setEntityAnimation(&ship, SHIP_CENTER);
     }
 
     if (inputKeys->up) {
@@ -408,15 +413,15 @@ void game_controller(GameController* controllerInput) {
     ship.velocity[1] = -2.0f * controllerInput->leftStickY;
 
     if (ship.velocity[0] < -1.0f) {
-        setCharacterAnimation(&ship, SHIP_LEFT);
+        setEntityAnimation(&ship, SHIP_LEFT);
     } else if (ship.velocity[0] < 0.0f) {
-        setCharacterAnimation(&ship, SHIP_CENTER_LEFT);
+        setEntityAnimation(&ship, SHIP_CENTER_LEFT);
     } else if (ship.velocity[0] > 1.0f) {
-        setCharacterAnimation(&ship, SHIP_RIGHT);
+        setEntityAnimation(&ship, SHIP_RIGHT);
     } else if (ship.velocity[0] > 0.0f) {
-        setCharacterAnimation(&ship, SHIP_CENTER_RIGHT);
+        setEntityAnimation(&ship, SHIP_CENTER_RIGHT);
     } else {
-        setCharacterAnimation(&ship, SHIP_CENTER);
+        setEntityAnimation(&ship, SHIP_CENTER);
     }
 
     if (controllerInput->aButton && ship.bulletThrottle == 0) {
@@ -429,6 +434,6 @@ void game_draw(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     renderer_draw((RenderList *) &shipSprite, 1);
-    renderer_draw((RenderList *) &largeEnemySprite, numLargeEnemies);
-    renderer_draw((RenderList *) &bulletSprite, numBullets);
+    renderer_draw((RenderList *) &largeEnemySprite, largeEnemies.count);
+    renderer_draw((RenderList *) &bulletSprite, bullets.count);
 }

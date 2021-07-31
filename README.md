@@ -26,8 +26,9 @@ Current State
 - [x] Enemy ships
 - [ ] Multiple enemy ship types
 - [x] Enemy bullets
-- [ ] Enemy bullet sound
-- [ ] Collisions
+- [x] Enemy bullet sound
+- [ ] Bullets kill enemies
+- [ ] Bullets kill player
 - [ ] Explosions
 - [ ] Multiple levels
 - [ ] Title screen
