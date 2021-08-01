@@ -2,13 +2,49 @@
 #include "game-renderer.h"
 #include "../../lib/stb_image.h"
 
+static GLuint offscreenFramebuffer;
+static GLuint offscreenTexture;
+
 static GLuint pixelSizeLocation;
 static GLuint panelPixelSizeLocation;
 static GLuint spriteSheetLocation;
 static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
-static GLuint spriteScaleLocation;
+
+typedef struct {
+    int width;
+    int height;
+} Dimensions;
+
+Dimensions game;
+Dimensions window;
+
+void renderer_frameStart(void) {
+    glViewport(0, 0, game.width, game.height);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, offscreenFramebuffer);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void renderer_frameEnd(void) {
+    glViewport(0, 0, window.width, window.height);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glGetError();
+
+    glBlitFramebuffer(
+        0, 0, game.width, game.height,
+        0, 0, window.width, window.height,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+    );
+
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        MessageBoxA(NULL, "Framebuffer BLIT error!", "FAILURE", MB_OK);
+    }
+    
+}
 
 void renderer_draw(RenderList* list, uint8_t count) {
     if (count == 0) {
@@ -36,7 +72,6 @@ bool renderer_loadTexture(const char* fileName, GLuint* texture) {
     }
 
     glGenTextures(1, texture);
-    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, *texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
 
@@ -51,29 +86,47 @@ bool renderer_loadTexture(const char* fileName, GLuint* texture) {
 }
 
 void renderer_resize(int width, int height) {
-     glViewport(0, 0, width, height);
-     glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
+    window.width = width;
+    window.height = height;
 }
 
-void renderer_init() {
+void renderer_init(int width, int height) {
+    game.width = width;
+    game.height = height;
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    glActiveTexture(GL_TEXTURE0);
+
+    glGenFramebuffers(1, &offscreenFramebuffer);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, offscreenFramebuffer);
+
+    glGenTextures(1, &offscreenTexture);
+    glBindTexture(GL_TEXTURE_2D, offscreenTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, offscreenTexture, 0);
 
     const char* vsSource = "#version 450\n"
     "layout (location=0) in vec2 position;\n"
     "uniform vec2 pixelOffset;\n"
     "uniform vec2 pixelSize;\n"
     "uniform vec2 panelPixelSize;\n"
-    "uniform float spriteScale;\n"
-    "uniform vec2 panelIndex;\n" // z is whether to flip horizontally
+    "uniform vec2 panelIndex;\n"
     "uniform vec2 spriteSheetDimensions;\n"
     "out vec2 vUV;\n"
     "void main() {\n"
     "    vec2 uv = position;\n"
     "    vUV = (uv + panelIndex) / spriteSheetDimensions;\n"
     "    vec2 clipOffset = pixelOffset * pixelSize - 1.0;\n"
-    "    gl_Position = vec4((position * panelPixelSize * pixelSize * spriteScale + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
+    "    gl_Position = vec4((position * panelPixelSize * pixelSize + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
     "}\n";
 
     const char* fsSource = "#version 450\n"
@@ -122,9 +175,9 @@ void renderer_init() {
     spriteSheetDimensionsLocation = glGetUniformLocation(program, "spriteSheetDimensions");
     panelIndexLocation = glGetUniformLocation(program, "panelIndex");
     pixelOffsetLocation = glGetUniformLocation(program, "pixelOffset");
-    spriteScaleLocation = glGetUniformLocation(program, "spriteScale");
 
-    glUniform1f(spriteScaleLocation, SPRITE_SCALE); 
+    glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
+
 
     float positions[] = {
         0.0f, 0.0f,

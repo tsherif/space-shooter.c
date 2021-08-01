@@ -37,12 +37,13 @@
 #define SHIP_LEFT         2
 #define SHIP_CENTER_RIGHT 3
 #define SHIP_RIGHT        4
-#define SHIP_BULLET_VELOCITY (-5.0f)
+#define SHIP_VELOCITY 0.5f
+#define SHIP_BULLET_VELOCITY (-1.5f)
 #define SHIP_BULLET_THROTTLE 20
 
-#define LARGE_ENEMY_VELOCITY 1.0f
+#define LARGE_ENEMY_VELOCITY 0.2f
 #define LARGE_ENEMY_SPAWN_PROBABILITY 0.001f
-#define ENEMY_BULLET_SPEED 1.0f
+#define ENEMY_BULLET_SPEED 0.3f
 #define ENEMY_BULLET_PROBABILITY 0.002f
 
 #define COLLISION_SCALE 0.8f
@@ -80,7 +81,10 @@ PlatformSound* enemyBulletSound;
 static struct {
     uint16_t width;
     uint16_t height;
-} canvas;
+} game = {
+    .width = 300,
+    .height = 200
+};
 
 static Animation shipAnimations[]  = {
     // Center
@@ -204,8 +208,8 @@ static void spawnLargeEnemy() {
     largeEnemies.entities[largeEnemies.count].position = largeEnemySprite.positions + largeEnemies.count * 2;
     largeEnemies.entities[largeEnemies.count].currentSpritePanel = largeEnemySprite.currentSpritePanels + largeEnemies.count * 2;
 
-    largeEnemies.entities[largeEnemies.count].position[0] = randomRange(0.0f, 1.0f) * (canvas.width - largeEnemySprite.panelDims[0] * SPRITE_SCALE);
-    largeEnemies.entities[largeEnemies.count].position[1] = -largeEnemySprite.panelDims[1] * SPRITE_SCALE;
+    largeEnemies.entities[largeEnemies.count].position[0] = randomRange(0.0f, 1.0f) * (game.width - largeEnemySprite.panelDims[0]);
+    largeEnemies.entities[largeEnemies.count].position[1] = -largeEnemySprite.panelDims[1];
     largeEnemies.entities[largeEnemies.count].velocity[0] = 0.0f;
     largeEnemies.entities[largeEnemies.count].velocity[1] = LARGE_ENEMY_VELOCITY;
     largeEnemies.entities[largeEnemies.count].sprite = &largeEnemySprite;
@@ -252,8 +256,8 @@ static void fireEnemyBullet(float x, float y) {
     enemyBullets.entities[enemyBullets.count].sprite = &enemyBulletSprite;
     enemyBullets.entities[enemyBullets.count].animationTick = 0;
 
-    float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE / 2.0f;
-    float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] * SPRITE_SCALE / 2.0f;
+    float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] / 2.0f;
+    float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] / 2.0f;
 
     float dx = ship.position[0] - x;
     float dy = ship.position[1] - y;
@@ -298,10 +302,10 @@ static void updateEntityPositions(EntityList* list) {
         list->entities[i].position[1] += list->entities[i].velocity[1];
 
         if (
-            list->entities[i].position[0] + list->entities[i].sprite->panelDims[0] * SPRITE_SCALE < 0 ||
-            list->entities[i].position[1] + list->entities[i].sprite->panelDims[1] * SPRITE_SCALE < 0 ||
-            list->entities[i].position[0] > canvas.width ||
-            list->entities[i].position[1] > canvas.height
+            list->entities[i].position[0] + list->entities[i].sprite->panelDims[0] < 0 ||
+            list->entities[i].position[1] + list->entities[i].sprite->panelDims[1] < 0 ||
+            list->entities[i].position[0] > game.width ||
+            list->entities[i].position[1] > game.height
         ) {
             killEntity(list, i);
         }
@@ -325,18 +329,18 @@ void game_init(void) {
 
     platform_playSound(music);
 
-    shipBulletOffset[0] = (shipSprite.panelDims[0] - playerBulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
-    shipBulletOffset[1] =  -playerBulletSprite.panelDims[1] * SPRITE_SCALE;
+    shipBulletOffset[0] = (shipSprite.panelDims[0] - playerBulletSprite.panelDims[0]) / 2;
+    shipBulletOffset[1] =  -playerBulletSprite.panelDims[1];
 
-    largeEnemyBulletOffset[0] = (largeEnemySprite.panelDims[0] - enemyBulletSprite.panelDims[0]) * SPRITE_SCALE / 2;
-    largeEnemyBulletOffset[1] =  (largeEnemySprite.panelDims[1] - enemyBulletSprite.panelDims[1]) * SPRITE_SCALE / 2;
+    largeEnemyBulletOffset[0] = (largeEnemySprite.panelDims[0] - enemyBulletSprite.panelDims[0]) / 2;
+    largeEnemyBulletOffset[1] =  (largeEnemySprite.panelDims[1] - enemyBulletSprite.panelDims[1]) / 2;
 
     ship.position = shipSprite.positions;
     ship.currentSpritePanel = shipSprite.currentSpritePanels;
-    ship.position[0] = canvas.width / 2 - ship.sprite->panelDims[0] * SPRITE_SCALE / 2;
-    ship.position[1] = canvas.height - 150.0f;
+    ship.position[0] = game.width / 2 - ship.sprite->panelDims[0] / 2;
+    ship.position[1] = game.height - ship.sprite->panelDims[0] * 3.0f;
 
-    renderer_init();
+    renderer_init(game.width, game.height);
 
     renderer_loadTexture("assets/img/ship.png", &shipSprite.texture);
     renderer_loadTexture("assets/img/enemy-big.png", &largeEnemySprite.texture);
@@ -384,16 +388,16 @@ void game_update(void) {
         ship.position[0] = 0.0f;
     }
 
-    if (ship.position[0] + ship.sprite->panelDims[0] * SPRITE_SCALE > canvas.width) {
-        ship.position[0] = canvas.width - ship.sprite->panelDims[0] * SPRITE_SCALE;
+    if (ship.position[0] + ship.sprite->panelDims[0] > game.width) {
+        ship.position[0] = game.width - ship.sprite->panelDims[0];
     }
 
     if (ship.position[1] < 0.0f) {
         ship.position[1] = 0.0f;
     }
 
-    if (ship.position[1] + ship.sprite->panelDims[1] * SPRITE_SCALE > canvas.height) {
-        ship.position[1] = canvas.height - ship.sprite->panelDims[1] * SPRITE_SCALE;
+    if (ship.position[1] + ship.sprite->panelDims[1] > game.height) {
+        ship.position[1] = game.height - ship.sprite->panelDims[1];
     }
 
     if (ship.bulletThrottle > 0) {
@@ -416,14 +420,14 @@ void game_update(void) {
         Entity* bullet = playerBullets.entities + i;
         float minx1 = bullet->position[0];
         float miny1 = bullet->position[1];
-        float maxx1 = minx1 + bullet->sprite->panelDims[0] * SPRITE_SCALE;
-        float maxy1 = miny1 + bullet->sprite->panelDims[1] * SPRITE_SCALE;
+        float maxx1 = minx1 + bullet->sprite->panelDims[0];
+        float maxy1 = miny1 + bullet->sprite->panelDims[1];
         for (uint8_t j = 0; j < largeEnemies.count; ++j) {
             Entity* enemy = largeEnemies.entities + j;
             float minx2 = enemy->position[0];
             float miny2 = enemy->position[1];
-            float maxx2 = minx2 + enemy->sprite->panelDims[0] * SPRITE_SCALE;
-            float maxy2 = miny2 + enemy->sprite->panelDims[1] * SPRITE_SCALE;
+            float maxx2 = minx2 + enemy->sprite->panelDims[0];
+            float maxy2 = miny2 + enemy->sprite->panelDims[1];
             
             if (boxCollision(minx1, miny1, maxx1, maxy1, minx2, miny2, maxx2, maxy2)) {
                 killEntity(&playerBullets, i);
@@ -449,18 +453,16 @@ void game_update(void) {
 }
 
 void game_resize(int width, int height) {
-    canvas.width = width;
-    canvas.height = height;
     renderer_resize(width, height);
     game_draw();
 }
 
 void game_keyboard(GameKeyboard* inputKeys) {
     if (inputKeys->left) {
-        ship.velocity[0] = -2.0f;
+        ship.velocity[0] = -SHIP_VELOCITY;
         setEntityAnimation(&ship, SHIP_LEFT);
     } else if (inputKeys->right) {
-        ship.velocity[0] = 2.0f;
+        ship.velocity[0] = SHIP_VELOCITY;
         setEntityAnimation(&ship, SHIP_RIGHT);
     } else {
         ship.velocity[0] = 0.0f;
@@ -468,9 +470,9 @@ void game_keyboard(GameKeyboard* inputKeys) {
     }
 
     if (inputKeys->up) {
-        ship.velocity[1] = -2.0f;
+        ship.velocity[1] = -SHIP_VELOCITY;
     } else if (inputKeys->down) {
-        ship.velocity[1] = 2.0f;
+        ship.velocity[1] = SHIP_VELOCITY;
     } else {
         ship.velocity[1] = 0.0f;
     }
@@ -482,8 +484,8 @@ void game_keyboard(GameKeyboard* inputKeys) {
 }
 
 void game_controller(GameController* controllerInput) {
-    ship.velocity[0] = 2.0f * controllerInput->leftStickX;
-    ship.velocity[1] = -2.0f * controllerInput->leftStickY;
+    ship.velocity[0] = SHIP_VELOCITY * controllerInput->leftStickX;
+    ship.velocity[1] = -SHIP_VELOCITY * controllerInput->leftStickY;
 
     if (ship.velocity[0] < -1.0f) {
         setEntityAnimation(&ship, SHIP_LEFT);
@@ -504,10 +506,12 @@ void game_controller(GameController* controllerInput) {
 }
 
 void game_draw(void) {
-    glClear(GL_COLOR_BUFFER_BIT);
+    renderer_frameStart();
 
     renderer_draw((RenderList *) &largeEnemySprite, largeEnemies.count);
     renderer_draw((RenderList *) &shipSprite, 1);
     renderer_draw((RenderList *) &enemyBulletSprite, enemyBullets.count);
     renderer_draw((RenderList *) &playerBulletSprite, playerBullets.count);
+
+    renderer_frameEnd();  
 }

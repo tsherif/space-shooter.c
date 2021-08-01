@@ -33,6 +33,7 @@ Current State
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score
-- [ ] Scale using a framebuffer
+- [x] Scale using a framebuffer
 - [x] Get rid of copying into render list
 - [ ] Instanced draws
+- [ ] Clean up globals 
