@@ -3,7 +3,7 @@
 #include "../../lib/stb_image.h"
 
 static GLuint offscreenFramebuffer;
-static GLuint offscreenTexture;
+static GLuint offscreenRenderbuffer;
 
 static GLuint pixelSizeLocation;
 static GLuint panelPixelSizeLocation;
@@ -30,20 +30,12 @@ void renderer_frameEnd(void) {
     glViewport(0, 0, window.width, window.height);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    glGetError();
-
     glBlitFramebuffer(
         0, 0, game.width, game.height,
         0, 0, window.width, window.height,
         GL_COLOR_BUFFER_BIT,
         GL_NEAREST
     );
-
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        MessageBoxA(NULL, "Framebuffer BLIT error!", "FAILURE", MB_OK);
-    }
-    
 }
 
 void renderer_draw(RenderList* list, uint8_t count) {
@@ -103,16 +95,12 @@ void renderer_init(int width, int height) {
     glGenFramebuffers(1, &offscreenFramebuffer);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, offscreenFramebuffer);
 
-    glGenTextures(1, &offscreenTexture);
-    glBindTexture(GL_TEXTURE_2D, offscreenTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glGenRenderbuffers(1, &offscreenRenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, offscreenRenderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glFramebufferRenderbuffer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, offscreenRenderbuffer);
 
-    glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, offscreenTexture, 0);
 
     const char* vsSource = "#version 450\n"
     "layout (location=0) in vec2 position;\n"
