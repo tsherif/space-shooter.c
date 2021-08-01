@@ -45,6 +45,7 @@
 #define ENEMY_BULLET_SPEED 1.0f
 #define ENEMY_BULLET_PROBABILITY 0.002f
 
+#define COLLISION_SCALE 0.8f
 
 typedef struct {
     uint8_t frames[32][2];
@@ -348,6 +349,32 @@ void game_init(void) {
     setEntityAnimation(&ship, SHIP_CENTER);
 }
 
+bool boxCollision(float minx1, float miny1, float maxx1, float maxy1, float minx2, float miny2, float maxx2, float maxy2) {
+    float correctionFactor = (1.0 - COLLISION_SCALE) * 0.5;
+    float xCorrection1 = (maxx1 - minx1) * correctionFactor;
+    float yCorrection1 = (maxy1 - miny1) * correctionFactor;
+    float xCorrection2 = (maxx2 - minx2) * correctionFactor;
+    float yCorrection2 = (maxy2 - miny2) * correctionFactor;
+
+    if (minx1 + xCorrection1 > maxx2 - xCorrection2) {
+        return false;
+    }
+
+    if (minx2 + xCorrection2 > maxx1 - xCorrection1) {
+        return false;
+    }
+
+    if (miny1 + yCorrection1 > maxy2 - yCorrection2) {
+        return false;
+    }
+
+    if (miny2 + yCorrection2 > maxy1 - yCorrection1) {
+        return false;
+    }
+
+    return true;
+}
+ 
 static int tick = 0;
 void game_update(void) {
     ship.position[0] += ship.velocity[0];
@@ -384,6 +411,28 @@ void game_update(void) {
             fireEnemyBullet(largeEnemies.entities[i].position[0] + largeEnemyBulletOffset[0], largeEnemies.entities[i].position[1] + largeEnemyBulletOffset[1]);
         }
     }
+
+    for (uint8_t i = 0; i < playerBullets.count; ++i) {
+        Entity* bullet = playerBullets.entities + i;
+        float minx1 = bullet->position[0];
+        float miny1 = bullet->position[1];
+        float maxx1 = minx1 + bullet->sprite->panelDims[0] * SPRITE_SCALE;
+        float maxy1 = miny1 + bullet->sprite->panelDims[1] * SPRITE_SCALE;
+        for (uint8_t j = 0; j < largeEnemies.count; ++j) {
+            Entity* enemy = largeEnemies.entities + j;
+            float minx2 = enemy->position[0];
+            float miny2 = enemy->position[1];
+            float maxx2 = minx2 + enemy->sprite->panelDims[0] * SPRITE_SCALE;
+            float maxy2 = miny2 + enemy->sprite->panelDims[1] * SPRITE_SCALE;
+            
+            if (boxCollision(minx1, miny1, maxx1, maxy1, minx2, miny2, maxx2, maxy2)) {
+                killEntity(&playerBullets, i);
+                killEntity(&largeEnemies, j);
+            }    
+        }    
+    }
+
+
 
     if (tick == 0) {
         uint8_t count = ship.sprite->animations[ship.currentAnimation].numFrames;
