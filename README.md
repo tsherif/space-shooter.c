@@ -8,12 +8,6 @@ Uses:
 - Audio: XAudio2
 - Image Loading: stb_image
 
-Asset Credits
--------------
-- Sprites: https://ansimuz.itch.io/spaceship-shooter-environment
-- BG Music: https://chiphead64.itch.io/free-game-soundtrack-by-cactusdude-hurry-up
-- SFX: https://fallenblood.itch.io/50-sfx
-
 Current State
 -------------
 
@@ -37,3 +31,9 @@ Current State
 - [ ] Keep score
 
 (A more detailed todo list lives [here](./TODO.md).)
+
+Asset Credits
+-------------
+- Sprites: https://ansimuz.itch.io/spaceship-shooter-environment
+- BG Music: https://chiphead64.itch.io/free-game-soundtrack-by-cactusdude-hurry-up
+- SFX: https://fallenblood.itch.io/50-sfx
