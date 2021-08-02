@@ -9,13 +9,10 @@ static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 
-typedef struct {
+struct {
     int width;
     int height;
-} Dimensions;
-
-Dimensions game;
-Dimensions window;
+} game;
 
 void renderer_draw(RenderList* list, uint8_t count) {
     if (count == 0) {
@@ -57,9 +54,19 @@ bool renderer_loadTexture(const char* fileName, GLuint* texture) {
 }
 
 void renderer_resize(int width, int height) {
-    window.width = width;
-    window.height = height;
-    glViewport(0, 0, window.width, window.height);
+    float aspect = (float) game.width / game.height;
+    uint16_t aspectWidth = width;
+    uint16_t aspectHeight = (uint16_t) (width / aspect);
+
+    if (aspectHeight > height) {
+        aspectHeight = height;
+        aspectWidth = (uint16_t) (aspect * aspectHeight);
+    }
+
+    int16_t xOffset = (width - aspectWidth) / 2;
+    int16_t yOffset = (height - aspectHeight) / 2;
+
+    glViewport(xOffset, yOffset, aspectWidth, aspectHeight);
 }
 
 void renderer_init(int width, int height) {
