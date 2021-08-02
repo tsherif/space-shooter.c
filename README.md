@@ -33,7 +33,5 @@ Current State
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score
-- [x] Scale using a framebuffer
-- [x] Get rid of copying into render list
-- [ ] Instanced draws
-- [ ] Clean up globals 
+
+(A more detailed todo list lives [here](./TODO.md).)s
