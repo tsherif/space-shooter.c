@@ -17,6 +17,8 @@ Asset Credits
 Current State
 -------------
 
+![gif](./site/img/space-shooter.c.gif)
+
 - [x] Sprite rendering
 - [x] Audio engine
 - [x] Controller support
