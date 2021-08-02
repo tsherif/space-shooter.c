@@ -36,8 +36,6 @@ typedef struct {
     float currentSpritePanels[DRAWLIST_MAX * 2];
 } RenderList;
 
-void renderer_frameStart(void);
-void renderer_frameEnd(void);
 void renderer_draw(RenderList* list, uint8_t count);
 bool renderer_loadTexture(const char* fileName, GLuint* texture);
 void renderer_resize(int width, int height);

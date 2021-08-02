@@ -187,8 +187,8 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
         WGL_STENCIL_BITS_ARB, 8,
         WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
         // TODO(Tarek): Make these optional 
-        // WGL_SAMPLE_BUFFERS_ARB, GL_TRUE,
-        // WGL_SAMPLES_ARB, 4,
+        WGL_SAMPLE_BUFFERS_ARB, GL_TRUE,
+        WGL_SAMPLES_ARB, 4,
         0
     };
 

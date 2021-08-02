@@ -2,9 +2,6 @@
 #include "game-renderer.h"
 #include "../../lib/stb_image.h"
 
-static GLuint offscreenFramebuffer;
-static GLuint offscreenRenderbuffer;
-
 static GLuint pixelSizeLocation;
 static GLuint panelPixelSizeLocation;
 static GLuint spriteSheetLocation;
@@ -19,24 +16,6 @@ typedef struct {
 
 Dimensions game;
 Dimensions window;
-
-void renderer_frameStart(void) {
-    glViewport(0, 0, game.width, game.height);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, offscreenFramebuffer);
-    glClear(GL_COLOR_BUFFER_BIT);
-}
-
-void renderer_frameEnd(void) {
-    glViewport(0, 0, window.width, window.height);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    glBlitFramebuffer(
-        0, 0, game.width, game.height,
-        0, 0, window.width, window.height,
-        GL_COLOR_BUFFER_BIT,
-        GL_NEAREST
-    );
-}
 
 void renderer_draw(RenderList* list, uint8_t count) {
     if (count == 0) {
@@ -80,6 +59,7 @@ bool renderer_loadTexture(const char* fileName, GLuint* texture) {
 void renderer_resize(int width, int height) {
     window.width = width;
     window.height = height;
+    glViewport(0, 0, window.width, window.height);
 }
 
 void renderer_init(int width, int height) {
@@ -91,16 +71,6 @@ void renderer_init(int width, int height) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     glActiveTexture(GL_TEXTURE0);
-
-    glGenFramebuffers(1, &offscreenFramebuffer);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, offscreenFramebuffer);
-
-    glGenRenderbuffers(1, &offscreenRenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, offscreenRenderbuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
-
-    glFramebufferRenderbuffer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, offscreenRenderbuffer);
-
 
     const char* vsSource = "#version 450\n"
     "layout (location=0) in vec2 position;\n"

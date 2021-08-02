@@ -506,12 +506,10 @@ void game_controller(GameController* controllerInput) {
 }
 
 void game_draw(void) {
-    renderer_frameStart();
+    glClear(GL_COLOR_BUFFER_BIT);
 
     renderer_draw((RenderList *) &largeEnemySprite, largeEnemies.count);
     renderer_draw((RenderList *) &shipSprite, 1);
     renderer_draw((RenderList *) &enemyBulletSprite, enemyBullets.count);
     renderer_draw((RenderList *) &playerBulletSprite, playerBullets.count);
-
-    renderer_frameEnd();  
 }
