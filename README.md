@@ -34,4 +34,4 @@ Current State
 - [ ] Title screen
 - [ ] Keep score
 
-(A more detailed todo list lives [here](./TODO.md).)s
+(A more detailed todo list lives [here](./TODO.md).)
