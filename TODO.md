@@ -10,7 +10,9 @@
 - [x] Enemy bullet sound
 - [x] Bullets kill enemies
 - [ ] Bullets kill player
-- [ ] Explosions
+- [ ] Enemies explode
+- [ ] Player explodes
+- [ ] Explosion sound
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score

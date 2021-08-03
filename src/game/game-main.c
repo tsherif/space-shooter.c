@@ -30,6 +30,7 @@
 #include "../../lib/simple-opengl-loader.h"
 #include "../shared/platform-interface.h"
 #include "game-renderer.h"
+#include "game-sprites.h"
 
 // Animations
 #define SHIP_CENTER       0
@@ -47,17 +48,6 @@
 #define ENEMY_BULLET_PROBABILITY 0.002f
 
 #define COLLISION_SCALE 0.8f
-
-typedef struct {
-    uint8_t frames[32][2];
-    uint8_t numFrames;
-} Animation;
-
-typedef struct {
-    RenderList;
-    Animation* animations;
-    uint8_t numAnimations;
-} Sprite;
 
 typedef struct {
     float* position;           // vec2 pointer into RenderList arrays
@@ -86,88 +76,7 @@ static struct {
     .height = 200
 };
 
-static Animation shipAnimations[]  = {
-    // Center
-    {
-        .frames = {{2, 0}, {2, 1}},
-        .numFrames = 2
-    },
-    // Center left
-    {
-        .frames = {{1, 0}, {1, 1}},
-        .numFrames = 2
-    },
-    // Left
-    {
-        .frames = {{0, 0}, {0, 1}},
-        .numFrames = 2
-    },
-    // Center right
-    {
-        .frames = {{3, 0}, {3, 1}},
-        .numFrames = 2
-    },
-    // Right
-    {
-        .frames = {{4, 0}, {4, 1}},
-        .numFrames = 2
-    }
-};
-
-static Sprite shipSprite = {
-    .panelDims = { 16.0f, 24.0f },
-    .sheetDims = { 5.0f, 2.0f },
-    .animations = shipAnimations,
-    .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
-};
-
-static Entity ship = {
-    .sprite = &shipSprite
-};
-
-static Animation enemyAnimations[]  = {
-    {
-        .frames = {{0, 0}, {1, 0}},
-        .numFrames = 2
-    }
-};
-
-static Sprite largeEnemySprite = {
-    .panelDims = { 32.0f, 32.0f },
-    .sheetDims = { 2.0f, 1.0f },
-    .animations = enemyAnimations,
-    .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
-};
-
-
-static Animation playerBulletAnimations[]  = {
-    {
-        .frames = {{0, 1}, {1, 1}},
-        .numFrames = 2
-    }
-};
-
-static Sprite playerBulletSprite = {
-    .panelDims = { 16.0f, 16.0f },
-    .sheetDims = { 2.0f, 2.0f },
-    .animations = playerBulletAnimations,
-    .numAnimations = sizeof(playerBulletAnimations) / sizeof(playerBulletAnimations[0])
-};
-
-static Animation enemyBulletAnimations[]  = {
-    {
-        .frames = {{0, 0}, {1, 0}},
-        .numFrames = 2
-    }
-};
-
-static Sprite enemyBulletSprite = {
-    .panelDims = { 16.0f, 16.0f },
-    .sheetDims = { 2.0f, 2.0f },
-    .animations = enemyBulletAnimations,
-    .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
-};
-
+static Entity ship = { .sprite = &shipSprite };
 static EntityList largeEnemies;
 static EntityList playerBullets;
 static EntityList enemyBullets;
