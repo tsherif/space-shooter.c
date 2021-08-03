@@ -10,7 +10,7 @@
 - [x] Enemy bullet sound
 - [x] Bullets kill enemies
 - [ ] Bullets kill player
-- [ ] Enemies explode
+- [x] Enemies explode
 - [ ] Player explodes
 - [ ] Explosion sound
 - [ ] Multiple levels

@@ -71,6 +71,14 @@ static Animation enemyBulletAnimations[]  = {
     }
 };
 
+static Animation explosionAnimations[]  = {
+    {
+        .frames = {{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}},
+        .numFrames = 5,
+        .endBehavior = ANIMATION_END_KILL
+    }
+};
+
 extern Sprite shipSprite = {
     .panelDims = { 16.0f, 24.0f },
     .sheetDims = { 5.0f, 2.0f },
@@ -97,4 +105,11 @@ extern Sprite enemyBulletSprite = {
     .sheetDims = { 2.0f, 2.0f },
     .animations = enemyBulletAnimations,
     .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
+};
+
+extern Sprite explosionSprite = {
+    .panelDims = { 16.0f, 16.0f },
+    .sheetDims = { 5.0f, 1.0f },
+    .animations = explosionAnimations,
+    .numAnimations = sizeof(explosionAnimations) / sizeof(explosionAnimations[0])
 };

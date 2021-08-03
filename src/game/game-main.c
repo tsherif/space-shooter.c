@@ -80,8 +80,10 @@ static Entity ship = { .sprite = &shipSprite };
 static EntityList largeEnemies;
 static EntityList playerBullets;
 static EntityList enemyBullets;
+static EntityList explosions;
 static float shipBulletOffset[2];
 static float largeEnemyBulletOffset[2];
+static float largeEnemyExplosionOffset[2];
 
 static float randomRange(float min, float max) {
     float range = max - min;
@@ -128,6 +130,27 @@ static void spawnLargeEnemy() {
     updateAnimationPanel(&largeEnemies.entities[largeEnemies.count]);
 
     ++largeEnemies.count;
+}
+
+static void spawnExplosion(float x, float y) {
+    if (explosions.count == DRAWLIST_MAX) {
+        return;
+    }
+
+    explosions.entities[explosions.count].position = explosionSprite.positions + explosions.count * 2;
+    explosions.entities[explosions.count].currentSpritePanel = explosionSprite.currentSpritePanels + explosions.count * 2;
+
+    explosions.entities[explosions.count].position[0] = x;
+    explosions.entities[explosions.count].position[1] = y;
+    explosions.entities[explosions.count].velocity[0] = 0.0f;
+    explosions.entities[explosions.count].velocity[1] = 0.0f;
+    explosions.entities[explosions.count].sprite = &explosionSprite;
+    explosions.entities[explosions.count].currentAnimation = 0;
+    explosions.entities[explosions.count].animationTick = 0;
+
+    updateAnimationPanel(&explosions.entities[explosions.count]);
+
+    ++explosions.count;
 }
 
 static void firePlayerBullet(float x, float y) {
@@ -224,7 +247,18 @@ static void updateEntityPositions(EntityList* list) {
 static void updateEntityAnimations(EntityList* list) {
     for (uint8_t i = 0; i < list->count; ++i) {
         uint8_t numFrames = list->entities[i].sprite->animations[list->entities[i].currentAnimation].numFrames;
-         list->entities[i].animationTick = (list->entities[i].animationTick + 1) % numFrames;
+        ++list->entities[i].animationTick;
+        if (list->entities[i].animationTick == numFrames) {
+            AnimationEndBehavior endBehavior = list->entities[i].sprite->animations[list->entities[i].currentAnimation].endBehavior;
+
+            if (endBehavior == ANIMATION_END_KILL) {
+                killEntity(list, i);
+                continue;
+            } else {
+                list->entities[i].animationTick = 0; 
+            }
+        }
+
         updateAnimationPanel(&list->entities[i]);
     }
 }
@@ -244,6 +278,10 @@ void game_init(void) {
     largeEnemyBulletOffset[0] = (largeEnemySprite.panelDims[0] - enemyBulletSprite.panelDims[0]) / 2;
     largeEnemyBulletOffset[1] =  (largeEnemySprite.panelDims[1] - enemyBulletSprite.panelDims[1]) / 2;
 
+
+    largeEnemyExplosionOffset[0] = (largeEnemySprite.panelDims[0] - explosionSprite.panelDims[0]) / 2;
+    largeEnemyExplosionOffset[1] =  (largeEnemySprite.panelDims[1] - explosionSprite.panelDims[1]) / 2;
+
     ship.position = shipSprite.positions;
     ship.currentSpritePanel = shipSprite.currentSpritePanels;
     ship.position[0] = game.width / 2 - ship.sprite->panelDims[0] / 2;
@@ -253,6 +291,7 @@ void game_init(void) {
 
     renderer_loadTexture("assets/img/ship.png", &shipSprite.texture);
     renderer_loadTexture("assets/img/enemy-big.png", &largeEnemySprite.texture);
+    renderer_loadTexture("assets/img/explosion.png", &explosionSprite.texture);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
     renderer_loadTexture("assets/img/laser-bolts.png", &bulletTexture);
@@ -339,13 +378,12 @@ void game_update(void) {
             float maxy2 = miny2 + enemy->sprite->panelDims[1];
             
             if (boxCollision(minx1, miny1, maxx1, maxy1, minx2, miny2, maxx2, maxy2)) {
+                spawnExplosion(enemy->position[0] + largeEnemyExplosionOffset[0], enemy->position[1] + largeEnemyExplosionOffset[1]);
                 killEntity(&playerBullets, i);
                 killEntity(&largeEnemies, j);
             }    
         }    
     }
-
-
 
     if (tick == 0) {
         uint8_t count = ship.sprite->animations[ship.currentAnimation].numFrames;
@@ -355,6 +393,7 @@ void game_update(void) {
         updateEntityAnimations(&playerBullets);  
         updateEntityAnimations(&largeEnemies);
         updateEntityAnimations(&enemyBullets);  
+        updateEntityAnimations(&explosions);  
 
         tick = 20;
     }
@@ -417,6 +456,7 @@ void game_controller(GameController* controllerInput) {
 void game_draw(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    renderer_draw((RenderList *) &explosionSprite, explosions.count);
     renderer_draw((RenderList *) &largeEnemySprite, largeEnemies.count);
     renderer_draw((RenderList *) &shipSprite, 1);
     renderer_draw((RenderList *) &enemyBulletSprite, enemyBullets.count);

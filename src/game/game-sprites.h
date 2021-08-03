@@ -25,9 +25,15 @@
 #define _GAME_SPRITES_H_
 #include "game-renderer.h"
 
+typedef enum {
+    ANIMATION_END_LOOP,
+    ANIMATION_END_KILL
+} AnimationEndBehavior;
+
 typedef struct {
     uint8_t frames[32][2];
     uint8_t numFrames;
+    AnimationEndBehavior endBehavior;
 } Animation;
 
 typedef struct {
@@ -40,5 +46,6 @@ extern Sprite shipSprite;
 extern Sprite largeEnemySprite;
 extern Sprite playerBulletSprite;
 extern Sprite enemyBulletSprite;
+extern Sprite explosionSprite;
 
 #endif
