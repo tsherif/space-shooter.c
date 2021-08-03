@@ -67,6 +67,7 @@ typedef struct {
 PlatformSound* music;
 PlatformSound* shipBulletSound;
 PlatformSound* enemyBulletSound;
+PlatformSound* explosionSound;
 
 static struct {
     uint16_t width;
@@ -269,6 +270,7 @@ void game_init(void) {
     music = platform_loadSound("assets/audio/music.wav");
     shipBulletSound = platform_loadSound("assets/audio/Laser_002.wav");
     enemyBulletSound = platform_loadSound("assets/audio/Hit_Hurt2.wav");
+    explosionSound = platform_loadSound("assets/audio/Explode1.wav");
 
     platform_playSound(music);
 
@@ -379,6 +381,7 @@ void game_update(void) {
             
             if (boxCollision(minx1, miny1, maxx1, maxy1, minx2, miny2, maxx2, maxy2)) {
                 spawnExplosion(enemy->position[0] + largeEnemyExplosionOffset[0], enemy->position[1] + largeEnemyExplosionOffset[1]);
+                platform_playSound(explosionSound);
                 killEntity(&playerBullets, i);
                 killEntity(&largeEnemies, j);
             }    
