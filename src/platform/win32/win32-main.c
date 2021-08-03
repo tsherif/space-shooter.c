@@ -31,9 +31,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <profileapi.h>
-#include "../../lib/create-opengl-window.h"
-#include "../../lib/simple-opengl-loader.h"
-#include "../shared/platform-interface.h"
+#include "../../../lib/create-opengl-window.h"
+#include "../../../lib/simple-opengl-loader.h"
+#include "../../shared/platform-interface.h"
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800

@@ -23,7 +23,7 @@
 
 #ifndef _GAME_SPRITES_H_
 #define _GAME_SPRITES_H_
-#include "game-renderer.h"
+#include "renderer.h"
 
 typedef enum {
     ANIMATION_END_LOOP,

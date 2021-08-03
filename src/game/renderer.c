@@ -1,5 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "game-renderer.h"
+#include "renderer.h"
 #include "../../lib/stb_image.h"
 
 static GLuint pixelSizeLocation;

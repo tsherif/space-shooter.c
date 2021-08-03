@@ -29,8 +29,8 @@
 #include <math.h>
 #include "../../lib/simple-opengl-loader.h"
 #include "../shared/platform-interface.h"
-#include "game-renderer.h"
-#include "game-sprites.h"
+#include "renderer.h"
+#include "sprites.h"
 
 // Animations
 #define SHIP_CENTER       0
@@ -291,12 +291,12 @@ void game_init(void) {
 
     renderer_init(game.width, game.height);
 
-    renderer_loadTexture("assets/img/ship.png", &shipSprite.texture);
-    renderer_loadTexture("assets/img/enemy-big.png", &largeEnemySprite.texture);
-    renderer_loadTexture("assets/img/explosion.png", &explosionSprite.texture);
+    renderer_loadTexture("assets/sprites/ship.png", &shipSprite.texture);
+    renderer_loadTexture("assets/sprites/enemy-big.png", &largeEnemySprite.texture);
+    renderer_loadTexture("assets/sprites/explosion.png", &explosionSprite.texture);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
-    renderer_loadTexture("assets/img/laser-bolts.png", &bulletTexture);
+    renderer_loadTexture("assets/sprites/laser-bolts.png", &bulletTexture);
     playerBulletSprite.texture = bulletTexture;
     enemyBulletSprite.texture = bulletTexture;
 

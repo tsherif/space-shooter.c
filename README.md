@@ -11,7 +11,7 @@ Uses:
 Current State
 -------------
 
-![gif](./site/img/space-shooter.c.gif)
+![gif](./space-shooter.c.gif)
 
 - [x] Sprite rendering
 - [x] Audio engine

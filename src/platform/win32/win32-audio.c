@@ -25,7 +25,7 @@
 #include <windows.h>
 #include <xaudio2.h>
 #include <stdbool.h>
-#include "../shared/platform-interface.h"
+#include "../../shared/platform-interface.h"
 
 
 #define FOURCC_RIFF 'FFIR';
