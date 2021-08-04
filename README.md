@@ -20,7 +20,7 @@ Current State
 - [x] Player ship
 - [x] Fire bullets
 - [x] Enemy ships
-- [ ] Multiple enemy ship types
+- [x] Multiple enemy ship types
 - [x] Enemy bullets
 - [x] Enemy bullet sound
 - [x] Bullets kill enemies

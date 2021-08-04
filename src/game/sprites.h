@@ -51,6 +51,7 @@ typedef struct {
 } Sprites_Sprite;
 
 extern Sprites_Sprite sprites_shipSprite;
+extern Sprites_Sprite sprites_smallEnemySprite;
 extern Sprites_Sprite sprites_mediumEnemySprite;
 extern Sprites_Sprite sprites_largeEnemySprite;
 extern Sprites_Sprite sprites_playerBulletSprite;
