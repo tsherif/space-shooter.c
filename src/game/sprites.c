@@ -86,6 +86,13 @@ extern Sprites_Sprite sprites_shipSprite = {
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
+extern Sprites_Sprite sprites_mediumEnemySprite = {
+    .panelDims = { 32.0f, 16.0f },
+    .sheetDims = { 2.0f, 1.0f },
+    .animations = enemyAnimations,
+    .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
+};
+
 extern Sprites_Sprite sprites_largeEnemySprite = {
     .panelDims = { 32.0f, 32.0f },
     .sheetDims = { 2.0f, 1.0f },
