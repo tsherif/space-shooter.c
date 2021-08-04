@@ -41,7 +41,7 @@
 GameKeyboard inputKeys;
 GameController controllerInput;
 
-bool gamepadEquals(XINPUT_GAMEPAD* gp1, XINPUT_GAMEPAD* gp2) {
+static bool gamepadEquals(XINPUT_GAMEPAD* gp1, XINPUT_GAMEPAD* gp2) {
     return gp1->wButtons == gp2->wButtons &&
         gp1->bLeftTrigger == gp2->bLeftTrigger &&
         gp1->bRightTrigger == gp2->bRightTrigger &&

@@ -9,12 +9,10 @@ static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 
-struct {
-    int width;
-    int height;
-} game;
+static int gameWidth;
+static int gameHeight;
 
-void renderer_draw(RenderList* list, uint8_t count) {
+void renderer_draw(Renderer_RenderList* list, uint8_t count) {
     if (count == 0) {
         return;
     }
@@ -54,7 +52,7 @@ bool renderer_loadTexture(const char* fileName, GLuint* texture) {
 }
 
 void renderer_resize(int width, int height) {
-    float aspect = (float) game.width / game.height;
+    float aspect = (float) gameWidth / gameHeight;
     uint16_t aspectWidth = width;
     uint16_t aspectHeight = (uint16_t) (width / aspect);
 
@@ -70,8 +68,8 @@ void renderer_resize(int width, int height) {
 }
 
 void renderer_init(int width, int height) {
-    game.width = width;
-    game.height = height;
+    gameWidth = width;
+    gameHeight = height;
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);

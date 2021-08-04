@@ -23,29 +23,37 @@
 
 #ifndef _GAME_SPRITES_H_
 #define _GAME_SPRITES_H_
+
+// Animations
+#define SPRITES_SHIP_CENTER       0
+#define SPRITES_SHIP_CENTER_LEFT  1
+#define SPRITES_SHIP_LEFT         2
+#define SPRITES_SHIP_CENTER_RIGHT 3
+#define SPRITES_SHIP_RIGHT        4
+
 #include "renderer.h"
 
 typedef enum {
-    ANIMATION_END_LOOP,
-    ANIMATION_END_KILL
-} AnimationEndBehavior;
+    SPRITES_ANIMATION_END_LOOP,
+    SPRITES_ANIMATION_END_KILL
+} Sprites_AnimationEndBehavior;
 
 typedef struct {
     uint8_t frames[32][2];
     uint8_t numFrames;
-    AnimationEndBehavior endBehavior;
-} Animation;
+    Sprites_AnimationEndBehavior endBehavior;
+} Sprites_Animation;
 
 typedef struct {
-    RenderList;
-    Animation* animations;
+    Renderer_RenderList;
+    Sprites_Animation* animations;
     uint8_t numAnimations;
-} Sprite;
+} Sprites_Sprite;
 
-extern Sprite shipSprite;
-extern Sprite largeEnemySprite;
-extern Sprite playerBulletSprite;
-extern Sprite enemyBulletSprite;
-extern Sprite explosionSprite;
+extern Sprites_Sprite sprites_shipSprite;
+extern Sprites_Sprite sprites_largeEnemySprite;
+extern Sprites_Sprite sprites_playerBulletSprite;
+extern Sprites_Sprite sprites_enemyBulletSprite;
+extern Sprites_Sprite sprites_explosionSprite;
 
 #endif

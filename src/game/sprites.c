@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 #include "sprites.h"
 
-static Animation shipAnimations[]  = {
+static Sprites_Animation shipAnimations[]  = {
     // Center
     {
         .frames = {{2, 0}, {2, 1}},
@@ -50,64 +50,64 @@ static Animation shipAnimations[]  = {
     }
 };
 
-static Animation playerBulletAnimations[]  = {
+static Sprites_Animation playerBulletAnimations[]  = {
     {
         .frames = {{0, 1}, {1, 1}},
         .numFrames = 2
     }
 };
 
-static Animation enemyAnimations[]  = {
+static Sprites_Animation enemyAnimations[]  = {
     {
         .frames = {{0, 0}, {1, 0}},
         .numFrames = 2
     }
 };
 
-static Animation enemyBulletAnimations[]  = {
+static Sprites_Animation enemyBulletAnimations[]  = {
     {
         .frames = {{0, 0}, {1, 0}},
         .numFrames = 2
     }
 };
 
-static Animation explosionAnimations[]  = {
+static Sprites_Animation explosionAnimations[]  = {
     {
         .frames = {{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}},
         .numFrames = 5,
-        .endBehavior = ANIMATION_END_KILL
+        .endBehavior = SPRITES_ANIMATION_END_KILL
     }
 };
 
-extern Sprite shipSprite = {
+extern Sprites_Sprite sprites_shipSprite = {
     .panelDims = { 16.0f, 24.0f },
     .sheetDims = { 5.0f, 2.0f },
     .animations = shipAnimations,
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
-extern Sprite largeEnemySprite = {
+extern Sprites_Sprite sprites_largeEnemySprite = {
     .panelDims = { 32.0f, 32.0f },
     .sheetDims = { 2.0f, 1.0f },
     .animations = enemyAnimations,
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprite playerBulletSprite = {
+extern Sprites_Sprite sprites_playerBulletSprite = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
     .animations = playerBulletAnimations,
     .numAnimations = sizeof(playerBulletAnimations) / sizeof(playerBulletAnimations[0])
 };
 
-extern Sprite enemyBulletSprite = {
+extern Sprites_Sprite sprites_enemyBulletSprite = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
     .animations = enemyBulletAnimations,
     .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
 };
 
-extern Sprite explosionSprite = {
+extern Sprites_Sprite sprites_explosionSprite = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 5.0f, 1.0f },
     .animations = explosionAnimations,

@@ -26,17 +26,17 @@
 #include <stdbool.h>
 #include "../../lib/simple-opengl-loader.h"
 
-#define DRAWLIST_MAX 255
+#define RENDERER_DRAWLIST_MAX 255
 
 typedef struct {
     float panelDims[2];
     float sheetDims[2];
     GLuint texture;
-    float positions[DRAWLIST_MAX * 2];
-    float currentSpritePanels[DRAWLIST_MAX * 2];
-} RenderList;
+    float positions[RENDERER_DRAWLIST_MAX * 2];
+    float currentSpritePanels[RENDERER_DRAWLIST_MAX * 2];
+} Renderer_RenderList;
 
-void renderer_draw(RenderList* list, uint8_t count);
+void renderer_draw(Renderer_RenderList* list, uint8_t count);
 bool renderer_loadTexture(const char* fileName, GLuint* texture);
 void renderer_resize(int width, int height);
 void renderer_init(int width, int height);
