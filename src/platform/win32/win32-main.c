@@ -35,8 +35,9 @@
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/platform-interface.h"
 
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 800
+static bool running = false;
+static int windowWidth = 1200;
+static int windowHeight = 800;
 
 GameKeyboard inputKeys;
 GameController controllerInput;
@@ -56,20 +57,30 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_SIZE: {
             RECT clientRect;
             GetClientRect(window, &clientRect); 
-            game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+            windowWidth = clientRect.right - clientRect.left;
+            windowHeight = clientRect.bottom - clientRect.top;
+            if (running) {
+                game_resize(windowWidth, windowHeight);
+            }
             return 0;
         };
         case WM_SIZING: {
             RECT clientRect;
             GetClientRect(window, &clientRect); 
-            game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+            windowWidth = clientRect.right - clientRect.left;
+            windowHeight = clientRect.bottom - clientRect.top;
+            if (running) {
+                game_resize(windowWidth, windowHeight);
+            }
             return 0;
         } break;
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC deviceContext = BeginPaint(window, &ps);
-            game_draw();
-            SwapBuffers(deviceContext);
+            if (running) {
+                game_draw();
+                SwapBuffers(deviceContext);
+            }
             EndPaint(window, &ps);
             return 0;
         } break;
@@ -112,10 +123,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = winProc,
-        .width = WINDOW_WIDTH,
-        .height = WINDOW_HEIGHT
+        .width = windowWidth,
+        .height = windowHeight
     });
-    
+
     if (!sogl_loadOpenGL()) {
         const char **failures = sogl_getFailures();
         while (*failures) {
@@ -125,6 +136,21 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             failures++;
         }
     }
+
+    HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+    GetMonitorInfo(monitor, &monitorInfo);
+    SetWindowPos(
+        window, 
+        HWND_TOP, 
+        monitorInfo.rcMonitor.left,
+        monitorInfo.rcMonitor.top,
+        monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+        monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+        0
+    );
+
+    SetWindowLong(window, GWL_STYLE, WS_POPUP);
 
     XINPUT_STATE controllerState;
     XINPUT_GAMEPAD lastGamePadState;
@@ -142,12 +168,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         return 1;
     }
 
-    RECT clientRect;
-    GetClientRect(window, &clientRect); 
-    game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
 
     game_init();
-    
+    game_resize(windowWidth, windowHeight);
+
     ///////////////////
     // Display window
     ///////////////////
@@ -168,7 +192,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     float averageTime = 0.0f;
     float minTime = 10000.0f;
     float maxTime = -10000.0f;
-    bool running = true;
+    running = true;
+
     while (running) {
         QueryPerformanceCounter(&startTicks);
         while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {

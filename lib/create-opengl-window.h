@@ -113,7 +113,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     // Create a dummy window so we can get WGL extension functions
     ////////////////////////////////////////////////////////////////////
 
-    HWND dummyWindow = CreateWindowA(WIN_CLASS_NAME, "DUMMY", WS_OVERLAPPEDWINDOW, 0, 0, 1, 1, NULL,  NULL, instance, NULL);
+    HWND dummyWindow = CreateWindowA(WIN_CLASS_NAME, "DUMMY", WS_POPUP, 0, 0, 1, 1, NULL,  NULL, instance, NULL);
 
     if (!dummyWindow) {
         MessageBoxA(NULL, "Failed to create window!", "FAILURE", MB_OK);
@@ -160,7 +160,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     HWND window = CreateWindow(
         WIN_CLASS_NAME,
         args->title,
-        WS_OVERLAPPEDWINDOW,
+        WS_POPUP,
         CW_USEDEFAULT, CW_USEDEFAULT,
         args->width, args->height,
         NULL, 
