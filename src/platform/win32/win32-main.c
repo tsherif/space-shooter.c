@@ -127,16 +127,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         .height = windowHeight
     });
 
-    if (!sogl_loadOpenGL()) {
-        const char **failures = sogl_getFailures();
-        while (*failures) {
-            char debugMessage[256];
-            snprintf(debugMessage, 256, "SOGL: Failed to load function %s\n", *failures);
-            OutputDebugStringA(debugMessage);
-            failures++;
-        }
-    }
-
     HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
     MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
     GetMonitorInfo(monitor, &monitorInfo);
@@ -147,8 +137,18 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         monitorInfo.rcMonitor.top,
         monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
         monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
-        0
+        SWP_NOACTIVATE | SWP_NOCOPYBITS
     );
+
+    if (!sogl_loadOpenGL()) {
+        const char **failures = sogl_getFailures();
+        while (*failures) {
+            char debugMessage[256];
+            snprintf(debugMessage, 256, "SOGL: Failed to load function %s\n", *failures);
+            OutputDebugStringA(debugMessage);
+            failures++;
+        }
+    }
 
     SetWindowLong(window, GWL_STYLE, WS_POPUP);
 
