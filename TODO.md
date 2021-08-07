@@ -22,4 +22,7 @@
 - [ ] Clean up globals 
 - [ ] Robust WAV file parsing
 - [ ] Get rid of win32 error messages in the renderer
-- [ ] Fullscreen
+- [x] Fullscreen
+- [ ] Loop music
+- [ ] Shaders as external files
+- [ ] Area outside game area in different color

@@ -41,6 +41,7 @@ static bool running = false;
 
 GameKeyboard inputKeys;
 GameController controllerInput;
+bool fullScreen = false;
 
 static bool gamepadEquals(XINPUT_GAMEPAD* gp1, XINPUT_GAMEPAD* gp2) {
     return gp1->wButtons == gp2->wButtons &&
@@ -80,28 +81,71 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             EndPaint(window, &ps);
             return 0;
         } break;
-        case WM_KEYDOWN: {
-            switch (wParam) {
-                case VK_LEFT:    inputKeys.left  = true; break;
-                case VK_RIGHT:   inputKeys.right = true; break;
-                case VK_UP:      inputKeys.up    = true; break;
-                case VK_DOWN:    inputKeys.down  = true; break;
-                case VK_SPACE:   inputKeys.space = true; break;
-                case VK_CONTROL: inputKeys.ctrl  = true; break;
-            }
-            inputKeys.changed = true;
-            return 0;
-        } break;
+        case WM_KEYDOWN:
         case WM_KEYUP: {
+            bool isDown = (lParam & (1 << 31)) == 0;
             switch (wParam) {
-                case VK_LEFT:    inputKeys.left  = false; break;
-                case VK_RIGHT:   inputKeys.right = false; break;
-                case VK_UP:      inputKeys.up    = false; break;
-                case VK_DOWN:    inputKeys.down  = false; break;
-                case VK_SPACE:   inputKeys.space = false; break;
-                case VK_CONTROL: inputKeys.ctrl  = false; break;
+                case VK_LEFT:    {
+                    inputKeys.left  = isDown;
+                    inputKeys.changed = true;
+                } break;
+                case VK_RIGHT:   {
+                    inputKeys.right = isDown;
+                    inputKeys.changed = true;
+                } break;
+                case VK_UP:      {
+                    inputKeys.up    = isDown;
+                    inputKeys.changed = true;
+                } break;
+                case VK_DOWN:    {
+                    inputKeys.down  = isDown;
+                    inputKeys.changed = true;
+                } break;
+                case VK_SPACE:   {
+                    inputKeys.space = isDown;
+                    inputKeys.changed = true;
+                } break;
+                case VK_CONTROL: {
+                    inputKeys.ctrl  = isDown;
+                    inputKeys.changed = true;
+                } break;
+                case 'F': {
+                    if (isDown && inputKeys.ctrl) {
+                        fullScreen = !fullScreen;
+                        int  x = 100;
+                        int  y = 100;
+                        int  width = INITIAL_WINDOW_WIDTH;
+                        int  height = INITIAL_WINDOW_HEIGHT;
+                        UINT flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
+                        DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+                        if (fullScreen) {
+                            HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+                            MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+                            GetMonitorInfo(monitor, &monitorInfo);
+                            x = monitorInfo.rcMonitor.left;
+                            y = monitorInfo.rcMonitor.top;
+                            width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+                            height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+                            windowStyle = WS_POPUP | WS_VISIBLE;
+                        }
+
+                        SetWindowLong(window, GWL_STYLE, windowStyle);
+                        SetWindowPos(
+                            window,
+                            HWND_TOP,
+                            x,
+                            y,
+                            width,
+                            height,
+                            flags
+                        );
+
+                        RECT clientRect;
+                        GetClientRect(window, &clientRect); 
+                        game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+                    }
+                } break;
             }
-            inputKeys.changed = true;
             return 0;
         } break;
         case WM_CLOSE: {
