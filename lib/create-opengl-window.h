@@ -142,7 +142,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     PIXELFORMATDESCRIPTOR pfd = {
         .nSize = sizeof(PIXELFORMATDESCRIPTOR),
         .nVersion = 1,
-        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+        .dwFlags = PFD_SUPPORT_OPENGL,
         .iPixelType = PFD_TYPE_RGBA,        
         .cColorBits = 32,                   
         .cDepthBits = 24,           
@@ -167,6 +167,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(dummyGL);
+    ReleaseDC(dummyWindow, dummyContext);
     DestroyWindow(dummyWindow);
 
     /////////////////////////////////////////////
