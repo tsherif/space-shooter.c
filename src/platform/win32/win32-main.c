@@ -36,8 +36,8 @@
 #include "../../shared/platform-interface.h"
 
 static bool running = false;
-static int windowWidth = 1200;
-static int windowHeight = 800;
+#define INITIAL_WINDOW_WIDTH 1200
+#define INITIAL_WINDOW_HEIGHT 800
 
 GameKeyboard inputKeys;
 GameController controllerInput;
@@ -55,22 +55,18 @@ static bool gamepadEquals(XINPUT_GAMEPAD* gp1, XINPUT_GAMEPAD* gp2) {
 LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
         case WM_SIZE: {
-            RECT clientRect;
-            GetClientRect(window, &clientRect); 
-            windowWidth = clientRect.right - clientRect.left;
-            windowHeight = clientRect.bottom - clientRect.top;
             if (running) {
-                game_resize(windowWidth, windowHeight);
+                RECT clientRect;
+                GetClientRect(window, &clientRect); 
+                game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
             }
             return 0;
         };
         case WM_SIZING: {
-            RECT clientRect;
-            GetClientRect(window, &clientRect); 
-            windowWidth = clientRect.right - clientRect.left;
-            windowHeight = clientRect.bottom - clientRect.top;
             if (running) {
-                game_resize(windowWidth, windowHeight);
+                RECT clientRect;
+                GetClientRect(window, &clientRect); 
+                game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
             }
             return 0;
         } break;
@@ -123,22 +119,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = winProc,
-        .width = windowWidth,
-        .height = windowHeight
+        .width = INITIAL_WINDOW_WIDTH,
+        .height = INITIAL_WINDOW_HEIGHT
     });
-
-    HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-    MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
-    GetMonitorInfo(monitor, &monitorInfo);
-    SetWindowPos(
-        window, 
-        HWND_TOP, 
-        monitorInfo.rcMonitor.left,
-        monitorInfo.rcMonitor.top,
-        monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
-        monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
-        SWP_NOACTIVATE | SWP_NOCOPYBITS
-    );
 
     if (!sogl_loadOpenGL()) {
         const char **failures = sogl_getFailures();
@@ -149,8 +132,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             failures++;
         }
     }
-
-    SetWindowLong(window, GWL_STYLE, WS_POPUP);
 
     XINPUT_STATE controllerState;
     XINPUT_GAMEPAD lastGamePadState;
@@ -170,7 +151,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 
     game_init();
-    game_resize(windowWidth, windowHeight);
+
+    RECT clientRect;
+    GetClientRect(window, &clientRect); 
+    game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
 
     ///////////////////
     // Display window

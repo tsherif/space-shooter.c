@@ -90,6 +90,11 @@ static const char WIN_CLASS_NAME[] = "CREATE_OPENGL_WINDOW_CLASS";
 
 HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     HINSTANCE instance = GetModuleHandle(NULL);
+    int windowX      = CW_USEDEFAULT;
+    int windowY      = CW_USEDEFAULT;
+    int windowWidth  = args->width;
+    int windowHeight = args->height;
+    DWORD windowStyle = WS_OVERLAPPEDWINDOW;
 
     WNDCLASSEXA winClass = {
         .cbSize = sizeof(winClass),
@@ -119,6 +124,17 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
         MessageBoxA(NULL, "Failed to create window!", "FAILURE", MB_OK);
 
         return NULL;
+    }
+
+    if (windowWidth == 0 || windowHeight == 0) {
+        HMONITOR monitor = MonitorFromWindow(dummyWindow, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+        GetMonitorInfo(monitor, &monitorInfo);
+        windowX      = monitorInfo.rcMonitor.left;
+        windowY      = monitorInfo.rcMonitor.top;
+        windowWidth  = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+        windowHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+        windowStyle = WS_POPUP;
     }
 
     HDC dummyContext = GetDC(dummyWindow);
@@ -160,9 +176,9 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     HWND window = CreateWindow(
         WIN_CLASS_NAME,
         args->title,
-        WS_POPUP,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        args->width, args->height,
+        windowStyle,
+        windowX, windowY,
+        windowWidth, windowHeight,
         NULL, 
         NULL,
         instance,
