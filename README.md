@@ -29,6 +29,7 @@ Current State
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score
+- [ ] Linux support
 
 (A more detailed todo list lives [here](./TODO.md).)
 
