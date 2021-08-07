@@ -29,6 +29,7 @@
 #include <math.h>
 #include "../../lib/simple-opengl-loader.h"
 #include "../shared/platform-interface.h"
+#include "utils.h"
 #include "renderer.h"
 #include "sprites.h"
 
@@ -66,7 +67,7 @@ typedef struct {
 } Entity;
 
 typedef struct {
-    Entity;
+    INLINE_STRUCT(Entity, entity);
     uint16_t bulletThrottle;
     uint16_t deadCounter;
 } Player;
@@ -325,7 +326,7 @@ void game_init(void) {
     sprites_playerBulletSprite.texture = bulletTexture;
     sprites_enemyBulletSprite.texture = bulletTexture;
 
-    setEntityAnimation((Entity *) &ship, SPRITES_SHIP_CENTER);
+    setEntityAnimation(&ship.entity, SPRITES_SHIP_CENTER);
 }
 
 bool boxCollision(float minx1, float miny1, float maxx1, float maxy1, float minx2, float miny2, float maxx2, float maxy2) {
@@ -479,7 +480,7 @@ void game_update(void) {
     if (tick == 0) {
         uint8_t count = ship.sprite->animations[ship.currentAnimation].numFrames;
         ship.animationTick = (ship.animationTick + 1) % count;
-        updateAnimationPanel((Entity *) &ship);
+        updateAnimationPanel(&ship.entity);
 
         updateEntityAnimations(&playerBullets);  
         updateEntityAnimations(&smallEnemies);
@@ -501,13 +502,13 @@ void game_resize(int width, int height) {
 void game_keyboard(GameKeyboard* inputKeys) {
     if (inputKeys->left) {
         ship.velocity[0] = -SHIP_VELOCITY;
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_LEFT);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_LEFT);
     } else if (inputKeys->right) {
         ship.velocity[0] = SHIP_VELOCITY;
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_RIGHT);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_RIGHT);
     } else {
         ship.velocity[0] = 0.0f;
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_CENTER);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_CENTER);
     }
 
     if (inputKeys->up) {
@@ -529,15 +530,15 @@ void game_controller(GameController* controllerInput) {
     ship.velocity[1] = -SHIP_VELOCITY * controllerInput->leftStickY;
 
     if (ship.velocity[0] < -1.0f) {
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_LEFT);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_LEFT);
     } else if (ship.velocity[0] < 0.0f) {
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_CENTER_LEFT);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_CENTER_LEFT);
     } else if (ship.velocity[0] > 1.0f) {
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_RIGHT);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_RIGHT);
     } else if (ship.velocity[0] > 0.0f) {
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_CENTER_RIGHT);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_CENTER_RIGHT);
     } else {
-        setEntityAnimation((Entity *) &ship, SPRITES_SHIP_CENTER);
+        setEntityAnimation(&ship.entity, SPRITES_SHIP_CENTER);
     }
 
     if (controllerInput->aButton) {
@@ -553,10 +554,10 @@ void game_draw(void) {
         renderer_draw((Renderer_RenderList *) &sprites_shipSprite, 1);
     }
 
-    renderer_draw((Renderer_RenderList *) &sprites_explosionSprite, explosions.count);
-    renderer_draw((Renderer_RenderList *) &sprites_smallEnemySprite, smallEnemies.count);
-    renderer_draw((Renderer_RenderList *) &sprites_mediumEnemySprite, mediumEnemies.count);
-    renderer_draw((Renderer_RenderList *) &sprites_largeEnemySprite, largeEnemies.count);
-    renderer_draw((Renderer_RenderList *) &sprites_enemyBulletSprite, enemyBullets.count);
-    renderer_draw((Renderer_RenderList *) &sprites_playerBulletSprite, playerBullets.count);
+    renderer_draw(&sprites_explosionSprite.renderList, explosions.count);
+    renderer_draw(&sprites_smallEnemySprite.renderList, smallEnemies.count);
+    renderer_draw(&sprites_mediumEnemySprite.renderList, mediumEnemies.count);
+    renderer_draw(&sprites_largeEnemySprite.renderList, largeEnemies.count);
+    renderer_draw(&sprites_enemyBulletSprite.renderList, enemyBullets.count);
+    renderer_draw(&sprites_playerBulletSprite.renderList, playerBullets.count);
 }
