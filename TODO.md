@@ -25,4 +25,5 @@
 - [x] Fullscreen
 - [ ] Loop music
 - [ ] Shaders as external files
-- [ ] Area outside game area in different color
+- [x] Area outside game area in different color
+- [ ] Large enemies take more hits

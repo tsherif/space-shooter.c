@@ -37,7 +37,7 @@
 
 static bool running = false;
 #define INITIAL_WINDOW_WIDTH 1200
-#define INITIAL_WINDOW_HEIGHT 800
+#define INITIAL_WINDOW_HEIGHT 600
 
 GameKeyboard inputKeys;
 GameController controllerInput;

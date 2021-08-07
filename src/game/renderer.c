@@ -9,72 +9,22 @@ static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 
-static int gameWidth;
-static int gameHeight;
-
-void renderer_draw(Renderer_RenderList* list, uint8_t count) {
-    if (count == 0) {
-        return;
-    }
-
-    glBindTexture(GL_TEXTURE_2D, list->texture);
-    glUniform2fv(panelPixelSizeLocation, 1, list->panelDims);
-    glUniform2fv(spriteSheetDimensionsLocation, 1, list->sheetDims);
-
-    for (uint8_t i = 0; i < count; ++i) {
-        glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
-        glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
-}
-
-
-bool renderer_loadTexture(const char* fileName, GLuint* texture) {
-    int imageWidth, imageHeight, imageChannels;
-    uint8_t *imageData = stbi_load(fileName, &imageWidth, &imageHeight, &imageChannels, 4);
-
-    if (!imageData) {
-        return false;
-    }
-
-    glGenTextures(1, texture);
-    glBindTexture(GL_TEXTURE_2D, *texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    stbi_image_free(imageData);
-
-    return true;
-}
-
-void renderer_resize(int width, int height) {
-    float aspect = (float) gameWidth / gameHeight;
-    uint16_t aspectWidth = width;
-    uint16_t aspectHeight = (uint16_t) (width / aspect);
-
-    if (aspectHeight > height) {
-        aspectHeight = height;
-        aspectWidth = (uint16_t) (aspect * aspectHeight);
-    }
-
-    int16_t xOffset = (width - aspectWidth) / 2;
-    int16_t yOffset = (height - aspectHeight) / 2;
-
-    glViewport(xOffset, yOffset, aspectWidth, aspectHeight);
-}
+static uint16_t windowWidth;
+static uint16_t windowHeight;
+static uint16_t gameWidth;
+static uint16_t gameHeight;
+static uint16_t gameScreenOffsetX;
+static uint16_t gameScreenOffsetY;
+static uint16_t gameScreenWidth;
+static uint16_t gameScreenHeight;
 
 void renderer_init(int width, int height) {
     gameWidth = width;
     gameHeight = height;
 
+    glEnable(GL_SCISSOR_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
     glActiveTexture(GL_TEXTURE0);
 
     const char* vsSource = "#version 450\n"
@@ -160,4 +110,71 @@ void renderer_init(int width, int height) {
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(0);
     glUniform1i(spriteSheetLocation, 0);
+}
+
+bool renderer_loadTexture(const char* fileName, GLuint* texture) {
+    int imageWidth, imageHeight, imageChannels;
+    uint8_t *imageData = stbi_load(fileName, &imageWidth, &imageHeight, &imageChannels, 4);
+
+    if (!imageData) {
+        return false;
+    }
+
+    glGenTextures(1, texture);
+    glBindTexture(GL_TEXTURE_2D, *texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    stbi_image_free(imageData);
+
+    return true;
+}
+
+void renderer_resize(int width, int height) {
+    windowWidth = width;
+    windowHeight = height;
+
+    float aspect = (float) gameWidth / gameHeight;
+    gameScreenWidth = width;
+    gameScreenHeight = (uint16_t) (width / aspect);
+
+    if (gameScreenHeight > height) {
+        gameScreenHeight = height;
+        gameScreenWidth = (uint16_t) (aspect * gameScreenHeight);
+    }
+
+    gameScreenOffsetX = (width - gameScreenWidth) / 2;
+    gameScreenOffsetY = (height - gameScreenHeight) / 2;
+
+    glViewport(gameScreenOffsetX, gameScreenOffsetY, gameScreenWidth, gameScreenHeight);
+}
+
+void renderer_beforeFrame(void) {
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glScissor(0, 0, windowWidth, windowHeight);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glScissor(gameScreenOffsetX, gameScreenOffsetY, gameScreenWidth, gameScreenHeight);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void renderer_draw(Renderer_RenderList* list, uint8_t count) {
+    if (count == 0) {
+        return;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, list->texture);
+    glUniform2fv(panelPixelSizeLocation, 1, list->panelDims);
+    glUniform2fv(spriteSheetDimensionsLocation, 1, list->sheetDims);
+
+    for (uint8_t i = 0; i < count; ++i) {
+        glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
+        glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
 }

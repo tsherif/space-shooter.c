@@ -32,8 +32,8 @@
 #include "renderer.h"
 #include "sprites.h"
 
-#define GAME_WIDTH 300
-#define GAME_HEIGHT 200
+#define GAME_WIDTH 320
+#define GAME_HEIGHT 180
 
 #define SHIP_VELOCITY 0.5f
 #define SHIP_BULLET_VELOCITY (-1.5f)
@@ -507,7 +507,7 @@ void game_controller(GameController* controllerInput) {
 }
 
 void game_draw(void) {
-    glClear(GL_COLOR_BUFFER_BIT);
+    renderer_beforeFrame();
 
     renderer_draw((Renderer_RenderList *) &sprites_explosionSprite, explosions.count);
     renderer_draw((Renderer_RenderList *) &sprites_smallEnemySprite, smallEnemies.count);
