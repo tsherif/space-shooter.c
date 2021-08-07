@@ -24,7 +24,7 @@ Current State
 - [x] Enemy bullets
 - [x] Enemy bullet sound
 - [x] Bullets kill enemies
-- [ ] Bullets kill player
+- [x] Bullets kill player
 - [x] Explosions
 - [ ] Multiple levels
 - [ ] Title screen

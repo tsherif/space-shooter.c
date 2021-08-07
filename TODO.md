@@ -9,9 +9,9 @@
 - [x] Enemy bullets
 - [x] Enemy bullet sound
 - [x] Bullets kill enemies
-- [ ] Bullets kill player
+- [x] Bullets kill player
 - [x] Enemies explode
-- [ ] Player explodes
+- [x] Player explodes
 - [x] Explosion sound
 - [ ] Multiple levels
 - [ ] Title screen
@@ -27,3 +27,4 @@
 - [ ] Shaders as external files
 - [x] Area outside game area in different color
 - [ ] Large enemies take more hits
+- [ ] Enemies can fire from offscreen
