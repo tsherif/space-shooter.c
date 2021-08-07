@@ -13,6 +13,7 @@
 - [x] Enemies explode
 - [x] Player explodes
 - [x] Explosion sound
+- [ ] Crashes kill enemy and player
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score

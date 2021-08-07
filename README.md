@@ -26,6 +26,7 @@ Current State
 - [x] Bullets kill enemies
 - [x] Bullets kill player
 - [x] Explosions
+- [ ] Crashes kill enemy and player
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score
