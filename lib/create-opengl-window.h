@@ -114,9 +114,12 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
         return NULL;
     }
 
-    ////////////////////////////////////////////////////////////////////
-    // Create a dummy window so we can get WGL extension functions
-    ////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    // Create a dummy window so we can get WGL extension functions.
+    // The reason we can't use the same window later is that SetPixelFormat can only be 
+    // called once on a window:
+    // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     HWND dummyWindow = CreateWindowA(WIN_CLASS_NAME, "DUMMY", WS_POPUP, 0, 0, 1, 1, NULL,  NULL, instance, NULL);
 
