@@ -28,6 +28,8 @@
 - [ ] Loop music
 - [ ] Shaders as external files
 - [x] Area outside game area in different color
-- [ ] Large enemies take more hits
+- [x] Large enemies take more hits
+- [ ] Hit sound
+- [ ] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes

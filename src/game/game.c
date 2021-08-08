@@ -44,14 +44,17 @@
 #define SMALL_ENEMY_VELOCITY 0.2f
 #define SMALL_ENEMY_SPAWN_PROBABILITY 0.001f
 #define SMALL_ENEMY_BULLET_PROBABILITY 0.002f
+#define SMALL_ENEMY_HEALTH 1
 
 #define MEDIUM_ENEMY_VELOCITY 0.1f
 #define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0004f
 #define MEDIUM_ENEMY_BULLET_PROBABILITY 0.003f
+#define MEDIUM_ENEMY_HEALTH 2
 
 #define LARGE_ENEMY_VELOCITY 0.05f
 #define LARGE_ENEMY_SPAWN_PROBABILITY 0.0001f
 #define LARGE_ENEMY_BULLET_PROBABILITY 0.01f
+#define LARGE_ENEMY_HEALTH 3
 
 #define ENEMY_BULLET_SPEED 0.3f
 
@@ -64,6 +67,7 @@ typedef struct {
     uint8_t currentAnimation;
     uint8_t animationTick;
     Sprites_Sprite* sprite;
+    uint8_t health;
 } Entity;
 
 typedef struct {
@@ -121,23 +125,26 @@ static void setEntityAnimation(Entity* character, uint8_t animation) {
     updateAnimationPanel(character);
 }
 
-static void spawnEnemy(EntityList* list, Sprites_Sprite* sprite, float velocity) {
+static void spawnEnemy(EntityList* list, Sprites_Sprite* sprite, float velocity, uint8_t health) {
     if (list->count == RENDERER_DRAWLIST_MAX) {
         return;
     }
 
-    list->entities[list->count].position = sprite->positions + list->count * 2;
-    list->entities[list->count].currentSpritePanel = sprite->currentSpritePanels + list->count * 2;
+    Entity* newEnemy = list->entities + list->count;
 
-    list->entities[list->count].position[0] = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprite->panelDims[0]);
-    list->entities[list->count].position[1] = -sprite->panelDims[1];
-    list->entities[list->count].velocity[0] = 0.0f;
-    list->entities[list->count].velocity[1] = velocity;
-    list->entities[list->count].sprite = sprite;
-    list->entities[list->count].currentAnimation = 0;
-    list->entities[list->count].animationTick = 0;
+    newEnemy->position = sprite->positions + list->count * 2;
+    newEnemy->currentSpritePanel = sprite->currentSpritePanels + list->count * 2;
 
-    updateAnimationPanel(&list->entities[list->count]);
+    newEnemy->position[0] = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprite->panelDims[0]);
+    newEnemy->position[1] = -sprite->panelDims[1];
+    newEnemy->velocity[0] = 0.0f;
+    newEnemy->velocity[1] = velocity;
+    newEnemy->sprite = sprite;
+    newEnemy->currentAnimation = 0;
+    newEnemy->animationTick = 0;
+    newEnemy->health = health;
+
+    updateAnimationPanel(newEnemy);
 
     ++list->count;
 }
@@ -369,10 +376,13 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
         };
         
         if (boxCollision(bulletMin, bulletMax, enemyMin, enemyMax)) {
-            spawnExplosion(enemy->position[0] + offset[0], enemy->position[1] + offset[1]);
-            platform_playSound(explosionSound);
-            killEntity(enemies, j);
             hit = true;
+            --enemy->health;
+            if (enemy->health == 0) {
+                spawnExplosion(enemy->position[0] + offset[0], enemy->position[1] + offset[1]);
+                platform_playSound(explosionSound);
+                killEntity(enemies, j);
+            }
         }    
     } 
 
@@ -383,15 +393,15 @@ static int tick = 0;
 void game_update(void) {
 
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
-        spawnEnemy(&smallEnemies, &sprites_smallEnemySprite, SMALL_ENEMY_VELOCITY); 
+        spawnEnemy(&smallEnemies, &sprites_smallEnemySprite, SMALL_ENEMY_VELOCITY, SMALL_ENEMY_HEALTH); 
     }
 
     if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY) {
-        spawnEnemy(&mediumEnemies, &sprites_mediumEnemySprite, MEDIUM_ENEMY_VELOCITY); 
+        spawnEnemy(&mediumEnemies, &sprites_mediumEnemySprite, MEDIUM_ENEMY_VELOCITY, MEDIUM_ENEMY_HEALTH); 
     }
 
     if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY) {
-        spawnEnemy(&largeEnemies, &sprites_largeEnemySprite, LARGE_ENEMY_VELOCITY); 
+        spawnEnemy(&largeEnemies, &sprites_largeEnemySprite, LARGE_ENEMY_VELOCITY, LARGE_ENEMY_HEALTH); 
     }
 
     updateEntityPositions(&smallEnemies, 0.0f);
