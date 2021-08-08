@@ -14,6 +14,7 @@
 - [x] Player explodes
 - [x] Explosion sound
 - [ ] Crashes kill enemy and player
+- [ ] Stars passing
 - [ ] Multiple levels
 - [ ] Title screen
 - [ ] Keep score
@@ -28,5 +29,5 @@
 - [ ] Shaders as external files
 - [x] Area outside game area in different color
 - [ ] Large enemies take more hits
-- [ ] Enemies can fire from offscreen
+- [x] Enemies can fire from offscreen
 - [x] Collision boxes

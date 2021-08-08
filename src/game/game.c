@@ -242,16 +242,16 @@ static void killEntity(EntityList* list, uint8_t i) {
     --list->count;
 }
 
-static void updateEntityPositions(EntityList* list) {
+static void updateEntityPositions(EntityList* list, float killBuffer) {
     for (uint8_t i = 0; i < list->count; ++i) {
         list->entities[i].position[0] += list->entities[i].velocity[0];
         list->entities[i].position[1] += list->entities[i].velocity[1];
 
         if (
-            list->entities[i].position[0] + list->entities[i].sprite->panelDims[0] < 0 ||
-            list->entities[i].position[1] + list->entities[i].sprite->panelDims[1] < 0 ||
-            list->entities[i].position[0] > GAME_WIDTH ||
-            list->entities[i].position[1] > GAME_HEIGHT
+            list->entities[i].position[0] + list->entities[i].sprite->panelDims[0] + killBuffer < 0 ||
+            list->entities[i].position[1] + list->entities[i].sprite->panelDims[1] + killBuffer < 0 ||
+            list->entities[i].position[0] - killBuffer > GAME_WIDTH ||
+            list->entities[i].position[1] - killBuffer > GAME_HEIGHT
         ) {
             killEntity(list, i);
         }
@@ -394,11 +394,11 @@ void game_update(void) {
         spawnEnemy(&largeEnemies, &sprites_largeEnemySprite, LARGE_ENEMY_VELOCITY); 
     }
 
-    updateEntityPositions(&playerBullets);
-    updateEntityPositions(&smallEnemies);
-    updateEntityPositions(&mediumEnemies);
-    updateEntityPositions(&largeEnemies);
-    updateEntityPositions(&enemyBullets);
+    updateEntityPositions(&smallEnemies, 0.0f);
+    updateEntityPositions(&mediumEnemies, 0.0f);
+    updateEntityPositions(&largeEnemies, 0.0f);
+    updateEntityPositions(&playerBullets, 32.0f);
+    updateEntityPositions(&enemyBullets, 32.0f);
 
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBulletSprite.collisionBox;
     for (uint8_t i = 0; i < playerBullets.count; ++i) {
