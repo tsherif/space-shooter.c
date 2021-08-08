@@ -329,42 +329,46 @@ void game_init(void) {
     setEntityAnimation(&ship.entity, SPRITES_SHIP_CENTER);
 }
 
-bool boxCollision(float minx1, float miny1, float maxx1, float maxy1, float minx2, float miny2, float maxx2, float maxy2) {
+bool boxCollision(float min1[2], float max1[2], float min2[2], float max2[2]) {
      float correctionFactor = (1.0 - COLLISION_SCALE) * 0.5;
-     float xCorrection1 = (maxx1 - minx1) * correctionFactor;
-     float yCorrection1 = (maxy1 - miny1) * correctionFactor;
-     float xCorrection2 = (maxx2 - minx2) * correctionFactor;
-     float yCorrection2 = (maxy2 - miny2) * correctionFactor;
+     float xCorrection1 = (max1[0] - min1[0]) * correctionFactor;
+     float yCorrection1 = (max1[1] - min1[1]) * correctionFactor;
+     float xCorrection2 = (max2[0] - min2[0]) * correctionFactor;
+     float yCorrection2 = (max2[1] - min2[1]) * correctionFactor;
  
-    if (minx1 + xCorrection1 > maxx2 - xCorrection2) {
+    if (min1[0] + xCorrection1 > max2[0] - xCorrection2) {
         return false;
     }
 
-    if (minx2 + xCorrection2 > maxx1 - xCorrection1) {
+    if (min2[0] + xCorrection2 > max1[0] - xCorrection1) {
         return false;
     }
 
-    if (miny1 + yCorrection1 > maxy2 - yCorrection2) {
+    if (min1[1] + yCorrection1 > max2[1] - yCorrection2) {
         return false;
     }
 
-    if (miny2 + yCorrection2 > maxy1 - yCorrection1) {
+    if (min2[1] + yCorrection2 > max1[1] - yCorrection1) {
         return false;
     }
 
     return true;
 }
 
-bool checkBulletCollision(float bulletMinX, float bulletMinY, float bulletMaxX, float bulletMaxY, EntityList* enemies, Sprites_CollisionBox* enemyCollisionBox, float* offset) {
+bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* enemies, Sprites_CollisionBox* enemyCollisionBox, float* offset) {
     bool hit = false;
     for (uint8_t j = 0; j < enemies->count; ++j) {
         Entity* enemy = enemies->entities + j;
-        float minx2 = enemy->position[0] + enemyCollisionBox->min[0];
-        float miny2 = enemy->position[1] + enemyCollisionBox->min[1];
-        float maxx2 = enemy->position[0] + enemyCollisionBox->max[0];
-        float maxy2 = enemy->position[1] + enemyCollisionBox->max[1];
+        float enemyMin[] = {
+            enemy->position[0] + enemyCollisionBox->min[0],
+            enemy->position[1] + enemyCollisionBox->min[1]
+        };
+        float enemyMax[] = {
+            enemy->position[0] + enemyCollisionBox->max[0],
+            enemy->position[1] + enemyCollisionBox->max[1]
+        };
         
-        if (boxCollision(bulletMinX, bulletMinY, bulletMaxX, bulletMaxY, minx2, miny2, maxx2, maxy2)) {
+        if (boxCollision(bulletMin, bulletMax, enemyMin, enemyMax)) {
             spawnExplosion(enemy->position[0] + offset[0], enemy->position[1] + offset[1]);
             platform_playSound(explosionSound);
             killEntity(enemies, j);
@@ -399,14 +403,18 @@ void game_update(void) {
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBulletSprite.collisionBox;
     for (uint8_t i = 0; i < playerBullets.count; ++i) {
         Entity* bullet = playerBullets.entities + i;
-        float minx = bullet->position[0] + playerBulletCollisionBox->min[0];
-        float miny = bullet->position[1] + playerBulletCollisionBox->min[1];
-        float maxx = bullet->position[0] + playerBulletCollisionBox->max[0];
-        float maxy = bullet->position[1] + playerBulletCollisionBox->max[1];
+        float bulletMin[] = {
+            bullet->position[0] + playerBulletCollisionBox->min[0],
+            bullet->position[1] + playerBulletCollisionBox->min[1]
+        };
+        float bulletMax[] = {
+            bullet->position[0] + playerBulletCollisionBox->max[0],
+            bullet->position[1] + playerBulletCollisionBox->max[1]
+        };
         
-        if (checkBulletCollision(minx, miny, maxx, maxy, &smallEnemies, &sprites_smallEnemySprite.collisionBox, smallEnemyExplosionOffset) ||
-            checkBulletCollision(minx, miny, maxx, maxy, &mediumEnemies, &sprites_mediumEnemySprite.collisionBox, mediumEnemyExplosionOffset) ||
-            checkBulletCollision(minx, miny, maxx, maxy, &largeEnemies, &sprites_largeEnemySprite.collisionBox, largeEnemyExplosionOffset)) {
+        if (checkBulletCollision(bulletMin, bulletMax, &smallEnemies, &sprites_smallEnemySprite.collisionBox, smallEnemyExplosionOffset) ||
+            checkBulletCollision(bulletMin, bulletMax, &mediumEnemies, &sprites_mediumEnemySprite.collisionBox, mediumEnemyExplosionOffset) ||
+            checkBulletCollision(bulletMin, bulletMax, &largeEnemies, &sprites_largeEnemySprite.collisionBox, largeEnemyExplosionOffset)) {
             killEntity(&playerBullets, i);
         }  
     }
@@ -457,18 +465,26 @@ void game_update(void) {
 
         Sprites_CollisionBox* shipCollisionBox = &sprites_shipSprite.collisionBox;
         Sprites_CollisionBox* enemyBulletCollisionBox = &sprites_enemyBulletSprite.collisionBox;
-        float shipMinx = ship.position[0] + shipCollisionBox->min[0];
-        float shipMiny = ship.position[1] + shipCollisionBox->min[1];
-        float shipMaxx = ship.position[0] + shipCollisionBox->max[0];
-        float shipMaxy = ship.position[1] + shipCollisionBox->max[1];
+        float shipMin[] = {
+            ship.position[0] + shipCollisionBox->min[0],
+            ship.position[1] + shipCollisionBox->min[1]
+        };
+        float shipMax[] = {
+            ship.position[0] + shipCollisionBox->max[0],
+            ship.position[1] + shipCollisionBox->max[1]
+        };
+
         for (uint8_t i = 0; i < enemyBullets.count; ++i) {
             Entity* bullet = enemyBullets.entities + i;
-            float bulletMinx = bullet->position[0] + enemyBulletCollisionBox->min[0];
-            float bulletMiny = bullet->position[1] + enemyBulletCollisionBox->min[1];
-            float bulletMaxx = bullet->position[0] + enemyBulletCollisionBox->max[0];
-            float bulletMaxy = bullet->position[1] + enemyBulletCollisionBox->max[1];
-            
-            if (boxCollision(shipMinx, shipMiny, shipMaxx, shipMaxy, bulletMinx, bulletMiny, bulletMaxx, bulletMaxy)) {
+            float bulletMin[] = {
+                bullet->position[0] + enemyBulletCollisionBox->min[0],
+                bullet->position[1] + enemyBulletCollisionBox->min[1]
+            };
+            float bulletMax[] = {
+                bullet->position[0] + enemyBulletCollisionBox->max[0],
+                bullet->position[1] + enemyBulletCollisionBox->max[1]
+            };      
+            if (boxCollision(shipMin, shipMax, bulletMin, bulletMax)) {
                 spawnExplosion(ship.position[0] + shipExplosionOffset[0], ship.position[1] + shipExplosionOffset[1]);
                 platform_playSound(explosionSound);
                 ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
