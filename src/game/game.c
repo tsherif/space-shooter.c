@@ -49,12 +49,12 @@
 #define MEDIUM_ENEMY_VELOCITY 0.1f
 #define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0004f
 #define MEDIUM_ENEMY_BULLET_PROBABILITY 0.003f
-#define MEDIUM_ENEMY_HEALTH 2
+#define MEDIUM_ENEMY_HEALTH 3
 
-#define LARGE_ENEMY_VELOCITY 0.05f
+#define LARGE_ENEMY_VELOCITY 0.04f
 #define LARGE_ENEMY_SPAWN_PROBABILITY 0.0001f
-#define LARGE_ENEMY_BULLET_PROBABILITY 0.01f
-#define LARGE_ENEMY_HEALTH 3
+#define LARGE_ENEMY_BULLET_PROBABILITY 0.02f
+#define LARGE_ENEMY_HEALTH 5
 
 #define ENEMY_BULLET_SPEED 0.3f
 
@@ -154,18 +154,20 @@ static void spawnExplosion(float x, float y) {
         return;
     }
 
-    explosions.entities[explosions.count].position = sprites_explosionSprite.positions + explosions.count * 2;
-    explosions.entities[explosions.count].currentSpritePanel = sprites_explosionSprite.currentSpritePanels + explosions.count * 2;
+    Entity* newExplosion = explosions.entities + explosions.count;
 
-    explosions.entities[explosions.count].position[0] = x;
-    explosions.entities[explosions.count].position[1] = y;
-    explosions.entities[explosions.count].velocity[0] = 0.0f;
-    explosions.entities[explosions.count].velocity[1] = 0.0f;
-    explosions.entities[explosions.count].sprite = &sprites_explosionSprite;
-    explosions.entities[explosions.count].currentAnimation = 0;
-    explosions.entities[explosions.count].animationTick = 0;
+    newExplosion->position = sprites_explosionSprite.positions + explosions.count * 2;
+    newExplosion->currentSpritePanel = sprites_explosionSprite.currentSpritePanels + explosions.count * 2;
 
-    updateAnimationPanel(&explosions.entities[explosions.count]);
+    newExplosion->position[0] = x;
+    newExplosion->position[1] = y;
+    newExplosion->velocity[0] = 0.0f;
+    newExplosion->velocity[1] = 0.0f;
+    newExplosion->sprite = &sprites_explosionSprite;
+    newExplosion->currentAnimation = 0;
+    newExplosion->animationTick = 0;
+
+    updateAnimationPanel(newExplosion);
 
     ++explosions.count;
 }
@@ -179,18 +181,20 @@ static void firePlayerBullet(float x, float y) {
         return;
     }
 
-    playerBullets.entities[playerBullets.count].position = sprites_playerBulletSprite.positions + playerBullets.count * 2;
-    playerBullets.entities[playerBullets.count].currentSpritePanel = sprites_playerBulletSprite.currentSpritePanels + playerBullets.count * 2;
+    Entity* bullet = playerBullets.entities + playerBullets.count;
 
-    playerBullets.entities[playerBullets.count].position[0] = x;
-    playerBullets.entities[playerBullets.count].position[1] = y;
-    playerBullets.entities[playerBullets.count].velocity[0] = 0.0f;
-    playerBullets.entities[playerBullets.count].velocity[1] = SHIP_BULLET_VELOCITY;
-    playerBullets.entities[playerBullets.count].sprite = &sprites_playerBulletSprite;
-    playerBullets.entities[playerBullets.count].animationTick = 0;
-    playerBullets.entities[playerBullets.count].currentAnimation = 0;
+    bullet->position = sprites_playerBulletSprite.positions + playerBullets.count * 2;
+    bullet->currentSpritePanel = sprites_playerBulletSprite.currentSpritePanels + playerBullets.count * 2;
 
-    updateAnimationPanel(&playerBullets.entities[playerBullets.count]);
+    bullet->position[0] = x;
+    bullet->position[1] = y;
+    bullet->velocity[0] = 0.0f;
+    bullet->velocity[1] = SHIP_BULLET_VELOCITY;
+    bullet->sprite = &sprites_playerBulletSprite;
+    bullet->animationTick = 0;
+    bullet->currentAnimation = 0;
+
+    updateAnimationPanel(bullet);
     platform_playSound(shipBulletSound);
 
     ++playerBullets.count;
@@ -201,26 +205,27 @@ static void fireEnemyBullet(float x, float y) {
         return;
     }
 
-    enemyBullets.entities[enemyBullets.count].position = sprites_enemyBulletSprite.positions + enemyBullets.count * 2;
-    enemyBullets.entities[enemyBullets.count].currentSpritePanel = sprites_enemyBulletSprite.currentSpritePanels + enemyBullets.count * 2;
+    Entity* bullet = enemyBullets.entities + enemyBullets.count;
 
-    enemyBullets.entities[enemyBullets.count].position[0] = x;
-    enemyBullets.entities[enemyBullets.count].position[1] = y;
-    enemyBullets.entities[enemyBullets.count].sprite = &sprites_enemyBulletSprite;
-    enemyBullets.entities[enemyBullets.count].animationTick = 0;
+    bullet->position = sprites_enemyBulletSprite.positions + enemyBullets.count * 2;
+    bullet->currentSpritePanel = sprites_enemyBulletSprite.currentSpritePanels + enemyBullets.count * 2;
+
+    bullet->position[0] = x;
+    bullet->position[1] = y;
+    bullet->sprite = &sprites_enemyBulletSprite;
+    bullet->animationTick = 0;
 
     float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] / 2.0f;
     float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] / 2.0f;
-
     float dx = ship.position[0] - x;
     float dy = ship.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
-    enemyBullets.entities[enemyBullets.count].velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
-    enemyBullets.entities[enemyBullets.count].velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
-    enemyBullets.entities[enemyBullets.count].currentAnimation = 0;
-    platform_playSound(enemyBulletSound);
+    bullet->velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
+    bullet->velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
+    bullet->currentAnimation = 0;
 
+    platform_playSound(enemyBulletSound);
     updateAnimationPanel(&enemyBullets.entities[enemyBullets.count]);
 
     ++enemyBullets.count;
