@@ -29,4 +29,4 @@
 - [x] Area outside game area in different color
 - [ ] Large enemies take more hits
 - [ ] Enemies can fire from offscreen
-- [ ] Collision boxes
+- [x] Collision boxes

@@ -34,6 +34,11 @@
 #define SPRITES_SHIP_CENTER_RIGHT 3
 #define SPRITES_SHIP_RIGHT        4
 
+typedef struct {
+    float min[2];
+    float max[2];
+} Sprites_CollisionBox;
+
 typedef enum {
     SPRITES_ANIMATION_END_LOOP,
     SPRITES_ANIMATION_END_KILL
@@ -47,6 +52,7 @@ typedef struct {
 
 typedef struct {
     INLINE_STRUCT(Renderer_RenderList, renderList);
+    Sprites_CollisionBox collisionBox;
     Sprites_Animation* animations;
     uint8_t numAnimations;
 } Sprites_Sprite;
