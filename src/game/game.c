@@ -63,6 +63,7 @@
 typedef struct {
     float* position;           // vec2 pointer into Renderer_RenderList arrays
     float* currentSpritePanel; // vec2 pointer into Renderer_RenderList arrays
+    uint8_t* whiteOut;         // pointer into Renderer_RenderList arrays
     float velocity[2];
     uint8_t currentAnimation;
     uint8_t animationTick;
@@ -135,6 +136,7 @@ static void spawnEnemy(EntityList* list, Sprites_Sprite* sprite, float velocity,
 
     newEnemy->position = sprite->positions + list->count * 2;
     newEnemy->currentSpritePanel = sprite->currentSpritePanels + list->count * 2;
+    newEnemy->whiteOut = sprite->whiteOut + list->count;
 
     newEnemy->position[0] = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprite->panelDims[0]);
     newEnemy->position[1] = -sprite->panelDims[1];
@@ -159,6 +161,7 @@ static void spawnExplosion(float x, float y) {
 
     newExplosion->position = sprites_explosionSprite.positions + explosions.count * 2;
     newExplosion->currentSpritePanel = sprites_explosionSprite.currentSpritePanels + explosions.count * 2;
+    newExplosion->whiteOut = sprites_explosionSprite.whiteOut + explosions.count;
 
     newExplosion->position[0] = x;
     newExplosion->position[1] = y;
@@ -186,6 +189,7 @@ static void firePlayerBullet(float x, float y) {
 
     bullet->position = sprites_playerBulletSprite.positions + playerBullets.count * 2;
     bullet->currentSpritePanel = sprites_playerBulletSprite.currentSpritePanels + playerBullets.count * 2;
+    bullet->whiteOut = sprites_playerBulletSprite.whiteOut + playerBullets.count;
 
     bullet->position[0] = x;
     bullet->position[1] = y;
@@ -210,6 +214,7 @@ static void fireEnemyBullet(float x, float y) {
 
     bullet->position = sprites_enemyBulletSprite.positions + enemyBullets.count * 2;
     bullet->currentSpritePanel = sprites_enemyBulletSprite.currentSpritePanels + enemyBullets.count * 2;
+    bullet->whiteOut = sprites_enemyBulletSprite.whiteOut + enemyBullets.count;
 
     bullet->position[0] = x;
     bullet->position[1] = y;
@@ -241,16 +246,19 @@ static void killEntity(EntityList* list, uint8_t i) {
 
     float* positionPointer = list->entities[i].position;
     float* currentSpritePanelPointer =  list->entities[i].currentSpritePanel;
+    uint8_t* whiteOutPointer = list->entities[i].whiteOut;
 
     positionPointer[0] = list->entities[last].position[0];
     positionPointer[1] = list->entities[last].position[1];
     currentSpritePanelPointer[0] = list->entities[last].currentSpritePanel[0];
     currentSpritePanelPointer[1] = list->entities[last].currentSpritePanel[1];
+    whiteOutPointer[0] = list->entities[last].whiteOut[0];
 
     list->entities[i] = list->entities[last];
 
     list->entities[i].position = positionPointer;
     list->entities[i].currentSpritePanel = currentSpritePanelPointer;
+    list->entities[i].whiteOut = whiteOutPointer;
 
     --list->count;
 }
@@ -259,6 +267,11 @@ static void updateEntityPositions(EntityList* list, float killBuffer) {
     for (uint8_t i = 0; i < list->count; ++i) {
         list->entities[i].position[0] += list->entities[i].velocity[0];
         list->entities[i].position[1] += list->entities[i].velocity[1];
+
+        // TODO(Tarek): Don't love that this is happening here.
+        if (list->entities[i].whiteOut[0]) {
+            list->entities[i].whiteOut[0] = 0;
+        }
 
         if (
             list->entities[i].position[0] + list->entities[i].sprite->panelDims[0] + killBuffer < 0 ||
@@ -391,6 +404,7 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
                 killEntity(enemies, j);
             } else {
                 platform_playSound(enemyHit);
+                enemy->whiteOut[0] = 1;
             }
         }    
     } 

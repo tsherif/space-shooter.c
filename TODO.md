@@ -30,6 +30,6 @@
 - [x] Area outside game area in different color
 - [x] Large enemies take more hits
 - [x] Hit sound
-- [ ] Hit animation
+- [x] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes

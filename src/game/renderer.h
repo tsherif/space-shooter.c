@@ -34,6 +34,7 @@ typedef struct {
     GLuint texture;
     float positions[RENDERER_DRAWLIST_MAX * 2];
     float currentSpritePanels[RENDERER_DRAWLIST_MAX * 2];
+    uint8_t whiteOut[RENDERER_DRAWLIST_MAX];
 } Renderer_RenderList;
 
 void renderer_init(int width, int height);

@@ -8,6 +8,7 @@ static GLuint spriteSheetLocation;
 static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
+static GLuint whiteOutLocation;
 
 static uint16_t windowWidth;
 static uint16_t windowHeight;
@@ -45,9 +46,11 @@ void renderer_init(int width, int height) {
     const char* fsSource = "#version 450\n"
     "in vec2 vUV;\n"
     "uniform sampler2D spriteSheet;\n"
+    "uniform bool whiteOut;"
     "out vec4 fragColor;\n"
     "void main() {\n"
     "    fragColor = texture(spriteSheet, vUV);\n"
+    "    if (whiteOut) fragColor.rgb = vec3(1.0);\n"
     "    fragColor.rgb *= fragColor.a;\n"
     "}\n";
 
@@ -88,9 +91,9 @@ void renderer_init(int width, int height) {
     spriteSheetDimensionsLocation = glGetUniformLocation(program, "spriteSheetDimensions");
     panelIndexLocation = glGetUniformLocation(program, "panelIndex");
     pixelOffsetLocation = glGetUniformLocation(program, "pixelOffset");
+    whiteOutLocation = glGetUniformLocation(program, "whiteOut");
 
     glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
-
 
     float positions[] = {
         0.0f, 0.0f,
@@ -175,6 +178,7 @@ void renderer_draw(Renderer_RenderList* list, uint8_t count) {
     for (uint8_t i = 0; i < count; ++i) {
         glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
         glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
+        glUniform1f(whiteOutLocation, list->whiteOut[i]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
