@@ -13,7 +13,7 @@
 - [x] Enemies explode
 - [x] Player explodes
 - [x] Explosion sound
-- [ ] Crashes kill enemy and player
+- [x] Crashes kill enemy and player
 - [ ] Stars passing
 - [ ] Multiple levels
 - [ ] Title screen
@@ -33,3 +33,4 @@
 - [x] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes
+- [ ] BUG? Controller button presses don't seem responsive.
