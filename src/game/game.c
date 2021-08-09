@@ -48,7 +48,7 @@
 
 #define MEDIUM_ENEMY_VELOCITY 0.1f
 #define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0004f
-#define MEDIUM_ENEMY_BULLET_PROBABILITY 0.003f
+#define MEDIUM_ENEMY_BULLET_PROBABILITY 0.005f
 #define MEDIUM_ENEMY_HEALTH 3
 
 #define LARGE_ENEMY_VELOCITY 0.04f
@@ -85,6 +85,7 @@ static PlatformSound* music;
 static PlatformSound* shipBulletSound;
 static PlatformSound* enemyBulletSound;
 static PlatformSound* explosionSound;
+static PlatformSound* enemyHit;
 
 static Player ship = { .sprite = &sprites_shipSprite };
 static EntityList smallEnemies;
@@ -296,6 +297,7 @@ void game_init(void) {
     shipBulletSound = platform_loadSound("assets/audio/Laser_002.wav");
     enemyBulletSound = platform_loadSound("assets/audio/Hit_Hurt2.wav");
     explosionSound = platform_loadSound("assets/audio/Explode1.wav");
+    enemyHit = platform_loadSound("assets/audio/Jump1.wav");
 
     platform_playSound(music);
 
@@ -387,6 +389,8 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
                 spawnExplosion(enemy->position[0] + offset[0], enemy->position[1] + offset[1]);
                 platform_playSound(explosionSound);
                 killEntity(enemies, j);
+            } else {
+                platform_playSound(enemyHit);
             }
         }    
     } 

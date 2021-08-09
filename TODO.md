@@ -29,7 +29,7 @@
 - [ ] Shaders as external files
 - [x] Area outside game area in different color
 - [x] Large enemies take more hits
-- [ ] Hit sound
+- [x] Hit sound
 - [ ] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes
