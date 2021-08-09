@@ -58,8 +58,8 @@ typedef struct {
     bool inUse;
 } Channel;
 
-#define MAX_CHANNELS 8
-#define MAX_SOUNDS 16
+#define MAX_CHANNELS 32
+#define MAX_SOUNDS 32
 
 void OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
     Channel* channel = (Channel*) pBufferContext;
@@ -145,13 +145,15 @@ bool platform_initAudio(void) {
     return true;
 }
 
-void platform_playSound(PlatformSound* sound) {
+void platform_playSound(PlatformSound* sound, bool loop) {;
     for (int i = 0; i < MAX_CHANNELS; ++i) {
         if (!audioEngine.channels[i].inUse) {
-            audioEngine.channels[i].buffer.AudioBytes = sound->size;
-            audioEngine.channels[i].buffer.pAudioData = sound->data;
+            XAUDIO2_BUFFER* buffer = &audioEngine.channels[i].buffer;
+            buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
+            buffer->AudioBytes = sound->size;
+            buffer->pAudioData = sound->data;
             IXAudio2SourceVoice_Start(audioEngine.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
-            IXAudio2SourceVoice_SubmitSourceBuffer(audioEngine.channels[i].voice, &audioEngine.channels[i].buffer, NULL);
+            IXAudio2SourceVoice_SubmitSourceBuffer(audioEngine.channels[i].voice, buffer, NULL);
             audioEngine.channels[i].inUse = true;
             break;
         }

@@ -200,7 +200,7 @@ static void firePlayerBullet(float x, float y) {
     bullet->currentAnimation = 0;
 
     updateAnimationPanel(bullet);
-    platform_playSound(shipBulletSound);
+    platform_playSound(shipBulletSound, false);
 
     ++playerBullets.count;
 }
@@ -231,7 +231,7 @@ static void fireEnemyBullet(float x, float y) {
     bullet->velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
     bullet->currentAnimation = 0;
 
-    platform_playSound(enemyBulletSound);
+    platform_playSound(enemyBulletSound, false);
     updateAnimationPanel(&enemyBullets.entities[enemyBullets.count]);
 
     ++enemyBullets.count;
@@ -312,7 +312,7 @@ void game_init(void) {
     explosionSound = platform_loadSound("assets/audio/Explode1.wav");
     enemyHit = platform_loadSound("assets/audio/Jump1.wav");
 
-    platform_playSound(music);
+    platform_playSound(music, true);
 
     shipBulletOffset[0] = (sprites_shipSprite.panelDims[0] - sprites_playerBulletSprite.panelDims[0]) / 2;
     shipBulletOffset[1] =  -sprites_playerBulletSprite.panelDims[1];
@@ -400,10 +400,10 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
             --enemy->health;
             if (enemy->health == 0) {
                 spawnExplosion(enemy->position[0] + offset[0], enemy->position[1] + offset[1]);
-                platform_playSound(explosionSound);
+                platform_playSound(explosionSound, false);
                 killEntity(enemies, j);
             } else {
-                platform_playSound(enemyHit);
+                platform_playSound(enemyHit, false);
                 enemy->whiteOut[0] = 1;
             }
         }    
@@ -519,7 +519,7 @@ void game_update(void) {
             };      
             if (boxCollision(shipMin, shipMax, bulletMin, bulletMax)) {
                 spawnExplosion(ship.position[0] + shipExplosionOffset[0], ship.position[1] + shipExplosionOffset[1]);
-                platform_playSound(explosionSound);
+                platform_playSound(explosionSound, false);
                 ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
                 ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
                 ship.deadCounter = SHIP_DEAD_COUNTER;

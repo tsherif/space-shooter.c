@@ -53,6 +53,6 @@ void game_controller(GameController* controllerInput);
 typedef struct PlatformSound PlatformSound;
 bool platform_initAudio(void);
 PlatformSound* platform_loadSound(const char* fileName);
-void platform_playSound(PlatformSound* sound);
+void platform_playSound(PlatformSound* sound, bool loop);
 
 #endif

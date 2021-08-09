@@ -25,7 +25,7 @@
 - [ ] Robust WAV file parsing
 - [ ] Get rid of win32 error messages in the renderer
 - [x] Fullscreen
-- [ ] Loop music
+- [x] Loop music
 - [ ] Shaders as external files
 - [x] Area outside game area in different color
 - [x] Large enemies take more hits
