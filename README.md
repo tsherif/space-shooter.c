@@ -40,3 +40,4 @@ Asset Credits
 - Sprites: https://ansimuz.itch.io/spaceship-shooter-environment
 - BG Music: https://chiphead64.itch.io/free-game-soundtrack-by-cactusdude-hurry-up
 - SFX: https://fallenblood.itch.io/50-sfx
+- Font: https://gpway.itch.io/white-pixel-sprite-font

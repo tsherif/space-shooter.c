@@ -32,6 +32,7 @@
 #include "utils.h"
 #include "renderer.h"
 #include "sprites.h"
+#include "fonts.h"
 
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
@@ -95,6 +96,8 @@ static EntityList largeEnemies;
 static EntityList playerBullets;
 static EntityList enemyBullets;
 static EntityList explosions;
+
+static Entity text = { .sprite = &fonts_Font };
 
 static float shipBulletOffset[2];
 static float shipExplosionOffset[2];
@@ -340,6 +343,11 @@ void game_init(void) {
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
 
+    text.position = fonts_Font.positions;
+    text.currentSpritePanel = fonts_Font.currentSpritePanels;
+    text.position[0] = 20.0f;
+    text.position[1] = 20.0f;
+
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
     renderer_loadTexture("assets/sprites/ship.png", &sprites_shipSprite.texture);
@@ -347,6 +355,7 @@ void game_init(void) {
     renderer_loadTexture("assets/sprites/enemy-medium.png", &sprites_mediumEnemySprite.texture);
     renderer_loadTexture("assets/sprites/enemy-big.png", &sprites_largeEnemySprite.texture);
     renderer_loadTexture("assets/sprites/explosion.png", &sprites_explosionSprite.texture);
+    renderer_loadTexture("assets/fonts/pixelspritefont32.png", &fonts_Font.texture);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
     renderer_loadTexture("assets/sprites/laser-bolts.png", &bulletTexture);
@@ -611,6 +620,10 @@ void game_update(void) {
         ship.animationTick = (ship.animationTick + 1) % count;
         updateAnimationPanel(&ship.entity);
 
+        count = text.sprite->animations[text.currentAnimation].numFrames;
+        text.animationTick = (text.animationTick + 1) % count;
+        updateAnimationPanel(&text);
+
         updateEntityAnimations(&playerBullets);  
         updateEntityAnimations(&smallEnemies);
         updateEntityAnimations(&mediumEnemies);
@@ -618,7 +631,7 @@ void game_update(void) {
         updateEntityAnimations(&enemyBullets);  
         updateEntityAnimations(&explosions);  
 
-        tick = 20;
+        tick = 60;
     }
     --tick;
 }
@@ -682,6 +695,8 @@ void game_draw(void) {
     if (ship.deadCounter == 0) {
         renderer_draw((Renderer_RenderList *) &sprites_shipSprite, 1);
     }
+
+    renderer_draw((Renderer_RenderList *) &fonts_Font, 1);
 
     renderer_draw(&sprites_explosionSprite.renderList, explosions.count);
     renderer_draw(&sprites_smallEnemySprite.renderList, smallEnemies.count);
