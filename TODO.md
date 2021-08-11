@@ -16,7 +16,7 @@
 - [x] Crashes kill enemy and player
 - [ ] Stars passing
 - [ ] Multiple levels
-- [ ] Text Rendering
+- [x] Text Rendering
 - [ ] Title screen
 - [ ] Keep score
 - [x] Scale using ~~a framebuffer~~ the viewport

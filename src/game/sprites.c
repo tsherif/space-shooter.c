@@ -79,7 +79,81 @@ static Sprites_Animation explosionAnimations[]  = {
     }
 };
 
-extern Sprites_Sprite sprites_shipSprite = {
+static Sprites_Animation fontAnimations[]  = {
+    { .frames = {{0, 0}}, .numFrames = 1},
+    { .frames = {{1, 0}}, .numFrames = 1},
+    { .frames = {{2, 0}}, .numFrames = 1},
+    { .frames = {{3, 0}}, .numFrames = 1},
+    { .frames = {{4, 0}}, .numFrames = 1},
+    { .frames = {{0, 1}}, .numFrames = 1},
+    { .frames = {{1, 1}}, .numFrames = 1},
+    { .frames = {{2, 1}}, .numFrames = 1},
+    { .frames = {{3, 1}}, .numFrames = 1},
+    { .frames = {{4, 1}}, .numFrames = 1},
+    { .frames = {{0, 2}}, .numFrames = 1},
+    { .frames = {{1, 2}}, .numFrames = 1},
+    { .frames = {{2, 2}}, .numFrames = 1},
+    { .frames = {{3, 2}}, .numFrames = 1},
+    { .frames = {{4, 2}}, .numFrames = 1},
+    { .frames = {{0, 3}}, .numFrames = 1},
+    { .frames = {{1, 3}}, .numFrames = 1},
+    { .frames = {{2, 3}}, .numFrames = 1},
+    { .frames = {{3, 3}}, .numFrames = 1},
+    { .frames = {{4, 3}}, .numFrames = 1},
+    { .frames = {{0, 4}}, .numFrames = 1},
+    { .frames = {{1, 4}}, .numFrames = 1},
+    { .frames = {{2, 4}}, .numFrames = 1},
+    { .frames = {{3, 4}}, .numFrames = 1},
+    { .frames = {{4, 4}}, .numFrames = 1},
+    { .frames = {{0, 5}}, .numFrames = 1},
+    { .frames = {{1, 5}}, .numFrames = 1},
+    { .frames = {{2, 5}}, .numFrames = 1},
+    { .frames = {{3, 5}}, .numFrames = 1},
+    { .frames = {{4, 5}}, .numFrames = 1},
+    { .frames = {{0, 6}}, .numFrames = 1},
+    { .frames = {{1, 6}}, .numFrames = 1},
+    { .frames = {{2, 6}}, .numFrames = 1},
+    { .frames = {{3, 6}}, .numFrames = 1},
+    { .frames = {{4, 6}}, .numFrames = 1},
+    { .frames = {{0, 7}}, .numFrames = 1},
+    { .frames = {{1, 7}}, .numFrames = 1},
+    { .frames = {{2, 7}}, .numFrames = 1},
+    { .frames = {{3, 7}}, .numFrames = 1},
+    { .frames = {{4, 7}}, .numFrames = 1},
+    { .frames = {{0, 8}}, .numFrames = 1},
+    { .frames = {{1, 8}}, .numFrames = 1},
+    { .frames = {{2, 8}}, .numFrames = 1},
+    { .frames = {{3, 8}}, .numFrames = 1},
+    { .frames = {{4, 8}}, .numFrames = 1},
+    { .frames = {{0, 9}}, .numFrames = 1},
+    { .frames = {{1, 9}}, .numFrames = 1},
+    { .frames = {{2, 9}}, .numFrames = 1},
+    { .frames = {{3, 9}}, .numFrames = 1},
+    { .frames = {{4, 9}}, .numFrames = 1},
+    { .frames = {{0, 10}}, .numFrames = 1},
+    { .frames = {{1, 10}}, .numFrames = 1},
+    { .frames = {{2, 10}}, .numFrames = 1},
+    { .frames = {{3, 10}}, .numFrames = 1},
+    { .frames = {{4, 10}}, .numFrames = 1},
+    { .frames = {{0, 11}}, .numFrames = 1},
+    { .frames = {{1, 11}}, .numFrames = 1},
+    { .frames = {{2, 11}}, .numFrames = 1},
+    { .frames = {{3, 11}}, .numFrames = 1},
+    { .frames = {{4, 11}}, .numFrames = 1},
+    { .frames = {{0, 12}}, .numFrames = 1},
+    { .frames = {{1, 12}}, .numFrames = 1},
+    { .frames = {{2, 12}}, .numFrames = 1},
+    { .frames = {{3, 12}}, .numFrames = 1},
+    { .frames = {{4, 12}}, .numFrames = 1},
+    { .frames = {{0, 13}}, .numFrames = 1},
+    { .frames = {{1, 13}}, .numFrames = 1},
+    { .frames = {{2, 13}}, .numFrames = 1},
+    { .frames = {{3, 13}}, .numFrames = 1},
+    { .frames = {{4, 13}}, .numFrames = 1}    
+
+};
+
+extern Sprites_Sprite sprites_ship = {
     .panelDims = { 16.0f, 24.0f },
     .sheetDims = { 5.0f, 2.0f },
     .collisionBox = {
@@ -90,7 +164,7 @@ extern Sprites_Sprite sprites_shipSprite = {
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
-extern Sprites_Sprite sprites_smallEnemySprite = {
+extern Sprites_Sprite sprites_smallEnemy = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -101,7 +175,7 @@ extern Sprites_Sprite sprites_smallEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_mediumEnemySprite = {
+extern Sprites_Sprite sprites_mediumEnemy = {
     .panelDims = { 32.0f, 16.0f },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -112,7 +186,7 @@ extern Sprites_Sprite sprites_mediumEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_largeEnemySprite = {
+extern Sprites_Sprite sprites_largeEnemy = {
     .panelDims = { 32.0f, 32.0f },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -123,7 +197,7 @@ extern Sprites_Sprite sprites_largeEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_playerBulletSprite = {
+extern Sprites_Sprite sprites_playerBullet = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
@@ -134,7 +208,7 @@ extern Sprites_Sprite sprites_playerBulletSprite = {
     .numAnimations = sizeof(playerBulletAnimations) / sizeof(playerBulletAnimations[0])
 };
 
-extern Sprites_Sprite sprites_enemyBulletSprite = {
+extern Sprites_Sprite sprites_enemyBullet = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
@@ -145,9 +219,16 @@ extern Sprites_Sprite sprites_enemyBulletSprite = {
     .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
 };
 
-extern Sprites_Sprite sprites_explosionSprite = {
+extern Sprites_Sprite sprites_explosion = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 5.0f, 1.0f },
     .animations = explosionAnimations,
     .numAnimations = sizeof(explosionAnimations) / sizeof(explosionAnimations[0])
+};
+
+extern Sprites_Sprite sprites_text = {
+    .panelDims = { 32.0f, 32.0f },
+    .sheetDims = { 5.0f, 13.0f },
+    .animations = fontAnimations,
+    .numAnimations = sizeof(fontAnimations) / sizeof(fontAnimations[0])
 };
