@@ -97,7 +97,41 @@ static EntityList playerBullets;
 static EntityList enemyBullets;
 static EntityList explosions;
 
-static Entity text = { .sprite = &fonts_Font };
+EntityList tarek = {
+    .entities = {
+        {
+            .sprite = &fonts_Font,
+            .position = fonts_Font.positions,
+            .currentSpritePanel = fonts_Font.currentSpritePanels,
+            .currentAnimation = 19
+        },
+        {
+            .sprite = &fonts_Font,
+            .position = fonts_Font.positions + 2,
+            .currentSpritePanel = fonts_Font.currentSpritePanels + 2,
+            .currentAnimation = 0
+        },
+        {
+            .sprite = &fonts_Font,
+            .position = fonts_Font.positions + 4,
+            .currentSpritePanel = fonts_Font.currentSpritePanels + 4,
+            .currentAnimation = 17
+        },
+        {
+            .sprite = &fonts_Font,
+            .position = fonts_Font.positions + 6,
+            .currentSpritePanel = fonts_Font.currentSpritePanels + 6,
+            .currentAnimation = 4
+        },
+        {
+            .sprite = &fonts_Font,
+            .position = fonts_Font.positions + 8,
+            .currentSpritePanel = fonts_Font.currentSpritePanels + 8,
+            .currentAnimation = 10
+        }
+    },
+    .count = 5
+};
 
 static float shipBulletOffset[2];
 static float shipExplosionOffset[2];
@@ -343,10 +377,18 @@ void game_init(void) {
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
 
-    text.position = fonts_Font.positions;
-    text.currentSpritePanel = fonts_Font.currentSpritePanels;
-    text.position[0] = 20.0f;
-    text.position[1] = 20.0f;
+    tarek.entities[0].position[0] = 20.0f;
+    tarek.entities[0].position[1] = 20.0f;
+    tarek.entities[1].position[0] = 20.0f + 20.0f;
+    tarek.entities[1].position[1] = 20.0f;
+    tarek.entities[2].position[0] = 20.0f + 40.0f;
+    tarek.entities[2].position[1] = 20.0f;
+    tarek.entities[3].position[0] = 20.0f + 60.0f;
+    tarek.entities[3].position[1] = 20.0f;
+    tarek.entities[4].position[0] = 20.0f + 80.0f;
+    tarek.entities[4].position[1] = 20.0f;
+
+    updateEntityAnimations(&tarek);
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
@@ -620,10 +662,6 @@ void game_update(void) {
         ship.animationTick = (ship.animationTick + 1) % count;
         updateAnimationPanel(&ship.entity);
 
-        count = text.sprite->animations[text.currentAnimation].numFrames;
-        text.animationTick = (text.animationTick + 1) % count;
-        updateAnimationPanel(&text);
-
         updateEntityAnimations(&playerBullets);  
         updateEntityAnimations(&smallEnemies);
         updateEntityAnimations(&mediumEnemies);
@@ -696,7 +734,7 @@ void game_draw(void) {
         renderer_draw((Renderer_RenderList *) &sprites_shipSprite, 1);
     }
 
-    renderer_draw((Renderer_RenderList *) &fonts_Font, 1);
+    renderer_draw((Renderer_RenderList *) &fonts_Font, tarek.count);
 
     renderer_draw(&sprites_explosionSprite.renderList, explosions.count);
     renderer_draw(&sprites_smallEnemySprite.renderList, smallEnemies.count);
