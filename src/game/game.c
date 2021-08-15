@@ -97,41 +97,7 @@ static EntityList playerBullets;
 static EntityList enemyBullets;
 static EntityList explosions;
 
-EntityList tarek = {
-    .entities = {
-        {
-            .sprite = &fonts_Font,
-            .position = fonts_Font.positions,
-            .currentSpritePanel = fonts_Font.currentSpritePanels,
-            .currentAnimation = 19
-        },
-        {
-            .sprite = &fonts_Font,
-            .position = fonts_Font.positions + 2,
-            .currentSpritePanel = fonts_Font.currentSpritePanels + 2,
-            .currentAnimation = 0
-        },
-        {
-            .sprite = &fonts_Font,
-            .position = fonts_Font.positions + 4,
-            .currentSpritePanel = fonts_Font.currentSpritePanels + 4,
-            .currentAnimation = 17
-        },
-        {
-            .sprite = &fonts_Font,
-            .position = fonts_Font.positions + 6,
-            .currentSpritePanel = fonts_Font.currentSpritePanels + 6,
-            .currentAnimation = 4
-        },
-        {
-            .sprite = &fonts_Font,
-            .position = fonts_Font.positions + 8,
-            .currentSpritePanel = fonts_Font.currentSpritePanels + 8,
-            .currentAnimation = 10
-        }
-    },
-    .count = 5
-};
+static EntityList textEntities;
 
 static float shipBulletOffset[2];
 static float shipExplosionOffset[2];
@@ -340,6 +306,46 @@ static void updateEntityAnimations(EntityList* list) {
     }
 }
 
+static uint8_t charToAnimationIndex(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A';
+    }
+
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a';
+    }
+
+    return 0;
+}
+
+static void renderText(float x, float y, const char* text, float spacingScale) {
+    uint8_t i = 0;
+    uint8_t start = textEntities.count;
+
+    while (text[i] && i + start < RENDERER_DRAWLIST_MAX) {
+
+        Entity* letter = textEntities.entities + i + start;
+
+        letter->position = fonts_Font.positions + textEntities.count * 2;
+        letter->currentSpritePanel = fonts_Font.currentSpritePanels + textEntities.count * 2;
+        letter->whiteOut = fonts_Font.whiteOut + textEntities.count;
+
+        letter->position[0] = x + i * fonts_Font.panelDims[0] * spacingScale;
+        letter->position[1] = y;
+        letter->velocity[0] = 0.0f;
+        letter->velocity[1] = 0.0f;
+        letter->sprite = &fonts_Font;
+        letter->currentAnimation = charToAnimationIndex(text[i]);
+        letter->animationTick = 0;
+
+        updateAnimationPanel(letter);
+        
+        ++textEntities.count;
+        ++i;
+    }
+
+}
+
 void game_init(void) {
     srand((unsigned int) time(NULL));
 
@@ -377,18 +383,7 @@ void game_init(void) {
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
 
-    tarek.entities[0].position[0] = 20.0f;
-    tarek.entities[0].position[1] = 20.0f;
-    tarek.entities[1].position[0] = 20.0f + 20.0f;
-    tarek.entities[1].position[1] = 20.0f;
-    tarek.entities[2].position[0] = 20.0f + 40.0f;
-    tarek.entities[2].position[1] = 20.0f;
-    tarek.entities[3].position[0] = 20.0f + 60.0f;
-    tarek.entities[3].position[1] = 20.0f;
-    tarek.entities[4].position[0] = 20.0f + 80.0f;
-    tarek.entities[4].position[1] = 20.0f;
-
-    updateEntityAnimations(&tarek);
+    renderText(20.0f, 20.0f, "Hello", 0.7f);
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
@@ -734,7 +729,7 @@ void game_draw(void) {
         renderer_draw((Renderer_RenderList *) &sprites_shipSprite, 1);
     }
 
-    renderer_draw((Renderer_RenderList *) &fonts_Font, tarek.count);
+    renderer_draw((Renderer_RenderList *) &fonts_Font, textEntities.count);
 
     renderer_draw(&sprites_explosionSprite.renderList, explosions.count);
     renderer_draw(&sprites_smallEnemySprite.renderList, smallEnemies.count);
