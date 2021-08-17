@@ -26,6 +26,7 @@
 #include "sprites.h"
 
 #define FONTS_SPACING_SCALE 0.7f
+#define FONTS_PUNCTUATION ".,/<>(){}[]?;:'\"/!|=+_-*^%#@$"
 
 extern Sprites_Sprite fonts_Font;
 

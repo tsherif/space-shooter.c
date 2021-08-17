@@ -184,8 +184,8 @@ void renderer_draw(Renderer_RenderList* list, uint8_t count) {
         glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
         glUniform1f(whiteOutLocation, list->whiteOut[i]);
         float scale = 1.0f;
-        if (list->scale[0]) {
-            scale = list->scale[0];
+        if (list->scale[i]) {
+            scale = list->scale[i];
         }
         glUniform1f(scaleLocation, scale);
 

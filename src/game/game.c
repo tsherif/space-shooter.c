@@ -307,7 +307,7 @@ static void updateEntityAnimations(EntityList* list) {
     }
 }
 
-static uint8_t charToAnimationIndex(char c) {
+static int8_t charToAnimationIndex(char c) {
     if (c >= 'A' && c <= 'Z') {
         return c - 'A';
     }
@@ -316,7 +316,23 @@ static uint8_t charToAnimationIndex(char c) {
         return c - 'a';
     }
 
-    return 0;
+    if (c >= '1' && c <= '9') {
+        return c - '1' + 26;
+    }
+
+    if (c == '0') {
+        return 35;
+    }
+
+    uint8_t i = 0; 
+    while (FONTS_PUNCTUATION[i]) {
+        if (c == FONTS_PUNCTUATION[i]) {
+            return i + 36;
+        }
+        ++i;
+    }
+
+    return -1;
 }
 
 static void renderText(float x, float y, const char* text, float scale) {
@@ -324,6 +340,12 @@ static void renderText(float x, float y, const char* text, float scale) {
     uint8_t start = textEntities.count;
 
     while (text[i] && i + start < RENDERER_DRAWLIST_MAX) {
+        int8_t animationIndex = charToAnimationIndex(text[i]);
+
+        if (animationIndex < 0) {
+            ++i;
+            continue;
+        }
 
         Entity* letter = textEntities.entities + i + start;
 
@@ -338,7 +360,7 @@ static void renderText(float x, float y, const char* text, float scale) {
         letter->velocity[1] = 0.0f;
         letter->scale[0] = scale;
         letter->sprite = &fonts_Font;
-        letter->currentAnimation = charToAnimationIndex(text[i]);
+        letter->currentAnimation = animationIndex;
         letter->animationTick = 0;
 
         updateAnimationPanel(letter);
@@ -386,7 +408,9 @@ void game_init(void) {
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
 
-    renderText(20.0f, 20.0f, "Hello", 0.5f);
+    renderText(20.0f, 20.0f, "space-shooter.c v15.0", 0.3f);
+    renderText(20.0f, 40.0f, "ALL YOUR BASE", 0.5f);
+    renderText(10.0f, 60.0f, "ARE BELONG TO US!!!", 0.7f);
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
@@ -667,7 +691,7 @@ void game_update(void) {
         updateEntityAnimations(&enemyBullets);  
         updateEntityAnimations(&explosions);  
 
-        tick = 60;
+        tick = 20;
     }
     --tick;
 }
