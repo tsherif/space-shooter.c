@@ -65,6 +65,7 @@ typedef struct {
     float* position;           // vec2 pointer into Renderer_RenderList arrays
     float* currentSpritePanel; // vec2 pointer into Renderer_RenderList arrays
     uint8_t* whiteOut;         // pointer into Renderer_RenderList arrays
+    float* scale;              // pointer into Renderer_RenderList arrays
     float velocity[2];
     uint8_t currentAnimation;
     uint8_t animationTick;
@@ -318,7 +319,7 @@ static uint8_t charToAnimationIndex(char c) {
     return 0;
 }
 
-static void renderText(float x, float y, const char* text, float spacingScale) {
+static void renderText(float x, float y, const char* text, float scale) {
     uint8_t i = 0;
     uint8_t start = textEntities.count;
 
@@ -329,11 +330,13 @@ static void renderText(float x, float y, const char* text, float spacingScale) {
         letter->position = fonts_Font.positions + textEntities.count * 2;
         letter->currentSpritePanel = fonts_Font.currentSpritePanels + textEntities.count * 2;
         letter->whiteOut = fonts_Font.whiteOut + textEntities.count;
+        letter->scale = fonts_Font.scale + textEntities.count;
 
-        letter->position[0] = x + i * fonts_Font.panelDims[0] * spacingScale;
+        letter->position[0] = x + i * fonts_Font.panelDims[0] * scale * FONTS_SPACING_SCALE;
         letter->position[1] = y;
         letter->velocity[0] = 0.0f;
         letter->velocity[1] = 0.0f;
+        letter->scale[0] = scale;
         letter->sprite = &fonts_Font;
         letter->currentAnimation = charToAnimationIndex(text[i]);
         letter->animationTick = 0;
@@ -383,7 +386,7 @@ void game_init(void) {
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
 
-    renderText(20.0f, 20.0f, "Hello", 0.7f);
+    renderText(20.0f, 20.0f, "Hello", 0.5f);
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 

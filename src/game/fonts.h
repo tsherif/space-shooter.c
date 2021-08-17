@@ -25,6 +25,8 @@
 #define _GAME_FONTS_H_
 #include "sprites.h"
 
+#define FONTS_SPACING_SCALE 0.7f
+
 extern Sprites_Sprite fonts_Font;
 
 #endif

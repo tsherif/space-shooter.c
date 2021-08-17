@@ -9,6 +9,7 @@ static GLuint spriteSheetDimensionsLocation;
 static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 static GLuint whiteOutLocation;
+static GLuint scaleLocation;
 
 static uint16_t windowWidth;
 static uint16_t windowHeight;
@@ -35,12 +36,13 @@ void renderer_init(int width, int height) {
     "uniform vec2 panelPixelSize;\n"
     "uniform vec2 panelIndex;\n"
     "uniform vec2 spriteSheetDimensions;\n"
+    "uniform float scale;\n"
     "out vec2 vUV;\n"
     "void main() {\n"
     "    vec2 uv = position;\n"
     "    vUV = (uv + panelIndex) / spriteSheetDimensions;\n"
     "    vec2 clipOffset = pixelOffset * pixelSize - 1.0;\n"
-    "    gl_Position = vec4((position * panelPixelSize * pixelSize + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
+    "    gl_Position = vec4((position * panelPixelSize * pixelSize * scale + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
     "}\n";
 
     const char* fsSource = "#version 450\n"
@@ -92,6 +94,7 @@ void renderer_init(int width, int height) {
     panelIndexLocation = glGetUniformLocation(program, "panelIndex");
     pixelOffsetLocation = glGetUniformLocation(program, "pixelOffset");
     whiteOutLocation = glGetUniformLocation(program, "whiteOut");
+    scaleLocation = glGetUniformLocation(program, "scale");
 
     glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
 
@@ -171,6 +174,7 @@ void renderer_draw(Renderer_RenderList* list, uint8_t count) {
         return;
     }
 
+
     glBindTexture(GL_TEXTURE_2D, list->texture);
     glUniform2fv(panelPixelSizeLocation, 1, list->panelDims);
     glUniform2fv(spriteSheetDimensionsLocation, 1, list->sheetDims);
@@ -179,6 +183,12 @@ void renderer_draw(Renderer_RenderList* list, uint8_t count) {
         glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
         glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
         glUniform1f(whiteOutLocation, list->whiteOut[i]);
+        float scale = 1.0f;
+        if (list->scale[0]) {
+            scale = list->scale[0];
+        }
+        glUniform1f(scaleLocation, scale);
+
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
 }
