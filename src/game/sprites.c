@@ -153,7 +153,7 @@ static Sprites_Animation fontAnimations[]  = {
 
 };
 
-extern Sprites_Sprite sprites_shipSprite = {
+extern Sprites_Sprite sprites_ship = {
     .panelDims = { 16.0f, 24.0f },
     .sheetDims = { 5.0f, 2.0f },
     .collisionBox = {
@@ -164,7 +164,7 @@ extern Sprites_Sprite sprites_shipSprite = {
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
-extern Sprites_Sprite sprites_smallEnemySprite = {
+extern Sprites_Sprite sprites_smallEnemy = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -175,7 +175,7 @@ extern Sprites_Sprite sprites_smallEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_mediumEnemySprite = {
+extern Sprites_Sprite sprites_mediumEnemy = {
     .panelDims = { 32.0f, 16.0f },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -186,7 +186,7 @@ extern Sprites_Sprite sprites_mediumEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_largeEnemySprite = {
+extern Sprites_Sprite sprites_largeEnemy = {
     .panelDims = { 32.0f, 32.0f },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -197,7 +197,7 @@ extern Sprites_Sprite sprites_largeEnemySprite = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_playerBulletSprite = {
+extern Sprites_Sprite sprites_playerBullet = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
@@ -208,7 +208,7 @@ extern Sprites_Sprite sprites_playerBulletSprite = {
     .numAnimations = sizeof(playerBulletAnimations) / sizeof(playerBulletAnimations[0])
 };
 
-extern Sprites_Sprite sprites_enemyBulletSprite = {
+extern Sprites_Sprite sprites_enemyBullet = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
@@ -219,14 +219,14 @@ extern Sprites_Sprite sprites_enemyBulletSprite = {
     .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
 };
 
-extern Sprites_Sprite sprites_explosionSprite = {
+extern Sprites_Sprite sprites_explosion = {
     .panelDims = { 16.0f, 16.0f },
     .sheetDims = { 5.0f, 1.0f },
     .animations = explosionAnimations,
     .numAnimations = sizeof(explosionAnimations) / sizeof(explosionAnimations[0])
 };
 
-extern Sprites_Sprite sprites_textSprite = {
+extern Sprites_Sprite sprites_text = {
     .panelDims = { 32.0f, 32.0f },
     .sheetDims = { 5.0f, 13.0f },
     .animations = fontAnimations,

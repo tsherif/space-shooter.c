@@ -61,13 +61,13 @@ typedef struct {
     uint8_t numAnimations;
 } Sprites_Sprite;
 
-extern Sprites_Sprite sprites_shipSprite;
-extern Sprites_Sprite sprites_smallEnemySprite;
-extern Sprites_Sprite sprites_mediumEnemySprite;
-extern Sprites_Sprite sprites_largeEnemySprite;
-extern Sprites_Sprite sprites_playerBulletSprite;
-extern Sprites_Sprite sprites_enemyBulletSprite;
-extern Sprites_Sprite sprites_explosionSprite;
-extern Sprites_Sprite sprites_textSprite;
+extern Sprites_Sprite sprites_ship;
+extern Sprites_Sprite sprites_smallEnemy;
+extern Sprites_Sprite sprites_mediumEnemy;
+extern Sprites_Sprite sprites_largeEnemy;
+extern Sprites_Sprite sprites_playerBullet;
+extern Sprites_Sprite sprites_enemyBullet;
+extern Sprites_Sprite sprites_explosion;
+extern Sprites_Sprite sprites_text;
 
 #endif
