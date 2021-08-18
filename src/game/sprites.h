@@ -34,6 +34,10 @@
 #define SPRITES_SHIP_CENTER_RIGHT 3
 #define SPRITES_SHIP_RIGHT        4
 
+// Text sprite
+#define SPRITES_TEXT_SPACING_SCALE 0.7f
+#define SPRITES_PUNCTUATION ".,/<>(){}[]?;:'\"/!|=+_-*^%#@$"
+
 typedef struct {
     float min[2];
     float max[2];
@@ -64,5 +68,6 @@ extern Sprites_Sprite sprites_largeEnemySprite;
 extern Sprites_Sprite sprites_playerBulletSprite;
 extern Sprites_Sprite sprites_enemyBulletSprite;
 extern Sprites_Sprite sprites_explosionSprite;
+extern Sprites_Sprite sprites_textSprite;
 
 #endif

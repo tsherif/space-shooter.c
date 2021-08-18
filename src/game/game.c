@@ -32,7 +32,6 @@
 #include "utils.h"
 #include "renderer.h"
 #include "sprites.h"
-#include "fonts.h"
 
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
@@ -325,8 +324,8 @@ static int8_t charToAnimationIndex(char c) {
     }
 
     uint8_t i = 0; 
-    while (FONTS_PUNCTUATION[i]) {
-        if (c == FONTS_PUNCTUATION[i]) {
+    while (SPRITES_PUNCTUATION[i]) {
+        if (c == SPRITES_PUNCTUATION[i]) {
             return i + 36;
         }
         ++i;
@@ -349,17 +348,17 @@ static void textToEntities(float x, float y, const char* text, float scale) {
 
         Entity* letter = textEntities.entities + i + start;
 
-        letter->position = fonts_Font.positions + textEntities.count * 2;
-        letter->currentSpritePanel = fonts_Font.currentSpritePanels + textEntities.count * 2;
-        letter->whiteOut = fonts_Font.whiteOut + textEntities.count;
-        letter->scale = fonts_Font.scale + textEntities.count;
+        letter->position = sprites_textSprite.positions + textEntities.count * 2;
+        letter->currentSpritePanel = sprites_textSprite.currentSpritePanels + textEntities.count * 2;
+        letter->whiteOut = sprites_textSprite.whiteOut + textEntities.count;
+        letter->scale = sprites_textSprite.scale + textEntities.count;
 
-        letter->position[0] = x + i * fonts_Font.panelDims[0] * scale * FONTS_SPACING_SCALE;
+        letter->position[0] = x + i * sprites_textSprite.panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE;
         letter->position[1] = y;
         letter->velocity[0] = 0.0f;
         letter->velocity[1] = 0.0f;
         letter->scale[0] = scale;
-        letter->sprite = &fonts_Font;
+        letter->sprite = &sprites_textSprite;
         letter->currentAnimation = animationIndex;
         letter->animationTick = 0;
 
@@ -417,7 +416,7 @@ void game_init(void) {
     renderer_loadTexture("assets/sprites/enemy-medium.png", &sprites_mediumEnemySprite.texture);
     renderer_loadTexture("assets/sprites/enemy-big.png", &sprites_largeEnemySprite.texture);
     renderer_loadTexture("assets/sprites/explosion.png", &sprites_explosionSprite.texture);
-    renderer_loadTexture("assets/fonts/pixelspritefont32.png", &fonts_Font.texture);
+    renderer_loadTexture("assets/sprites/pixelspritefont32.png", &sprites_textSprite.texture);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
     renderer_loadTexture("assets/sprites/laser-bolts.png", &bulletTexture);
@@ -754,7 +753,7 @@ void game_draw(void) {
         renderer_draw((Renderer_RenderList *) &sprites_shipSprite, 1);
     }
 
-    renderer_draw((Renderer_RenderList *) &fonts_Font, textEntities.count);
+    renderer_draw((Renderer_RenderList *) &sprites_textSprite, textEntities.count);
 
     renderer_draw(&sprites_explosionSprite.renderList, explosions.count);
     renderer_draw(&sprites_smallEnemySprite.renderList, smallEnemies.count);
