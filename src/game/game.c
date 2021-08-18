@@ -97,8 +97,8 @@ static EntityList largeEnemies;
 static EntityList playerBullets;
 static EntityList enemyBullets;
 static EntityList explosions;
-
 static EntityList textEntities;
+
 
 static float shipBulletOffset[2];
 static float shipExplosionOffset[2];
@@ -335,7 +335,7 @@ static int8_t charToAnimationIndex(char c) {
     return -1;
 }
 
-static void renderText(float x, float y, const char* text, float scale) {
+static void textToEntities(float x, float y, const char* text, float scale) {
     uint8_t i = 0;
     uint8_t start = textEntities.count;
 
@@ -408,9 +408,7 @@ void game_init(void) {
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
 
-    renderText(20.0f, 20.0f, "space-shooter.c v15.0", 0.3f);
-    renderText(20.0f, 40.0f, "ALL YOUR BASE", 0.5f);
-    renderText(10.0f, 60.0f, "ARE BELONG TO US!!!", 0.7f);
+    textToEntities(GAME_WIDTH / 2.0f - 80.0f, 20.0f, "space-shooter.c", 0.5f);
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
