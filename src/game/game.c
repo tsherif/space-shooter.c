@@ -306,40 +306,12 @@ static void updateEntityAnimations(EntityList* list) {
     }
 }
 
-static int8_t charToAnimationIndex(char c) {
-    if (c >= 'A' && c <= 'Z') {
-        return c - 'A';
-    }
-
-    if (c >= 'a' && c <= 'z') {
-        return c - 'a';
-    }
-
-    if (c >= '1' && c <= '9') {
-        return c - '1' + 26;
-    }
-
-    if (c == '0') {
-        return 35;
-    }
-
-    uint8_t i = 0; 
-    while (SPRITES_PUNCTUATION[i]) {
-        if (c == SPRITES_PUNCTUATION[i]) {
-            return i + 36;
-        }
-        ++i;
-    }
-
-    return -1;
-}
-
 static void textToEntities(float x, float y, const char* text, float scale) {
     uint8_t i = 0;
     uint8_t start = textEntities.count;
 
     while (text[i] && i + start < RENDERER_DRAWLIST_MAX) {
-        int8_t animationIndex = charToAnimationIndex(text[i]);
+        int8_t animationIndex = sprites_charToAnimationIndex(text[i]);
 
         if (animationIndex < 0) {
             ++i;

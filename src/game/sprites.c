@@ -22,6 +22,8 @@
 ////////////////////////////////////////////////////////////////////////////////////
 #include "sprites.h"
 
+#define PUNCTUATION ".,/<>(){}[]?;:'\"/!|=+_-*^%#@$"
+
 static Sprites_Animation shipAnimations[]  = {
     // Center
     {
@@ -232,3 +234,31 @@ extern Sprites_Sprite sprites_text = {
     .animations = fontAnimations,
     .numAnimations = sizeof(fontAnimations) / sizeof(fontAnimations[0])
 };
+
+extern int8_t sprites_charToAnimationIndex(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A';
+    }
+
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a';
+    }
+
+    if (c >= '1' && c <= '9') {
+        return c - '1' + 26;
+    }
+
+    if (c == '0') {
+        return 35;
+    }
+
+    uint8_t i = 0; 
+    while (PUNCTUATION[i]) {
+        if (c == PUNCTUATION[i]) {
+            return i + 36;
+        }
+        ++i;
+    }
+
+    return -1;
+}

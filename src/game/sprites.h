@@ -36,7 +36,6 @@
 
 // Text sprite
 #define SPRITES_TEXT_SPACING_SCALE 0.7f
-#define SPRITES_PUNCTUATION ".,/<>(){}[]?;:'\"/!|=+_-*^%#@$"
 
 typedef struct {
     float min[2];
@@ -69,5 +68,7 @@ extern Sprites_Sprite sprites_playerBullet;
 extern Sprites_Sprite sprites_enemyBullet;
 extern Sprites_Sprite sprites_explosion;
 extern Sprites_Sprite sprites_text;
+
+extern int8_t sprites_charToAnimationIndex(char c);
 
 #endif
