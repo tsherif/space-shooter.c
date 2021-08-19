@@ -73,7 +73,7 @@ typedef struct {
 } Entity;
 
 typedef struct {
-    INLINE_STRUCT(Entity, entity);
+    MIXIN_STRUCT(Entity, entity);
     uint16_t bulletThrottle;
     uint16_t deadCounter;
 } Player;

@@ -25,8 +25,8 @@
 #define _GAME_UTILS_H_
 
 
-// Allows for use of the inlined struct members by directly
+// Allows for use of the mixin struct members by directly
 // or through the named struct.
-#define INLINE_STRUCT(type, name) union { type; type name; }
+#define MIXIN_STRUCT(type, name) union { type; type name; }
 
 #endif

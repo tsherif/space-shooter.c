@@ -89,7 +89,7 @@ typedef struct {
 } Sprites_Animation;
 
 typedef struct {
-    INLINE_STRUCT(Renderer_RenderList, renderList);
+    MIXIN_STRUCT(Renderer_RenderList, renderList);
     Sprites_CollisionBox collisionBox;
     Sprites_Animation* animations;
     uint8_t numAnimations;
