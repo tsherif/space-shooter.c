@@ -156,7 +156,7 @@ static Sprites_Animation fontAnimations[]  = {
 };
 
 extern Sprites_Sprite sprites_ship = {
-    .panelDims = { 16.0f, 24.0f },
+    .panelDims = { SPRITES_SHIP_PANEL_WIDTH, SPRITES_SHIP_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 2.0f },
     .collisionBox = {
         .min = {0.0f, 0.0f},
@@ -167,7 +167,7 @@ extern Sprites_Sprite sprites_ship = {
 };
 
 extern Sprites_Sprite sprites_smallEnemy = {
-    .panelDims = { 16.0f, 16.0f },
+    .panelDims = { SPRITES_SMALL_ENEMY_PANEL_WIDTH, SPRITES_SMALL_ENEMY_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
         .min = {0.0f, 5.0f},
@@ -178,7 +178,7 @@ extern Sprites_Sprite sprites_smallEnemy = {
 };
 
 extern Sprites_Sprite sprites_mediumEnemy = {
-    .panelDims = { 32.0f, 16.0f },
+    .panelDims = { SPRITES_MEDIUM_ENEMY_PANEL_WIDTH, SPRITES_MEDIUM_ENEMY_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
         .min = {0.0f, 0.0f},
@@ -189,7 +189,7 @@ extern Sprites_Sprite sprites_mediumEnemy = {
 };
 
 extern Sprites_Sprite sprites_largeEnemy = {
-    .panelDims = { 32.0f, 32.0f },
+    .panelDims = { SPRITES_LARGE_ENEMY_PANEL_WIDTH, SPRITES_LARGE_ENEMY_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
         .min = {3.0f, 12.0f},
@@ -200,7 +200,7 @@ extern Sprites_Sprite sprites_largeEnemy = {
 };
 
 extern Sprites_Sprite sprites_playerBullet = {
-    .panelDims = { 16.0f, 16.0f },
+    .panelDims = { SPRITES_BULLET_PANEL_WIDTH, SPRITES_BULLET_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
         .min = {4.0f, 2.0f},
@@ -211,7 +211,7 @@ extern Sprites_Sprite sprites_playerBullet = {
 };
 
 extern Sprites_Sprite sprites_enemyBullet = {
-    .panelDims = { 16.0f, 16.0f },
+    .panelDims = { SPRITES_BULLET_PANEL_WIDTH, SPRITES_BULLET_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
         .min = {4.0f, 7.0f},
@@ -222,14 +222,14 @@ extern Sprites_Sprite sprites_enemyBullet = {
 };
 
 extern Sprites_Sprite sprites_explosion = {
-    .panelDims = { 16.0f, 16.0f },
+    .panelDims = { SPRITES_EXPLOSION_PANEL_WIDTH, SPRITES_EXPLOSION_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 1.0f },
     .animations = explosionAnimations,
     .numAnimations = sizeof(explosionAnimations) / sizeof(explosionAnimations[0])
 };
 
 extern Sprites_Sprite sprites_text = {
-    .panelDims = { 32.0f, 32.0f },
+    .panelDims = { SPRITES_TEXT_PANEL_WIDTH, SPRITES_TEXT_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 13.0f },
     .animations = fontAnimations,
     .numAnimations = sizeof(fontAnimations) / sizeof(fontAnimations[0])

@@ -98,16 +98,6 @@ static EntityList enemyBullets;
 static EntityList explosions;
 static EntityList textEntities;
 
-
-static float shipBulletOffset[2];
-static float shipExplosionOffset[2];
-static float smallEnemyBulletOffset[2];
-static float smallEnemyExplosionOffset[2];
-static float mediumEnemyBulletOffset[2];
-static float mediumEnemyExplosionOffset[2];
-static float largeEnemyBulletOffset[2];
-static float largeEnemyExplosionOffset[2];
-
 static float randomRange(float min, float max) {
     float range = max - min;
     return min + ((float) rand() / (RAND_MAX + 1)) * range;
@@ -353,27 +343,6 @@ void game_init(void) {
 
     platform_playSound(music, true);
 
-    shipBulletOffset[0] = (sprites_ship.panelDims[0] - sprites_playerBullet.panelDims[0]) / 2;
-    shipBulletOffset[1] =  -sprites_playerBullet.panelDims[1];
-    shipExplosionOffset[0] = (sprites_ship.panelDims[0] - sprites_explosion.panelDims[0]) / 2;
-    shipExplosionOffset[1] =  (sprites_ship.panelDims[1] - sprites_explosion.panelDims[1]) / 2;
-
-    smallEnemyBulletOffset[0] = (sprites_smallEnemy.panelDims[0] - sprites_enemyBullet.panelDims[0]) / 2;
-    smallEnemyBulletOffset[1] =  (sprites_smallEnemy.panelDims[1] - sprites_enemyBullet.panelDims[1]) / 2;
-    smallEnemyExplosionOffset[0] = (sprites_smallEnemy.panelDims[0] - sprites_explosion.panelDims[0]) / 2;
-    smallEnemyExplosionOffset[1] =  (sprites_smallEnemy.panelDims[1] - sprites_explosion.panelDims[1]) / 2;
-
-    mediumEnemyBulletOffset[0] = (sprites_mediumEnemy.panelDims[0] - sprites_enemyBullet.panelDims[0]) / 2;
-    mediumEnemyBulletOffset[1] =  (sprites_mediumEnemy.panelDims[1] - sprites_enemyBullet.panelDims[1]) / 2;
-    mediumEnemyExplosionOffset[0] = (sprites_mediumEnemy.panelDims[0] - sprites_explosion.panelDims[0]) / 2;
-    mediumEnemyExplosionOffset[1] =  (sprites_mediumEnemy.panelDims[1] - sprites_explosion.panelDims[1]) / 2;
-
-
-    largeEnemyBulletOffset[0] = (sprites_largeEnemy.panelDims[0] - sprites_enemyBullet.panelDims[0]) / 2;
-    largeEnemyBulletOffset[1] =  (sprites_largeEnemy.panelDims[1] - sprites_enemyBullet.panelDims[1]) / 2;
-    largeEnemyExplosionOffset[0] = (sprites_largeEnemy.panelDims[0] - sprites_explosion.panelDims[0]) / 2;
-    largeEnemyExplosionOffset[1] =  (sprites_largeEnemy.panelDims[1] - sprites_explosion.panelDims[1]) / 2;
-
     ship.position = sprites_ship.positions;
     ship.currentSpritePanel = sprites_ship.currentSpritePanels;
     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
@@ -424,7 +393,7 @@ bool boxCollision(float min1[2], float max1[2], float min2[2], float max2[2]) {
     return true;
 }
 
-bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* enemies, Sprites_CollisionBox* enemyCollisionBox, float* offset) {
+bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* enemies, Sprites_CollisionBox* enemyCollisionBox, float explosionXOffset, float explosionYOffset) {
     bool hit = false;
     for (uint8_t j = 0; j < enemies->count; ++j) {
         Entity* enemy = enemies->entities + j;
@@ -441,7 +410,7 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
             hit = true;
             --enemy->health;
             if (enemy->health == 0) {
-                spawnExplosion(enemy->position[0] + offset[0], enemy->position[1] + offset[1]);
+                spawnExplosion(enemy->position[0] + explosionXOffset, enemy->position[1] + explosionYOffset);
                 platform_playSound(explosionSound, false);
                 killEntity(enemies, j);
             } else {
@@ -487,9 +456,9 @@ void game_update(void) {
             bullet->position[1] + playerBulletCollisionBox->max[1]
         };
         
-        if (checkBulletCollision(bulletMin, bulletMax, &smallEnemies, &sprites_smallEnemy.collisionBox, smallEnemyExplosionOffset) ||
-            checkBulletCollision(bulletMin, bulletMax, &mediumEnemies, &sprites_mediumEnemy.collisionBox, mediumEnemyExplosionOffset) ||
-            checkBulletCollision(bulletMin, bulletMax, &largeEnemies, &sprites_largeEnemy.collisionBox, largeEnemyExplosionOffset)) {
+        if (checkBulletCollision(bulletMin, bulletMax, &smallEnemies, &sprites_smallEnemy.collisionBox, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET) ||
+            checkBulletCollision(bulletMin, bulletMax, &mediumEnemies, &sprites_mediumEnemy.collisionBox, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET) ||
+            checkBulletCollision(bulletMin, bulletMax, &largeEnemies, &sprites_largeEnemy.collisionBox, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET)) {
             killEntity(&playerBullets, i);
         }  
     }
@@ -542,7 +511,7 @@ void game_update(void) {
                 bullet->position[1] + enemyBulletCollisionBox->max[1]
             };      
             if (boxCollision(shipMin, shipMax, bulletMin, bulletMax)) {
-                spawnExplosion(ship.position[0] + shipExplosionOffset[0], ship.position[1] + shipExplosionOffset[1]);
+                spawnExplosion(ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET, ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET);
                 platform_playSound(explosionSound, false);
                 ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
                 ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
@@ -565,8 +534,8 @@ void game_update(void) {
                     enemy->position[1] + smallEnemyCollisionBox->max[1]
                 };      
                 if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
-                    spawnExplosion(ship.position[0] + shipExplosionOffset[0], ship.position[1] + shipExplosionOffset[1]);
-                    spawnExplosion(enemy->position[0] + smallEnemyExplosionOffset[0], enemy->position[1] + smallEnemyExplosionOffset[1]);
+                    spawnExplosion(ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET, ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET);
+                    spawnExplosion(enemy->position[0] + SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, enemy->position[1] + SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET);
                     platform_playSound(explosionSound, false);
                     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
                     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
@@ -590,8 +559,8 @@ void game_update(void) {
                     enemy->position[1] + mediumEnemyCollisionBox->max[1]
                 };      
                 if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
-                    spawnExplosion(ship.position[0] + shipExplosionOffset[0], ship.position[1] + shipExplosionOffset[1]);
-                    spawnExplosion(enemy->position[0] + mediumEnemyExplosionOffset[0], enemy->position[1] + mediumEnemyExplosionOffset[1]);
+                    spawnExplosion(ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET, ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET);
+                    spawnExplosion(enemy->position[0] + SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, enemy->position[1] + SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET);
                     platform_playSound(explosionSound, false);
                     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
                     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
@@ -615,8 +584,8 @@ void game_update(void) {
                     enemy->position[1] + largeEnemyCollisionBox->max[1]
                 };      
                 if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
-                    spawnExplosion(ship.position[0] + shipExplosionOffset[0], ship.position[1] + shipExplosionOffset[1]);
-                    spawnExplosion(enemy->position[0] + largeEnemyExplosionOffset[0], enemy->position[1] + largeEnemyExplosionOffset[1]);
+                    spawnExplosion(ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET, ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET);
+                    spawnExplosion(enemy->position[0] + SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, enemy->position[1] + SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET);
                     platform_playSound(explosionSound, false);
                     ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
                     ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
@@ -630,19 +599,19 @@ void game_update(void) {
         if (ship.deadCounter == 0) {
             for (uint8_t i = 0; i < smallEnemies.count; ++i) {
                 if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY) {
-                    fireEnemyBullet(smallEnemies.entities[i].position[0] + smallEnemyBulletOffset[0], smallEnemies.entities[i].position[1] + smallEnemyBulletOffset[1]);
+                    fireEnemyBullet(smallEnemies.entities[i].position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, smallEnemies.entities[i].position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
                 }
             }
 
             for (uint8_t i = 0; i < mediumEnemies.count; ++i) {
                 if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY) {
-                    fireEnemyBullet(mediumEnemies.entities[i].position[0] + mediumEnemyBulletOffset[0], mediumEnemies.entities[i].position[1] + mediumEnemyBulletOffset[1]);
+                    fireEnemyBullet(mediumEnemies.entities[i].position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, mediumEnemies.entities[i].position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
                 }
             }
 
             for (uint8_t i = 0; i < largeEnemies.count; ++i) {
                 if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY) {
-                    fireEnemyBullet(largeEnemies.entities[i].position[0] + largeEnemyBulletOffset[0], largeEnemies.entities[i].position[1] + largeEnemyBulletOffset[1]);
+                    fireEnemyBullet(largeEnemies.entities[i].position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, largeEnemies.entities[i].position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
                 }
             }
         }
@@ -691,7 +660,7 @@ void game_keyboard(GameKeyboard* inputKeys) {
     }
 
     if (inputKeys->space) {
-        firePlayerBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
+        firePlayerBullet(ship.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, ship.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
         ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
@@ -713,7 +682,7 @@ void game_controller(GameController* controllerInput) {
     }
 
     if (controllerInput->aButton) {
-        firePlayerBullet(ship.position[0] + shipBulletOffset[0], ship.position[1] + shipBulletOffset[1]);
+        firePlayerBullet(ship.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, ship.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
         ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
