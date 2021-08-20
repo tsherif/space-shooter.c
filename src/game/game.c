@@ -155,6 +155,7 @@ static void firePlayerBullet(float x, float y) {
 
     spawnEntity(&playerBullets, &sprites_playerBullet, x, y, 0.0f, SHIP_BULLET_VELOCITY, 0);
     platform_playSound(shipBulletSound, false);
+    ship.bulletThrottle = SHIP_BULLET_THROTTLE;
 }
 
 static void fireEnemyBullet(float x, float y) {
@@ -627,7 +628,6 @@ void game_keyboard(GameKeyboard* inputKeys) {
 
     if (inputKeys->space) {
         firePlayerBullet(ship.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, ship.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
-        ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
 
@@ -649,7 +649,6 @@ void game_controller(GameController* controllerInput) {
 
     if (controllerInput->aButton) {
         firePlayerBullet(ship.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, ship.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
-        ship.bulletThrottle = SHIP_BULLET_THROTTLE;
     }
 }
 
