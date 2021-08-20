@@ -195,7 +195,7 @@ static void killEntity(EntityList* list, uint8_t i) {
     --list->count;
 }
 
-static void updateEntity(EntityList* list, float killBuffer) {
+static void updateEntities(EntityList* list, float killBuffer) {
     for (uint8_t i = 0; i < list->count; ++i) {
         list->entities[i].position[0] += list->entities[i].velocity[0];
         list->entities[i].position[1] += list->entities[i].velocity[1];
@@ -404,11 +404,11 @@ void game_update(void) {
         ); 
     }
 
-    updateEntity(&smallEnemies, 0.0f);
-    updateEntity(&mediumEnemies, 0.0f);
-    updateEntity(&largeEnemies, 0.0f);
-    updateEntity(&playerBullets, 32.0f);
-    updateEntity(&enemyBullets, 32.0f);
+    updateEntities(&smallEnemies, 0.0f);
+    updateEntities(&mediumEnemies, 0.0f);
+    updateEntities(&largeEnemies, 0.0f);
+    updateEntities(&playerBullets, 32.0f);
+    updateEntities(&enemyBullets, 32.0f);
 
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBullet.collisionBox;
     for (uint8_t i = 0; i < playerBullets.count; ++i) {
