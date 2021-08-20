@@ -147,63 +147,26 @@ static void spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, float
 
 static void firePlayerBullet(float x, float y) {
     if (
-        playerBullets.count == RENDERER_DRAWLIST_MAX || 
         ship.bulletThrottle > 0 || 
         ship.deadCounter > 0
     ) {
         return;
     }
 
-    Entity* bullet = playerBullets.entities + playerBullets.count;
-
-    bullet->position = sprites_playerBullet.positions + playerBullets.count * 2;
-    bullet->currentSpritePanel = sprites_playerBullet.currentSpritePanels + playerBullets.count * 2;
-    bullet->whiteOut = sprites_playerBullet.whiteOut + playerBullets.count;
-
-    bullet->position[0] = x;
-    bullet->position[1] = y;
-    bullet->velocity[0] = 0.0f;
-    bullet->velocity[1] = SHIP_BULLET_VELOCITY;
-    bullet->sprite = &sprites_playerBullet;
-    bullet->animationTick = 0;
-    bullet->currentAnimation = 0;
-
-    updateAnimationPanel(bullet);
+    spawnEntity(&playerBullets, &sprites_playerBullet, x, y, 0.0f, SHIP_BULLET_VELOCITY, 0);
     platform_playSound(shipBulletSound, false);
-
-    ++playerBullets.count;
 }
 
 static void fireEnemyBullet(float x, float y) {
-    if (enemyBullets.count == RENDERER_DRAWLIST_MAX) {
-        return;
-    }
-
-    Entity* bullet = enemyBullets.entities + enemyBullets.count;
-
-    bullet->position = sprites_enemyBullet.positions + enemyBullets.count * 2;
-    bullet->currentSpritePanel = sprites_enemyBullet.currentSpritePanels + enemyBullets.count * 2;
-    bullet->whiteOut = sprites_enemyBullet.whiteOut + enemyBullets.count;
-
-    bullet->position[0] = x;
-    bullet->position[1] = y;
-    bullet->sprite = &sprites_enemyBullet;
-    bullet->animationTick = 0;
-
     float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] / 2.0f;
     float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] / 2.0f;
     float dx = ship.position[0] - x;
     float dy = ship.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
-    bullet->velocity[0] = (dx / d) * ENEMY_BULLET_SPEED;
-    bullet->velocity[1] = (dy / d) * ENEMY_BULLET_SPEED;
-    bullet->currentAnimation = 0;
+    spawnEntity(&enemyBullets, &sprites_enemyBullet, x, y, (dx / d) * ENEMY_BULLET_SPEED, (dy / d) * ENEMY_BULLET_SPEED, 0);
 
     platform_playSound(enemyBulletSound, false);
-    updateAnimationPanel(&enemyBullets.entities[enemyBullets.count]);
-
-    ++enemyBullets.count;
 }
 
 static void killEntity(EntityList* list, uint8_t i) {
