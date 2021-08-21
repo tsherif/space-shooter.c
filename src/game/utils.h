@@ -25,7 +25,7 @@
 #define _GAME_UTILS_H_
 
 
-// Allows for use of the mixin struct members by directly
+// Allows for use of the mixin struct members directly
 // or through the named struct.
 #define MIXIN_STRUCT(type, name) union { type; type name; }
 
