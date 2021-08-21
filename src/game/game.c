@@ -78,7 +78,7 @@ static PlatformSound* enemyBulletSound;
 static PlatformSound* explosionSound;
 static PlatformSound* enemyHit;
 
-static Player ship = { .sprite = &sprites_ship };
+static Player player = { .sprite = &sprites_ship };
 static EntitiesList smallEnemies;
 static EntitiesList mediumEnemies;
 static EntitiesList largeEnemies;
@@ -94,8 +94,8 @@ static float randomRange(float min, float max) {
 
 static void firePlayerBullet(float x, float y) {
     if (
-        ship.bulletThrottle > 0 || 
-        ship.deadCounter > 0
+        player.bulletThrottle > 0 || 
+        player.deadCounter > 0
     ) {
         return;
     }
@@ -106,14 +106,14 @@ static void firePlayerBullet(float x, float y) {
         .vy = SHIP_BULLET_VELOCITY
     });
     platform_playSound(shipBulletSound, false);
-    ship.bulletThrottle = SHIP_BULLET_THROTTLE;
+    player.bulletThrottle = SHIP_BULLET_THROTTLE;
 }
 
 static void fireEnemyBullet(float x, float y) {
-    float shipCenterX = ship.position[0] + ship.sprite->panelDims[0] / 2.0f;
-    float shipCenterY = ship.position[1] + ship.sprite->panelDims[1] / 2.0f;
-    float dx = ship.position[0] - x;
-    float dy = ship.position[1] - y;
+    float shipCenterX = player.position[0] + player.sprite->panelDims[0] / 2.0f;
+    float shipCenterY = player.position[1] + player.sprite->panelDims[1] / 2.0f;
+    float dx = player.position[0] - x;
+    float dy = player.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
     entities_spawn(&enemyBullets, &sprites_enemyBullet, &(EntitiesSpawnOptions) {
@@ -244,10 +244,10 @@ void game_init(void) {
 
     platform_playSound(music, true);
 
-    ship.position = sprites_ship.positions;
-    ship.currentSpritePanel = sprites_ship.currentSpritePanels;
-    ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
-    ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
+    player.position = sprites_ship.positions;
+    player.currentSpritePanel = sprites_ship.currentSpritePanels;
+    player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
+    player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
 
     entities_fromText(&textEntities, &sprites_text, GAME_WIDTH / 2.0f - 80.0f, 20.0f, "space-shooter.c", 0.5f);
 
@@ -265,7 +265,7 @@ void game_init(void) {
     sprites_playerBullet.texture = bulletTexture;
     sprites_enemyBullet.texture = bulletTexture;
 
-    entities_setAnimation(&ship.entity, SPRITES_SHIP_CENTER);
+    entities_setAnimation(&player.entity, SPRITES_SHIP_CENTER);
 }
 
 static int tick = 0;
@@ -323,30 +323,30 @@ void game_update(void) {
         }  
     }
 
-    if (ship.bulletThrottle > 0) {
-        --ship.bulletThrottle; 
+    if (player.bulletThrottle > 0) {
+        --player.bulletThrottle; 
     }
 
-    if (ship.deadCounter > 0) {
-        --ship.deadCounter;
+    if (player.deadCounter > 0) {
+        --player.deadCounter;
     } else {
-        ship.position[0] += ship.velocity[0];
-        ship.position[1] += ship.velocity[1];
+        player.position[0] += player.velocity[0];
+        player.position[1] += player.velocity[1];
 
-        if (ship.position[0] < 0.0f) {
-            ship.position[0] = 0.0f;
+        if (player.position[0] < 0.0f) {
+            player.position[0] = 0.0f;
         }
 
-        if (ship.position[0] + ship.sprite->panelDims[0] > GAME_WIDTH) {
-            ship.position[0] = GAME_WIDTH - ship.sprite->panelDims[0];
+        if (player.position[0] + player.sprite->panelDims[0] > GAME_WIDTH) {
+            player.position[0] = GAME_WIDTH - player.sprite->panelDims[0];
         }
 
-        if (ship.position[1] < 0.0f) {
-            ship.position[1] = 0.0f;
+        if (player.position[1] < 0.0f) {
+            player.position[1] = 0.0f;
         }
 
-        if (ship.position[1] + ship.sprite->panelDims[1] > GAME_HEIGHT) {
-            ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[1];
+        if (player.position[1] + player.sprite->panelDims[1] > GAME_HEIGHT) {
+            player.position[1] = GAME_HEIGHT - player.sprite->panelDims[1];
         }
 
         for (uint8_t i = 0; i < smallEnemies.count; ++i) {
@@ -369,12 +369,12 @@ void game_update(void) {
 
         Sprites_CollisionBox* shipCollisionBox = &sprites_ship.collisionBox;
         float shipMin[] = {
-            ship.position[0] + shipCollisionBox->min[0],
-            ship.position[1] + shipCollisionBox->min[1]
+            player.position[0] + shipCollisionBox->min[0],
+            player.position[1] + shipCollisionBox->min[1]
         };
         float shipMax[] = {
-            ship.position[0] + shipCollisionBox->max[0],
-            ship.position[1] + shipCollisionBox->max[1]
+            player.position[0] + shipCollisionBox->max[0],
+            player.position[1] + shipCollisionBox->max[1]
         };
 
 
@@ -394,22 +394,22 @@ void game_update(void) {
 
         if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
             entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
-                .x = ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
-                .y = ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
+                .x = player.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
+                .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
             });
 
             platform_playSound(explosionSound, false);
-            ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
-            ship.position[1] = GAME_HEIGHT - ship.sprite->panelDims[0] * 3.0f;
-            ship.deadCounter = SHIP_DEAD_COUNTER;
+            player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
+            player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
+            player.deadCounter = SHIP_DEAD_COUNTER;
                     
         }
     }
 
     if (tick == 0) {
-        uint8_t count = ship.sprite->animations[ship.currentAnimation].numFrames;
-        ship.animationTick = (ship.animationTick + 1) % count;
-        entities_updateAnimationPanel(&ship.entity);
+        uint8_t count = player.sprite->animations[player.currentAnimation].numFrames;
+        player.animationTick = (player.animationTick + 1) % count;
+        entities_updateAnimationPanel(&player.entity);
 
         entities_updateAnimations(&playerBullets);  
         entities_updateAnimations(&smallEnemies);
@@ -430,54 +430,54 @@ void game_resize(int width, int height) {
 
 void game_keyboard(GameKeyboard* inputKeys) {
     if (inputKeys->left) {
-        ship.velocity[0] = -SHIP_VELOCITY;
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_LEFT);
+        player.velocity[0] = -SHIP_VELOCITY;
+        entities_setAnimation(&player.entity, SPRITES_SHIP_LEFT);
     } else if (inputKeys->right) {
-        ship.velocity[0] = SHIP_VELOCITY;
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_RIGHT);
+        player.velocity[0] = SHIP_VELOCITY;
+        entities_setAnimation(&player.entity, SPRITES_SHIP_RIGHT);
     } else {
-        ship.velocity[0] = 0.0f;
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_CENTER);
+        player.velocity[0] = 0.0f;
+        entities_setAnimation(&player.entity, SPRITES_SHIP_CENTER);
     }
 
     if (inputKeys->up) {
-        ship.velocity[1] = -SHIP_VELOCITY;
+        player.velocity[1] = -SHIP_VELOCITY;
     } else if (inputKeys->down) {
-        ship.velocity[1] = SHIP_VELOCITY;
+        player.velocity[1] = SHIP_VELOCITY;
     } else {
-        ship.velocity[1] = 0.0f;
+        player.velocity[1] = 0.0f;
     }
 
     if (inputKeys->space) {
-        firePlayerBullet(ship.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, ship.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
+        firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
     }
 }
 
 void game_controller(GameController* controllerInput) {
-    ship.velocity[0] = SHIP_VELOCITY * controllerInput->leftStickX;
-    ship.velocity[1] = -SHIP_VELOCITY * controllerInput->leftStickY;
+    player.velocity[0] = SHIP_VELOCITY * controllerInput->leftStickX;
+    player.velocity[1] = -SHIP_VELOCITY * controllerInput->leftStickY;
 
-    if (ship.velocity[0] < -1.0f) {
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_LEFT);
-    } else if (ship.velocity[0] < 0.0f) {
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_CENTER_LEFT);
-    } else if (ship.velocity[0] > 1.0f) {
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_RIGHT);
-    } else if (ship.velocity[0] > 0.0f) {
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_CENTER_RIGHT);
+    if (player.velocity[0] < -1.0f) {
+        entities_setAnimation(&player.entity, SPRITES_SHIP_LEFT);
+    } else if (player.velocity[0] < 0.0f) {
+        entities_setAnimation(&player.entity, SPRITES_SHIP_CENTER_LEFT);
+    } else if (player.velocity[0] > 1.0f) {
+        entities_setAnimation(&player.entity, SPRITES_SHIP_RIGHT);
+    } else if (player.velocity[0] > 0.0f) {
+        entities_setAnimation(&player.entity, SPRITES_SHIP_CENTER_RIGHT);
     } else {
-        entities_setAnimation(&ship.entity, SPRITES_SHIP_CENTER);
+        entities_setAnimation(&player.entity, SPRITES_SHIP_CENTER);
     }
 
     if (controllerInput->aButton) {
-        firePlayerBullet(ship.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, ship.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
+        firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
     }
 }
 
 void game_draw(void) {
     renderer_beforeFrame();
 
-    if (ship.deadCounter == 0) {
+    if (player.deadCounter == 0) {
         renderer_draw((Renderer_RenderList *) &sprites_ship, 1);
     }
 
