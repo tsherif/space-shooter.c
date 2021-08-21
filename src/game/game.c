@@ -43,19 +43,19 @@
 #define SHIP_DEAD_COUNTER 500
 
 #define SMALL_ENEMY_VELOCITY 0.2f
-#define SMALL_ENEMY_SPAWN_PROBABILITY 0.001f
+#define SMALL_ENEMY_SPAWN_PROBABILITY 0.002f
 #define SMALL_ENEMY_BULLET_PROBABILITY 0.002f
 #define SMALL_ENEMY_HEALTH 1
 
 #define MEDIUM_ENEMY_VELOCITY 0.1f
-#define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0004f
+#define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0006f
 #define MEDIUM_ENEMY_BULLET_PROBABILITY 0.005f
-#define MEDIUM_ENEMY_HEALTH 3
+#define MEDIUM_ENEMY_HEALTH 5
 
 #define LARGE_ENEMY_VELOCITY 0.04f
-#define LARGE_ENEMY_SPAWN_PROBABILITY 0.0001f
+#define LARGE_ENEMY_SPAWN_PROBABILITY 0.0002f
 #define LARGE_ENEMY_BULLET_PROBABILITY 0.02f
-#define LARGE_ENEMY_HEALTH 5
+#define LARGE_ENEMY_HEALTH 10
 
 #define ENEMY_BULLET_SPEED 0.3f
 
@@ -273,7 +273,7 @@ void game_update(void) {
 
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
         entities_spawn(&smallEnemies, &sprites_smallEnemy, &(EntitiesSpawnOptions) {
-            .x = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
+            .x = randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
             .vy = SMALL_ENEMY_VELOCITY,
             .health = SMALL_ENEMY_HEALTH
@@ -282,7 +282,7 @@ void game_update(void) {
 
     if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY) {
         entities_spawn(&mediumEnemies, &sprites_mediumEnemy, &(EntitiesSpawnOptions) {
-            .x = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
+            .x = randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
             .vy = MEDIUM_ENEMY_VELOCITY,
             .health = MEDIUM_ENEMY_HEALTH
@@ -291,7 +291,7 @@ void game_update(void) {
 
     if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY) {
         entities_spawn(&largeEnemies, &sprites_largeEnemy, &(EntitiesSpawnOptions) {
-            .x = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
+            .x = randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
             .vy = LARGE_ENEMY_VELOCITY,
             .health = LARGE_ENEMY_HEALTH
