@@ -83,6 +83,16 @@ typedef struct {
     uint8_t count;
 } EntityList;
 
+typedef struct {
+    float x;
+    float y;
+    float vx;
+    float vy;
+    uint8_t currentAnimation;
+    uint8_t health;
+    float scale;
+} SpawnEntityOptions;
+
 static PlatformSound* music;
 static PlatformSound* shipBulletSound;
 static PlatformSound* enemyBulletSound;
@@ -120,9 +130,9 @@ static void setEntityAnimation(Entity* character, uint8_t animation) {
     updateAnimationPanel(character);
 }
 
-static Entity* spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, float y, float vx, float vy, uint8_t health) {
+static void spawnEntity(EntityList* list, Sprites_Sprite* sprite, SpawnEntityOptions* opts) {
     if (list->count == RENDERER_DRAWLIST_MAX) {
-        return NULL;
+        return;
     }
 
     Entity* newEntity = list->entities + list->count;
@@ -132,20 +142,19 @@ static Entity* spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, fl
     newEntity->whiteOut = sprite->whiteOut + list->count;
     newEntity->scale = sprite->scale + list->count;
 
-    newEntity->position[0] = x; 
-    newEntity->position[1] = y;
-    newEntity->velocity[0] = vx;
-    newEntity->velocity[1] = vy;
+    newEntity->position[0] = opts->x; 
+    newEntity->position[1] = opts->y;
+    newEntity->velocity[0] = opts->vx;
+    newEntity->velocity[1] = opts->vy;
     newEntity->sprite = sprite;
-    newEntity->currentAnimation = 0;
+    newEntity->currentAnimation = opts->currentAnimation;
     newEntity->animationTick = 0;
-    newEntity->health = health;
+    newEntity->scale[0] = opts->scale;
+    newEntity->health = opts->health;
 
     updateAnimationPanel(newEntity);
 
     ++list->count;
-
-    return newEntity;
 }
 
 static void firePlayerBullet(float x, float y) {
@@ -156,7 +165,11 @@ static void firePlayerBullet(float x, float y) {
         return;
     }
 
-    spawnEntity(&playerBullets, &sprites_playerBullet, x, y, 0.0f, SHIP_BULLET_VELOCITY, 0);
+    spawnEntity(&playerBullets, &sprites_playerBullet, &(SpawnEntityOptions) {
+        .x = x, 
+        .y = y, 
+        .vy = SHIP_BULLET_VELOCITY
+    });
     platform_playSound(shipBulletSound, false);
     ship.bulletThrottle = SHIP_BULLET_THROTTLE;
 }
@@ -168,7 +181,12 @@ static void fireEnemyBullet(float x, float y) {
     float dy = ship.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
-    spawnEntity(&enemyBullets, &sprites_enemyBullet, x, y, (dx / d) * ENEMY_BULLET_SPEED, (dy / d) * ENEMY_BULLET_SPEED, 0);
+    spawnEntity(&enemyBullets, &sprites_enemyBullet, &(SpawnEntityOptions) {
+        .x = x,
+        .y = y,
+        .vx = (dx / d) * ENEMY_BULLET_SPEED,
+        .vy = (dy / d) * ENEMY_BULLET_SPEED
+    });
 
     platform_playSound(enemyBulletSound, false);
 }
@@ -249,17 +267,13 @@ static void textToEntities(float x, float y, const char* text, float scale) {
             continue;
         }
 
-        Entity* letter = spawnEntity(
-            &textEntities,
-            &sprites_text, 
-            x + i * sprites_text.panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
-            y,
-            0.0f, 0.0f, 0
-        );
+        spawnEntity(&textEntities, &sprites_text, &(SpawnEntityOptions) { 
+            .x = x + i * sprites_text.panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
+            .y = y,
+            .scale = scale,
+            .currentAnimation = animationIndex
+        });
 
-        letter->scale[0] = scale;
-        letter->currentAnimation = animationIndex;
-        
         ++i;
     }
 
@@ -343,11 +357,10 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
             hit = true;
             --enemy->health;
             if (enemy->health == 0) {
-                spawnEntity(
-                    &explosions, &sprites_explosion,
-                    enemy->position[0] + explosionXOffset, enemy->position[1] + explosionYOffset, 
-                    0.0f, 0.0f, 0
-                );
+                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
+                    .x = enemy->position[0] + explosionXOffset, 
+                    .y = enemy->position[1] + explosionYOffset
+                });
                 platform_playSound(explosionSound, false);
                 killEntity(enemies, j);
             } else {
@@ -364,39 +377,30 @@ static int tick = 0;
 void game_update(void) {
 
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
-        spawnEntity(
-            &smallEnemies,
-            &sprites_smallEnemy,
-            randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
-            -sprites_smallEnemy.panelDims[1], 
-            0.0f,
-            SMALL_ENEMY_VELOCITY,
-            SMALL_ENEMY_HEALTH
-        ); 
+        spawnEntity(&smallEnemies, &sprites_smallEnemy, &(SpawnEntityOptions) {
+            .x = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
+            .y = -sprites_smallEnemy.panelDims[1], 
+            .vy = SMALL_ENEMY_VELOCITY,
+            .health = SMALL_ENEMY_HEALTH
+        }); 
     }
 
     if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY) {
-        spawnEntity(
-            &mediumEnemies,
-            &sprites_mediumEnemy,
-            randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_mediumEnemy.panelDims[0]),
-            -sprites_mediumEnemy.panelDims[1], 
-            0.0f, 
-            MEDIUM_ENEMY_VELOCITY,
-            MEDIUM_ENEMY_HEALTH
-        ); 
+        spawnEntity(&mediumEnemies, &sprites_mediumEnemy, &(SpawnEntityOptions) {
+            .x = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
+            .y = -sprites_mediumEnemy.panelDims[1], 
+            .vy = MEDIUM_ENEMY_VELOCITY,
+            .health = MEDIUM_ENEMY_HEALTH
+        });
     }
 
     if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY) {
-        spawnEntity(
-            &largeEnemies,
-            &sprites_largeEnemy,
-            randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_largeEnemy.panelDims[0]),
-            -sprites_largeEnemy.panelDims[1], 
-            0.0f, 
-            LARGE_ENEMY_VELOCITY,
-            LARGE_ENEMY_HEALTH
-        ); 
+        spawnEntity(&largeEnemies, &sprites_largeEnemy, &(SpawnEntityOptions) {
+            .x = randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
+            .y = -sprites_largeEnemy.panelDims[1], 
+            .vy = LARGE_ENEMY_VELOCITY,
+            .health = LARGE_ENEMY_HEALTH
+        });
     }
 
     updateEntities(&smallEnemies, 0.0f);
@@ -510,11 +514,10 @@ void game_update(void) {
             };      
             if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
                 shipHit = true;
-                spawnEntity(
-                    &explosions, &sprites_explosion,
-                    enemy->position[0] + SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, enemy->position[1] + SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET, 
-                    0.0f, 0.0f, 0
-                );
+                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
+                    .x = enemy->position[0] + SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
+                    .y = enemy->position[1] + SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET 
+                });
                 killEntity(&smallEnemies, i);
             }   
         }
@@ -532,11 +535,10 @@ void game_update(void) {
             };      
             if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
                 shipHit = true;
-                spawnEntity(
-                    &explosions, &sprites_explosion,
-                    enemy->position[0] + SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, enemy->position[1] + SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET, 
-                    0.0f, 0.0f, 0
-                );
+                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
+                    .x = enemy->position[0] + SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
+                    .y = enemy->position[1] + SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET 
+                });
                 killEntity(&mediumEnemies, i);
             }   
         }
@@ -554,21 +556,19 @@ void game_update(void) {
             };      
             if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
                 shipHit = true;
-                spawnEntity(
-                    &explosions, &sprites_explosion,
-                    enemy->position[0] + SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, enemy->position[1] + SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET,
-                    0.0f, 0.0f, 0
-                );
+                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
+                    .x = enemy->position[0] + SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
+                    .y = enemy->position[1] + SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET 
+                });
                 killEntity(&largeEnemies, i);
             }   
         }
 
         if (shipHit) {
-            spawnEntity(
-                &explosions, &sprites_explosion,
-                ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET, ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET, 
-                0.0f, 0.0f, 0
-            );
+            spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
+                .x = ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
+                .y = ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
+            });
 
             platform_playSound(explosionSound, false);
             ship.position[0] = GAME_WIDTH / 2 - ship.sprite->panelDims[0] / 2;
