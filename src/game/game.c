@@ -93,6 +93,11 @@ typedef struct {
     float scale;
 } SpawnEntityOptions;
 
+typedef struct {
+    float xOffset;
+    float yOffset;
+} PlayerCollisionExplosionOptions;
+
 static PlatformSound* music;
 static PlatformSound* shipBulletSound;
 static PlatformSound* enemyBulletSound;
@@ -340,7 +345,7 @@ bool boxCollision(float min1[2], float max1[2], float min2[2], float max2[2]) {
     return true;
 }
 
-bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* enemies, Sprites_CollisionBox* enemyCollisionBox, float explosionXOffset, float explosionYOffset) {
+bool checkPlayerBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* enemies, Sprites_CollisionBox* enemyCollisionBox, float explosionXOffset, float explosionYOffset) {
     bool hit = false;
     for (uint8_t j = 0; j < enemies->count; ++j) {
         Entity* enemy = enemies->entities + j;
@@ -371,6 +376,34 @@ bool checkBulletCollision(float bulletMin[2], float bulletMax[2], EntityList* en
     } 
 
     return hit;
+}
+
+bool checkPlayerCollision(float playerMin[2], float playerMax[2], EntityList* list, Sprites_Sprite* sprite, PlayerCollisionExplosionOptions* opts) {
+    bool playerHit = false;
+    Sprites_CollisionBox* collisionBox = &sprite->collisionBox;
+    for (uint8_t i = 0; i < list->count; ++i) {
+        Entity* entity = list->entities + i;
+        float entityMin[] = {
+            entity->position[0] + collisionBox->min[0],
+            entity->position[1] + collisionBox->min[1]
+        };
+        float entityMax[] = {
+            entity->position[0] + collisionBox->max[0],
+            entity->position[1] + collisionBox->max[1]
+        };      
+        if (boxCollision(playerMin, playerMax, entityMin, entityMax)) {
+            playerHit = true;
+            if (opts) {
+                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
+                    .x = entity->position[0] + opts->xOffset,
+                    .y = entity->position[1] + opts->yOffset 
+                });     
+            }
+            killEntity(list, i);
+        }   
+    }
+
+    return playerHit;
 }
 
 static int tick = 0;
@@ -421,9 +454,9 @@ void game_update(void) {
             bullet->position[1] + playerBulletCollisionBox->max[1]
         };
         
-        if (checkBulletCollision(bulletMin, bulletMax, &smallEnemies, &sprites_smallEnemy.collisionBox, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET) ||
-            checkBulletCollision(bulletMin, bulletMax, &mediumEnemies, &sprites_mediumEnemy.collisionBox, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET) ||
-            checkBulletCollision(bulletMin, bulletMax, &largeEnemies, &sprites_largeEnemy.collisionBox, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET)) {
+        if (checkPlayerBulletCollision(bulletMin, bulletMax, &smallEnemies, &sprites_smallEnemy.collisionBox, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET) ||
+            checkPlayerBulletCollision(bulletMin, bulletMax, &mediumEnemies, &sprites_mediumEnemy.collisionBox, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET) ||
+            checkPlayerBulletCollision(bulletMin, bulletMax, &largeEnemies, &sprites_largeEnemy.collisionBox, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET)) {
             killEntity(&playerBullets, i);
         }  
     }
@@ -483,88 +516,21 @@ void game_update(void) {
         };
 
 
-        bool shipHit = false;
-        Sprites_CollisionBox* enemyBulletCollisionBox = &sprites_enemyBullet.collisionBox;
-        for (uint8_t i = 0; i < enemyBullets.count; ++i) {
-            Entity* bullet = enemyBullets.entities + i;
-            float bulletMin[] = {
-                bullet->position[0] + enemyBulletCollisionBox->min[0],
-                bullet->position[1] + enemyBulletCollisionBox->min[1]
-            };
-            float bulletMax[] = {
-                bullet->position[0] + enemyBulletCollisionBox->max[0],
-                bullet->position[1] + enemyBulletCollisionBox->max[1]
-            };      
-            if (boxCollision(shipMin, shipMax, bulletMin, bulletMax)) {
-                shipHit = true;
-                killEntity(&enemyBullets, i);
-            }   
-        }
+        bool bulletHit = checkPlayerCollision(shipMin, shipMax, &enemyBullets, &sprites_enemyBullet, NULL);
+        bool smallEnemyHit = checkPlayerCollision(shipMin, shipMax, &smallEnemies, &sprites_smallEnemy, &(PlayerCollisionExplosionOptions) {
+            .xOffset = SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
+            .yOffset = SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET
+        });
+        bool mediumEnemyHit = checkPlayerCollision(shipMin, shipMax, &mediumEnemies, &sprites_mediumEnemy, &(PlayerCollisionExplosionOptions) {
+            .xOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
+            .yOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET
+        });
+        bool largeEnemyHit = checkPlayerCollision(shipMin, shipMax, &largeEnemies, &sprites_largeEnemy, &(PlayerCollisionExplosionOptions) {
+            .xOffset = SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
+            .yOffset = SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET
+        });
 
-        Sprites_CollisionBox* smallEnemyCollisionBox = &sprites_smallEnemy.collisionBox;
-        for (uint8_t i = 0; i < smallEnemies.count; ++i) {
-            Entity* enemy = smallEnemies.entities + i;
-            float enemyMin[] = {
-                enemy->position[0] + smallEnemyCollisionBox->min[0],
-                enemy->position[1] + smallEnemyCollisionBox->min[1]
-            };
-            float enemyMax[] = {
-                enemy->position[0] + smallEnemyCollisionBox->max[0],
-                enemy->position[1] + smallEnemyCollisionBox->max[1]
-            };      
-            if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
-                shipHit = true;
-                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
-                    .x = enemy->position[0] + SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
-                    .y = enemy->position[1] + SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET 
-                });
-                killEntity(&smallEnemies, i);
-            }   
-        }
-
-        Sprites_CollisionBox* mediumEnemyCollisionBox = &sprites_mediumEnemy.collisionBox;
-        for (uint8_t i = 0; i < mediumEnemies.count; ++i) {
-            Entity* enemy = mediumEnemies.entities + i;
-            float enemyMin[] = {
-                enemy->position[0] + mediumEnemyCollisionBox->min[0],
-                enemy->position[1] + mediumEnemyCollisionBox->min[1]
-            };
-            float enemyMax[] = {
-                enemy->position[0] + mediumEnemyCollisionBox->max[0],
-                enemy->position[1] + mediumEnemyCollisionBox->max[1]
-            };      
-            if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
-                shipHit = true;
-                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
-                    .x = enemy->position[0] + SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
-                    .y = enemy->position[1] + SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET 
-                });
-                killEntity(&mediumEnemies, i);
-            }   
-        }
-
-        Sprites_CollisionBox* largeEnemyCollisionBox = &sprites_largeEnemy.collisionBox;
-        for (uint8_t i = 0; i < largeEnemies.count; ++i) {
-            Entity* enemy = largeEnemies.entities + i;
-            float enemyMin[] = {
-                enemy->position[0] + largeEnemyCollisionBox->min[0],
-                enemy->position[1] + largeEnemyCollisionBox->min[1]
-            };
-            float enemyMax[] = {
-                enemy->position[0] + largeEnemyCollisionBox->max[0],
-                enemy->position[1] + largeEnemyCollisionBox->max[1]
-            };      
-            if (boxCollision(shipMin, shipMax, enemyMin, enemyMax)) {
-                shipHit = true;
-                spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
-                    .x = enemy->position[0] + SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
-                    .y = enemy->position[1] + SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET 
-                });
-                killEntity(&largeEnemies, i);
-            }   
-        }
-
-        if (shipHit) {
+        if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
             spawnEntity(&explosions, &sprites_explosion, &(SpawnEntityOptions) {
                 .x = ship.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
                 .y = ship.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
