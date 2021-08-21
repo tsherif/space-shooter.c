@@ -120,9 +120,9 @@ static void setEntityAnimation(Entity* character, uint8_t animation) {
     updateAnimationPanel(character);
 }
 
-static void spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, float y, float vx, float vy, uint8_t health) {
+static Entity* spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, float y, float vx, float vy, uint8_t health) {
     if (list->count == RENDERER_DRAWLIST_MAX) {
-        return;
+        return NULL;
     }
 
     Entity* newEntity = list->entities + list->count;
@@ -130,11 +130,12 @@ static void spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, float
     newEntity->position = sprite->positions + list->count * 2;
     newEntity->currentSpritePanel = sprite->currentSpritePanels + list->count * 2;
     newEntity->whiteOut = sprite->whiteOut + list->count;
+    newEntity->scale = sprite->scale + list->count;
 
-    newEntity->position[0] = x; // randomRange(0.0f, 1.0f) * (GAME_WIDTH - sprite->panelDims[0]);
-    newEntity->position[1] = y; //-sprite->panelDims[1];
-    newEntity->velocity[0] = vx; //0.0f;
-    newEntity->velocity[1] = vy; //velocity;
+    newEntity->position[0] = x; 
+    newEntity->position[1] = y;
+    newEntity->velocity[0] = vx;
+    newEntity->velocity[1] = vy;
     newEntity->sprite = sprite;
     newEntity->currentAnimation = 0;
     newEntity->animationTick = 0;
@@ -143,6 +144,8 @@ static void spawnEntity(EntityList* list, Sprites_Sprite* sprite, float x, float
     updateAnimationPanel(newEntity);
 
     ++list->count;
+
+    return newEntity;
 }
 
 static void firePlayerBullet(float x, float y) {
@@ -237,9 +240,8 @@ static void updateEntityAnimations(EntityList* list) {
 
 static void textToEntities(float x, float y, const char* text, float scale) {
     uint8_t i = 0;
-    uint8_t start = textEntities.count;
 
-    while (text[i] && i + start < RENDERER_DRAWLIST_MAX) {
+    while (text[i] && textEntities.count < RENDERER_DRAWLIST_MAX) {
         int8_t animationIndex = sprites_charToAnimationIndex(text[i]);
 
         if (animationIndex < 0) {
@@ -247,25 +249,17 @@ static void textToEntities(float x, float y, const char* text, float scale) {
             continue;
         }
 
-        Entity* letter = textEntities.entities + i + start;
+        Entity* letter = spawnEntity(
+            &textEntities,
+            &sprites_text, 
+            x + i * sprites_text.panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
+            y,
+            0.0f, 0.0f, 0
+        );
 
-        letter->position = sprites_text.positions + textEntities.count * 2;
-        letter->currentSpritePanel = sprites_text.currentSpritePanels + textEntities.count * 2;
-        letter->whiteOut = sprites_text.whiteOut + textEntities.count;
-        letter->scale = sprites_text.scale + textEntities.count;
-
-        letter->position[0] = x + i * sprites_text.panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE;
-        letter->position[1] = y;
-        letter->velocity[0] = 0.0f;
-        letter->velocity[1] = 0.0f;
         letter->scale[0] = scale;
-        letter->sprite = &sprites_text;
         letter->currentAnimation = animationIndex;
-        letter->animationTick = 0;
-
-        updateAnimationPanel(letter);
         
-        ++textEntities.count;
         ++i;
     }
 
