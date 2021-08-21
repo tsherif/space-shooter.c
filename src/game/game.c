@@ -146,6 +146,93 @@ static void updateEntities(EntitiesList* list, float killBuffer) {
     }
 }
 
+static bool boxCollision(float min1[2], float max1[2], float min2[2], float max2[2]) {
+     float correctionFactor = (1.0 - COLLISION_SCALE) * 0.5;
+     float xCorrection1 = (max1[0] - min1[0]) * correctionFactor;
+     float yCorrection1 = (max1[1] - min1[1]) * correctionFactor;
+     float xCorrection2 = (max2[0] - min2[0]) * correctionFactor;
+     float yCorrection2 = (max2[1] - min2[1]) * correctionFactor;
+ 
+    if (min1[0] + xCorrection1 > max2[0] - xCorrection2) {
+        return false;
+    }
+
+    if (min2[0] + xCorrection2 > max1[0] - xCorrection1) {
+        return false;
+    }
+
+    if (min1[1] + yCorrection1 > max2[1] - yCorrection2) {
+        return false;
+    }
+
+    if (min2[1] + yCorrection2 > max1[1] - yCorrection1) {
+        return false;
+    }
+
+    return true;
+}
+
+static bool checkPlayerBulletCollision(float bulletMin[2], float bulletMax[2], EntitiesList* enemies, Sprites_CollisionBox* enemyCollisionBox, float explosionXOffset, float explosionYOffset) {
+    bool hit = false;
+    for (uint8_t j = 0; j < enemies->count; ++j) {
+        EntitiesEntity* enemy = enemies->entities + j;
+        float enemyMin[] = {
+            enemy->position[0] + enemyCollisionBox->min[0],
+            enemy->position[1] + enemyCollisionBox->min[1]
+        };
+        float enemyMax[] = {
+            enemy->position[0] + enemyCollisionBox->max[0],
+            enemy->position[1] + enemyCollisionBox->max[1]
+        };
+        
+        if (boxCollision(bulletMin, bulletMax, enemyMin, enemyMax)) {
+            hit = true;
+            --enemy->health;
+            if (enemy->health == 0) {
+                entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
+                    .x = enemy->position[0] + explosionXOffset, 
+                    .y = enemy->position[1] + explosionYOffset
+                });
+                platform_playSound(explosionSound, false);
+                entities_kill(enemies, j);
+            } else {
+                platform_playSound(enemyHit, false);
+                enemy->whiteOut[0] = 1;
+            }
+        }    
+    } 
+
+    return hit;
+}
+
+static bool checkPlayerCollision(float playerMin[2], float playerMax[2], EntitiesList* list, Sprites_Sprite* sprite, PlayerCollisionExplosionOptions* opts) {
+    bool playerHit = false;
+    Sprites_CollisionBox* collisionBox = &sprite->collisionBox;
+    for (uint8_t i = 0; i < list->count; ++i) {
+        EntitiesEntity* entity = list->entities + i;
+        float entityMin[] = {
+            entity->position[0] + collisionBox->min[0],
+            entity->position[1] + collisionBox->min[1]
+        };
+        float entityMax[] = {
+            entity->position[0] + collisionBox->max[0],
+            entity->position[1] + collisionBox->max[1]
+        };      
+        if (boxCollision(playerMin, playerMax, entityMin, entityMax)) {
+            playerHit = true;
+            if (opts) {
+                entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
+                    .x = entity->position[0] + opts->xOffset,
+                    .y = entity->position[1] + opts->yOffset 
+                });     
+            }
+            entities_kill(list, i);
+        }   
+    }
+
+    return playerHit;
+}
+
 void game_init(void) {
     srand((unsigned int) time(NULL));
 
@@ -179,93 +266,6 @@ void game_init(void) {
     sprites_enemyBullet.texture = bulletTexture;
 
     entities_setAnimation(&ship.entity, SPRITES_SHIP_CENTER);
-}
-
-bool boxCollision(float min1[2], float max1[2], float min2[2], float max2[2]) {
-     float correctionFactor = (1.0 - COLLISION_SCALE) * 0.5;
-     float xCorrection1 = (max1[0] - min1[0]) * correctionFactor;
-     float yCorrection1 = (max1[1] - min1[1]) * correctionFactor;
-     float xCorrection2 = (max2[0] - min2[0]) * correctionFactor;
-     float yCorrection2 = (max2[1] - min2[1]) * correctionFactor;
- 
-    if (min1[0] + xCorrection1 > max2[0] - xCorrection2) {
-        return false;
-    }
-
-    if (min2[0] + xCorrection2 > max1[0] - xCorrection1) {
-        return false;
-    }
-
-    if (min1[1] + yCorrection1 > max2[1] - yCorrection2) {
-        return false;
-    }
-
-    if (min2[1] + yCorrection2 > max1[1] - yCorrection1) {
-        return false;
-    }
-
-    return true;
-}
-
-bool checkPlayerBulletCollision(float bulletMin[2], float bulletMax[2], EntitiesList* enemies, Sprites_CollisionBox* enemyCollisionBox, float explosionXOffset, float explosionYOffset) {
-    bool hit = false;
-    for (uint8_t j = 0; j < enemies->count; ++j) {
-        EntitiesEntity* enemy = enemies->entities + j;
-        float enemyMin[] = {
-            enemy->position[0] + enemyCollisionBox->min[0],
-            enemy->position[1] + enemyCollisionBox->min[1]
-        };
-        float enemyMax[] = {
-            enemy->position[0] + enemyCollisionBox->max[0],
-            enemy->position[1] + enemyCollisionBox->max[1]
-        };
-        
-        if (boxCollision(bulletMin, bulletMax, enemyMin, enemyMax)) {
-            hit = true;
-            --enemy->health;
-            if (enemy->health == 0) {
-                entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
-                    .x = enemy->position[0] + explosionXOffset, 
-                    .y = enemy->position[1] + explosionYOffset
-                });
-                platform_playSound(explosionSound, false);
-                entities_kill(enemies, j);
-            } else {
-                platform_playSound(enemyHit, false);
-                enemy->whiteOut[0] = 1;
-            }
-        }    
-    } 
-
-    return hit;
-}
-
-bool checkPlayerCollision(float playerMin[2], float playerMax[2], EntitiesList* list, Sprites_Sprite* sprite, PlayerCollisionExplosionOptions* opts) {
-    bool playerHit = false;
-    Sprites_CollisionBox* collisionBox = &sprite->collisionBox;
-    for (uint8_t i = 0; i < list->count; ++i) {
-        EntitiesEntity* entity = list->entities + i;
-        float entityMin[] = {
-            entity->position[0] + collisionBox->min[0],
-            entity->position[1] + collisionBox->min[1]
-        };
-        float entityMax[] = {
-            entity->position[0] + collisionBox->max[0],
-            entity->position[1] + collisionBox->max[1]
-        };      
-        if (boxCollision(playerMin, playerMax, entityMin, entityMax)) {
-            playerHit = true;
-            if (opts) {
-                entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
-                    .x = entity->position[0] + opts->xOffset,
-                    .y = entity->position[1] + opts->yOffset 
-                });     
-            }
-            entities_kill(list, i);
-        }   
-    }
-
-    return playerHit;
 }
 
 static int tick = 0;
