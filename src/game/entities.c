@@ -63,7 +63,7 @@ extern void entities_init(EntitiesEntity* entity, EntitiesInitOptions* opts) {
     entity->currentAnimation = opts->currentAnimation;
     entity->animationTick = 0;
     entity->scale[0] = opts->scale > 0.0f ? opts->scale : 1.0f;
-    entity->alpha[0] = 1.0f;
+    entity->alpha[0] = 1.0f - opts->transparency;
     entity->health = opts->health;
 
     entities_updateAnimationPanel(entity);
@@ -120,7 +120,7 @@ extern void updateEntityAnimations(EntitiesList* list) {
     }
 }
 
-extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, float x, float y, const char* text, float scale) {
+extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, const char* text, EntitiesFromTextOptions* opts) {
     uint8_t i = 0;
 
     while (text[i] && list->count < RENDERER_DRAWLIST_MAX) {
@@ -132,9 +132,10 @@ extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, float 
         }
 
         entities_spawn(list, sprite, &(EntitiesInitOptions) { 
-            .x = x + i * sprite->panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
-            .y = y,
-            .scale = scale,
+            .x = opts->x + i * sprite->panelDims[0] * opts->scale * SPRITES_TEXT_SPACING_SCALE,
+            .y = opts->y,
+            .scale = opts->scale,
+            .transparency = opts->transparency,
             .currentAnimation = animationIndex
         });
 

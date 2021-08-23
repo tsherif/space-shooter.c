@@ -52,7 +52,15 @@ typedef struct {
     uint8_t currentAnimation;
     uint8_t health;
     float scale;
+    float transparency;
 } EntitiesInitOptions;
+
+typedef struct {
+    float x;
+    float y;
+    float scale;
+    float transparency;
+} EntitiesFromTextOptions;
 
 extern void entities_updateAnimationPanel(EntitiesEntity* entity);
 extern void entities_setAnimation(EntitiesEntity* entity, uint8_t animation);
@@ -60,6 +68,6 @@ extern void entities_updateAnimations(EntitiesList* list);
 extern void entities_spawn(EntitiesList* list, Sprites_Sprite* sprite, EntitiesInitOptions* opts);
 extern void entities_init(EntitiesEntity* entity, EntitiesInitOptions* opts);
 extern void entities_kill(EntitiesList* list, uint8_t i);
-extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, float x, float y, const char* text, float scale);
+extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, const char* text, EntitiesFromTextOptions* opts);
 
 #endif

@@ -256,7 +256,11 @@ void game_init(void) {
         .y = GAME_HEIGHT - player.sprite->panelDims[1] * 2.0f
     });
 
-    entities_fromText(&textEntities, &sprites_text, GAME_WIDTH / 2.0f - 80.0f, 20.0f, "space-shooter.c", 0.5f);
+    entities_fromText(&textEntities, &sprites_text, "space-shooter.c", &(EntitiesFromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 80.0f,
+        .y = 20.0f, 
+        .scale = 0.5f
+    });
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
