@@ -63,7 +63,7 @@ extern void entities_init(EntitiesEntity* entity, EntitiesInitOptions* opts) {
     entity->currentAnimation = opts->currentAnimation;
     entity->animationTick = 0;
     entity->scale[0] = opts->scale > 0.0f ? opts->scale : 1.0f;
-    entity->alpha[0] = 0.5f;
+    entity->alpha[0] = 1.0f;
     entity->health = opts->health;
 
     entities_updateAnimationPanel(entity);
