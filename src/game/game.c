@@ -429,6 +429,21 @@ void game_update(void) {
         entities_updateAnimations(&enemyBullets);  
         entities_updateAnimations(&explosions);  
 
+        // TODO(Tarek): Just for testing. FIX ME.
+        static float textTransparency = 0.0f;
+        textTransparency += 0.02f;
+        if (textTransparency < 1.0f) {
+            entities_fromText(&textEntities, &sprites_text, "space-shooter.c", &(EntitiesFromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - 80.0f,
+                .y = 20.0f, 
+                .scale = 0.5f,
+                .reset = true,
+                .transparency = textTransparency
+            });
+        } else {
+            textEntities.count = 0;
+        }
+
         tick = 20;
     }
     --tick;
@@ -489,10 +504,8 @@ void game_draw(void) {
     renderer_beforeFrame();
 
     if (player.deadCounter == 0) {
-        renderer_draw((Renderer_RenderList *) &sprites_ship, 1);
+        renderer_draw(&sprites_ship.renderList, 1);
     }
-
-    renderer_draw((Renderer_RenderList *) &sprites_text, textEntities.count);
 
     renderer_draw(&sprites_explosion.renderList, explosions.count);
     renderer_draw(&sprites_smallEnemy.renderList, smallEnemies.count);
@@ -500,4 +513,5 @@ void game_draw(void) {
     renderer_draw(&sprites_largeEnemy.renderList, largeEnemies.count);
     renderer_draw(&sprites_enemyBullet.renderList, enemyBullets.count);
     renderer_draw(&sprites_playerBullet.renderList, playerBullets.count);
+    renderer_draw(&sprites_text.renderList, textEntities.count);
 }

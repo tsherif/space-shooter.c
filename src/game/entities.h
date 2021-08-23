@@ -60,6 +60,7 @@ typedef struct {
     float y;
     float scale;
     float transparency;
+    bool reset;
 } EntitiesFromTextOptions;
 
 extern void entities_updateAnimationPanel(EntitiesEntity* entity);

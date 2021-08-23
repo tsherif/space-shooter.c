@@ -123,6 +123,10 @@ extern void updateEntityAnimations(EntitiesList* list) {
 extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, const char* text, EntitiesFromTextOptions* opts) {
     uint8_t i = 0;
 
+    if (opts->reset) {
+        list->count = 0;
+    }
+
     while (text[i] && list->count < RENDERER_DRAWLIST_MAX) {
         int8_t animationIndex = sprites_charToAnimationIndex(text[i]);
 
