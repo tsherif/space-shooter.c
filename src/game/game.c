@@ -78,7 +78,14 @@ static PlatformSound* enemyBulletSound;
 static PlatformSound* explosionSound;
 static PlatformSound* enemyHit;
 
-static Player player = { .sprite = &sprites_ship };
+static Player player = { 
+    .sprite = &sprites_ship,
+    .position = sprites_ship.positions,
+    .currentSpritePanel = sprites_ship.currentSpritePanels,
+    .whiteOut = sprites_ship.whiteOut,
+    .scale = sprites_ship.scale,
+    .alpha = sprites_ship.alpha
+};
 static EntitiesList smallEnemies;
 static EntitiesList mediumEnemies;
 static EntitiesList largeEnemies;
@@ -100,7 +107,7 @@ static void firePlayerBullet(float x, float y) {
         return;
     }
 
-    entities_spawn(&playerBullets, &sprites_playerBullet, &(EntitiesSpawnOptions) {
+    entities_spawn(&playerBullets, &sprites_playerBullet, &(EntitiesInitOptions) {
         .x = x, 
         .y = y, 
         .vy = SHIP_BULLET_VELOCITY
@@ -116,7 +123,7 @@ static void fireEnemyBullet(float x, float y) {
     float dy = player.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
-    entities_spawn(&enemyBullets, &sprites_enemyBullet, &(EntitiesSpawnOptions) {
+    entities_spawn(&enemyBullets, &sprites_enemyBullet, &(EntitiesInitOptions) {
         .x = x,
         .y = y,
         .vx = (dx / d) * ENEMY_BULLET_SPEED,
@@ -189,7 +196,7 @@ static bool checkPlayerBulletCollision(float bulletMin[2], float bulletMax[2], E
             hit = true;
             --enemy->health;
             if (enemy->health == 0) {
-                entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
+                entities_spawn(&explosions, &sprites_explosion, &(EntitiesInitOptions) {
                     .x = enemy->position[0] + explosionXOffset, 
                     .y = enemy->position[1] + explosionYOffset
                 });
@@ -221,7 +228,7 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
         if (boxCollision(playerMin, playerMax, entityMin, entityMax)) {
             playerHit = true;
             if (opts) {
-                entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
+                entities_spawn(&explosions, &sprites_explosion, &(EntitiesInitOptions) {
                     .x = entity->position[0] + opts->xOffset,
                     .y = entity->position[1] + opts->yOffset 
                 });     
@@ -244,10 +251,10 @@ void game_init(void) {
 
     platform_playSound(music, true);
 
-    player.position = sprites_ship.positions;
-    player.currentSpritePanel = sprites_ship.currentSpritePanels;
-    player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
-    player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
+    entities_init(&player.entity, & (EntitiesInitOptions) {
+        .x = (GAME_WIDTH - player.sprite->panelDims[0]) / 2,
+        .y = GAME_HEIGHT - player.sprite->panelDims[1] * 2.0f
+    });
 
     entities_fromText(&textEntities, &sprites_text, GAME_WIDTH / 2.0f - 80.0f, 20.0f, "space-shooter.c", 0.5f);
 
@@ -272,7 +279,7 @@ static int tick = 0;
 void game_update(void) {
 
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
-        entities_spawn(&smallEnemies, &sprites_smallEnemy, &(EntitiesSpawnOptions) {
+        entities_spawn(&smallEnemies, &sprites_smallEnemy, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
             .vy = SMALL_ENEMY_VELOCITY,
@@ -281,7 +288,7 @@ void game_update(void) {
     }
 
     if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY) {
-        entities_spawn(&mediumEnemies, &sprites_mediumEnemy, &(EntitiesSpawnOptions) {
+        entities_spawn(&mediumEnemies, &sprites_mediumEnemy, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
             .vy = MEDIUM_ENEMY_VELOCITY,
@@ -290,7 +297,7 @@ void game_update(void) {
     }
 
     if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY) {
-        entities_spawn(&largeEnemies, &sprites_largeEnemy, &(EntitiesSpawnOptions) {
+        entities_spawn(&largeEnemies, &sprites_largeEnemy, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
             .vy = LARGE_ENEMY_VELOCITY,
@@ -393,7 +400,7 @@ void game_update(void) {
         });
 
         if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
-            entities_spawn(&explosions, &sprites_explosion, &(EntitiesSpawnOptions) {
+            entities_spawn(&explosions, &sprites_explosion, &(EntitiesInitOptions) {
                 .x = player.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
                 .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
             });

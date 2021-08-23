@@ -36,31 +36,37 @@ extern void entities_updateAnimations(EntitiesList* list) {
     }
 }
 
-extern void entities_spawn(EntitiesList* list, Sprites_Sprite* sprite, EntitiesSpawnOptions* opts) {
+extern void entities_spawn(EntitiesList* list, Sprites_Sprite* sprite, EntitiesInitOptions* opts) {
     if (list->count == RENDERER_DRAWLIST_MAX) {
         return;
     }
 
-    EntitiesEntity* newEntity = list->entities + list->count;
+    EntitiesEntity* entity = list->entities + list->count;
 
-    newEntity->position = sprite->positions + list->count * 2;
-    newEntity->currentSpritePanel = sprite->currentSpritePanels + list->count * 2;
-    newEntity->whiteOut = sprite->whiteOut + list->count;
-    newEntity->scale = sprite->scale + list->count;
+    entity->sprite = sprite;
+    entity->position = sprite->positions + list->count * 2;
+    entity->currentSpritePanel = sprite->currentSpritePanels + list->count * 2;
+    entity->whiteOut = sprite->whiteOut + list->count;
+    entity->scale = sprite->scale + list->count;
+    entity->alpha = sprite->alpha + list->count;
 
-    newEntity->position[0] = opts->x; 
-    newEntity->position[1] = opts->y;
-    newEntity->velocity[0] = opts->vx;
-    newEntity->velocity[1] = opts->vy;
-    newEntity->sprite = sprite;
-    newEntity->currentAnimation = opts->currentAnimation;
-    newEntity->animationTick = 0;
-    newEntity->scale[0] = opts->scale;
-    newEntity->health = opts->health;
-
-    entities_updateAnimationPanel(newEntity);
+    entities_init(entity, opts);
 
     ++list->count;
+}
+
+extern void entities_init(EntitiesEntity* entity, EntitiesInitOptions* opts) {
+    entity->position[0] = opts->x; 
+    entity->position[1] = opts->y;
+    entity->velocity[0] = opts->vx;
+    entity->velocity[1] = opts->vy;
+    entity->currentAnimation = opts->currentAnimation;
+    entity->animationTick = 0;
+    entity->scale[0] = opts->scale > 0.0f ? opts->scale : 1.0f;
+    entity->alpha[0] = 0.5f;
+    entity->health = opts->health;
+
+    entities_updateAnimationPanel(entity);
 }
 
 extern void entities_kill(EntitiesList* list, uint8_t i) {
@@ -73,18 +79,24 @@ extern void entities_kill(EntitiesList* list, uint8_t i) {
     float* positionPointer = list->entities[i].position;
     float* currentSpritePanelPointer =  list->entities[i].currentSpritePanel;
     uint8_t* whiteOutPointer = list->entities[i].whiteOut;
+    float* scalePointer = list->entities[i].scale;
+    float* alphaPointer = list->entities[i].alpha;
 
     positionPointer[0] = list->entities[last].position[0];
     positionPointer[1] = list->entities[last].position[1];
     currentSpritePanelPointer[0] = list->entities[last].currentSpritePanel[0];
     currentSpritePanelPointer[1] = list->entities[last].currentSpritePanel[1];
     whiteOutPointer[0] = list->entities[last].whiteOut[0];
+    scalePointer[0] = list->entities[last].scale[0];
+    alphaPointer[0] = list->entities[last].alpha[0];
 
     list->entities[i] = list->entities[last];
 
     list->entities[i].position = positionPointer;
     list->entities[i].currentSpritePanel = currentSpritePanelPointer;
     list->entities[i].whiteOut = whiteOutPointer;
+    list->entities[i].scale = scalePointer;
+    list->entities[i].alpha = alphaPointer;
 
     --list->count;
 }
@@ -119,7 +131,7 @@ extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, float 
             continue;
         }
 
-        entities_spawn(list, sprite, &(EntitiesSpawnOptions) { 
+        entities_spawn(list, sprite, &(EntitiesInitOptions) { 
             .x = x + i * sprite->panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
             .y = y,
             .scale = scale,

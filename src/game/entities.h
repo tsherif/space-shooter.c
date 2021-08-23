@@ -31,6 +31,7 @@ typedef struct {
     float* currentSpritePanel; // vec2 pointer into Renderer_RenderList arrays
     uint8_t* whiteOut;         // pointer into Renderer_RenderList arrays
     float* scale;              // pointer into Renderer_RenderList arrays
+    float* alpha;              // pointer into Renderer_RenderList arrays
     float velocity[2];
     uint8_t currentAnimation;
     uint8_t animationTick;
@@ -51,12 +52,13 @@ typedef struct {
     uint8_t currentAnimation;
     uint8_t health;
     float scale;
-} EntitiesSpawnOptions;
+} EntitiesInitOptions;
 
 extern void entities_updateAnimationPanel(EntitiesEntity* entity);
 extern void entities_setAnimation(EntitiesEntity* entity, uint8_t animation);
 extern void entities_updateAnimations(EntitiesList* list);
-extern void entities_spawn(EntitiesList* list, Sprites_Sprite* sprite, EntitiesSpawnOptions* opts);
+extern void entities_spawn(EntitiesList* list, Sprites_Sprite* sprite, EntitiesInitOptions* opts);
+extern void entities_init(EntitiesEntity* entity, EntitiesInitOptions* opts);
 extern void entities_kill(EntitiesList* list, uint8_t i);
 extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, float x, float y, const char* text, float scale);
 

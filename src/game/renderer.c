@@ -10,6 +10,7 @@ static GLuint panelIndexLocation;
 static GLuint pixelOffsetLocation;
 static GLuint whiteOutLocation;
 static GLuint scaleLocation;
+static GLuint alphaLocation;
 
 static uint16_t windowWidth;
 static uint16_t windowHeight;
@@ -49,10 +50,12 @@ void renderer_init(int width, int height) {
     "in vec2 vUV;\n"
     "uniform sampler2D spriteSheet;\n"
     "uniform bool whiteOut;"
+    "uniform float alpha;"
     "out vec4 fragColor;\n"
     "void main() {\n"
     "    fragColor = texture(spriteSheet, vUV);\n"
     "    if (whiteOut) fragColor.rgb = vec3(1.0);\n"
+    "    fragColor.a *= alpha;\n"
     "    fragColor.rgb *= fragColor.a;\n"
     "}\n";
 
@@ -95,6 +98,7 @@ void renderer_init(int width, int height) {
     pixelOffsetLocation = glGetUniformLocation(program, "pixelOffset");
     whiteOutLocation = glGetUniformLocation(program, "whiteOut");
     scaleLocation = glGetUniformLocation(program, "scale");
+    alphaLocation = glGetUniformLocation(program, "alpha");
 
     glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
 
@@ -183,11 +187,8 @@ void renderer_draw(Renderer_RenderList* list, uint8_t count) {
         glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
         glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
         glUniform1f(whiteOutLocation, list->whiteOut[i]);
-        float scale = 1.0f;
-        if (list->scale[i]) {
-            scale = list->scale[i];
-        }
-        glUniform1f(scaleLocation, scale);
+        glUniform1f(scaleLocation, list->scale[i]);
+        glUniform1f(alphaLocation, list->alpha[i]);
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }

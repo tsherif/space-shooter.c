@@ -36,6 +36,7 @@ typedef struct {
     float currentSpritePanels[RENDERER_DRAWLIST_MAX * 2];
     uint8_t whiteOut[RENDERER_DRAWLIST_MAX];
     float scale[RENDERER_DRAWLIST_MAX];
+    float alpha[RENDERER_DRAWLIST_MAX];
 } Renderer_RenderList;
 
 void renderer_init(int width, int height);
