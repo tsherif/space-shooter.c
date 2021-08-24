@@ -24,6 +24,7 @@
 #ifndef _PLATFORM_INTERFACE_H_
 #define _PLATFORM_INTERFACE_H_
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
 	bool left;
@@ -43,13 +44,13 @@ typedef struct {
 
 // Must be implemented by game, to be used by platform layer.
 void game_init(void);
-void game_update(void);
+void game_update(uint32_t tick);
 void game_draw(void);
 void game_resize(int width, int height);
 void game_keyboard(GameKeyboard* inputKeys);
 void game_controller(GameController* controllerInput);
 
-// Must be implemented by platform layer, to be used by platform game.
+// Must be implemented by platform layer, to be used by game.
 typedef struct PlatformSound PlatformSound;
 bool platform_initAudio(void);
 PlatformSound* platform_loadSound(const char* fileName);

@@ -278,7 +278,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             inputKeys.changed = false;
         }
 
-        game_update();
+        game_update(ticks);
         game_draw();
 
         SwapBuffers(deviceContext);

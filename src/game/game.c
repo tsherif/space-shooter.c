@@ -279,9 +279,7 @@ void game_init(void) {
     entities_setAnimation(&player.entity, SPRITES_SHIP_CENTER);
 }
 
-static int tick = 0;
-void game_update(void) {
-
+static void mainGame(uint32_t tick) {
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
         entities_spawn(&smallEnemies, &sprites_smallEnemy, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
@@ -417,7 +415,7 @@ void game_update(void) {
         }
     }
 
-    if (tick == 0) {
+    if (tick % 20 == 0) {
         uint8_t count = player.sprite->animations[player.currentAnimation].numFrames;
         player.animationTick = (player.animationTick + 1) % count;
         entities_updateAnimationPanel(&player.entity);
@@ -444,9 +442,11 @@ void game_update(void) {
             textEntities.count = 0;
         }
 
-        tick = 20;
     }
-    --tick;
+}
+
+void game_update(uint32_t tick) {
+    mainGame(tick);  
 }
 
 void game_resize(int width, int height) {
