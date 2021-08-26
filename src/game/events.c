@@ -21,39 +21,33 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _PLATFORM_INTERFACE_H_
-#define _PLATFORM_INTERFACE_H_
-#include <stdbool.h>
-#include <stdint.h>
+#include "events.h"
 
-typedef struct {
-	bool left;
-	bool right;
-	bool up;
-	bool down;
-	bool space;
-	bool ctrl;
-	bool changed;
-} GameKeyboard;
+static bool enabled(EventsEvent* event) {
+    return event->start != 0;
+}
 
-typedef struct {
-	float leftStickX;
-	float leftStickY;
-	bool aButton;
-} GameController;
+static void disable(EventsEvent* event) {
+    event->start = 0;
+}
 
-// Must be implemented by game, to be used by platform layer.
-void game_init(void);
-void game_update(void);
-void game_draw(void);
-void game_resize(int width, int height);
-void game_keyboard(GameKeyboard* inputKeys);
-void game_controller(GameController* controllerInput);
+void events_start(uint32_t currentTick, EventsEvent* event, uint32_t delay) {
+    event->start = currentTick + 1 + delay;
+}
 
-// Must be implemented by platform layer, to be used by game.
-typedef struct PlatformSound PlatformSound;
-bool platform_initAudio(void);
-PlatformSound* platform_loadSound(const char* fileName);
-void platform_playSound(PlatformSound* sound, bool loop);
+void events_transition(uint32_t currentTick, EventsEvent* endEvent, EventsEvent* startEvent, uint32_t delay) {
+    disable(endEvent);
+    events_start(currentTick, startEvent, delay);
+}
 
-#endif
+bool events_entering(uint32_t currentTick, EventsEvent* event) {
+    return enabled(event) && event->start == currentTick;
+} 
+
+bool events_during(uint32_t currentTick, EventsEvent* event) {
+    return enabled(event) && currentTick >= event->start && currentTick <= event->start + event->duration;
+}
+
+bool events_exiting(uint32_t currentTick, EventsEvent* event) {
+    return enabled(event) && currentTick == event->start + event->duration;
+}

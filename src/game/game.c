@@ -33,6 +33,7 @@
 #include "renderer.h"
 #include "sprites.h"
 #include "entities.h"
+#include "events.h"
 
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
@@ -86,6 +87,19 @@ static EntitiesList playerBullets = { .sprite = &sprites_playerBullet };
 static EntitiesList enemyBullets = { .sprite = &sprites_enemyBullet };
 static EntitiesList explosions = { .sprite = &sprites_explosion };
 static EntitiesList textEntities = { .sprite = &sprites_text };
+
+static enum {
+    TITLE,
+    MAIN_GAME
+} gameState = TITLE;
+
+static uint32_t gameTick = 1; // 0 reserved for disabled events
+
+static EventsEvent titleDisplayEvent;
+static EventsEvent titleFadeEvent = {
+    .duration = 400
+};
+static EventsEvent mainGameEvent;
 
 static float randomRange(float min, float max) {
     float range = max - min;
@@ -252,12 +266,6 @@ void game_init(void) {
         .y = GAME_HEIGHT - player.sprite->panelDims[1] * 2.0f
     });
 
-    entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 80.0f,
-        .y = 20.0f, 
-        .scale = 0.5f
-    });
-
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
     renderer_loadTexture("assets/sprites/ship.png", &player.texture);
@@ -273,7 +281,40 @@ void game_init(void) {
     enemyBullets.texture = bulletTexture;
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
+
+    events_start(0, &titleDisplayEvent, 300);
 }
+
+static void titleScreen(uint32_t tick) {
+    if (events_entering(tick, &titleDisplayEvent)) {
+        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 65.0f, 
+            .scale = 0.75f
+        });
+        events_transition(tick, &titleDisplayEvent, &titleFadeEvent, 300);
+    }
+
+    if (events_during(tick, &titleFadeEvent)) {
+        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 65.0f, 
+            .scale = 0.75f,
+            .reset = true,
+            .transparency = (float) (tick - titleFadeEvent.start) / titleFadeEvent.duration
+        });
+    }
+
+    if (events_exiting(tick, &titleFadeEvent)) {
+        textEntities.count = 0;
+        events_transition(tick, &titleFadeEvent, &mainGameEvent, 0);
+    }
+
+    if (tick % 20 == 0) {
+        entities_updateAnimations(&player.entity);  
+    }
+}
+
 
 static void mainGame(uint32_t tick) {
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
@@ -335,6 +376,18 @@ static void mainGame(uint32_t tick) {
     if (player.deadCounter > 0) {
         --player.deadCounter;
     } else {
+        if (player.velocity[0] < -1.0f) {
+            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
+        } else if (player.velocity[0] < 0.0f) {
+            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_LEFT);
+        } else if (player.velocity[0] > 1.0f) {
+            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_RIGHT);
+        } else if (player.velocity[0] > 0.0f) {
+            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_RIGHT);
+        } else {
+            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
+        }
+
         player.position[0] += player.velocity[0];
         player.position[1] += player.velocity[1];
 
@@ -415,37 +468,28 @@ static void mainGame(uint32_t tick) {
     }
 
     if (tick % 20 == 0) {
-        uint8_t count = player.sprite->animations[player.currentAnimation[0]].numFrames;
-        player.animationTick[0] = (player.animationTick[0] + 1) % count;
-        entities_updateAnimationPanel(&player.entity, 0);
-
+        entities_updateAnimations(&player.entity);  
         entities_updateAnimations(&playerBullets);  
         entities_updateAnimations(&smallEnemies);
         entities_updateAnimations(&mediumEnemies);
         entities_updateAnimations(&largeEnemies);
         entities_updateAnimations(&enemyBullets);  
         entities_updateAnimations(&explosions);  
-
-        // TODO(Tarek): Just for testing. FIX ME.
-        static float textTransparency = 0.0f;
-        textTransparency += 0.02f;
-        if (textTransparency < 1.0f) {
-            entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-                .x = GAME_WIDTH / 2.0f - 80.0f,
-                .y = 20.0f, 
-                .scale = 0.5f,
-                .reset = true,
-                .transparency = textTransparency
-            });
-        } else {
-            textEntities.count = 0;
-        }
-
     }
 }
 
-void game_update(uint32_t tick) {
-    mainGame(tick);  
+void game_update() {
+    if (events_entering(gameTick, &mainGameEvent)) {
+        gameState = MAIN_GAME;
+    }
+
+    if (gameState == TITLE) {
+        titleScreen(gameTick);
+    } else {
+        mainGame(gameTick);  
+    }
+
+    ++gameTick;
 }
 
 void game_resize(int width, int height) {
@@ -456,13 +500,10 @@ void game_resize(int width, int height) {
 void game_keyboard(GameKeyboard* inputKeys) {
     if (inputKeys->left) {
         player.velocity[0] = -SHIP_VELOCITY;
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
     } else if (inputKeys->right) {
         player.velocity[0] = SHIP_VELOCITY;
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_RIGHT);
     } else {
         player.velocity[0] = 0.0f;
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
     }
 
     if (inputKeys->up) {
@@ -473,7 +514,7 @@ void game_keyboard(GameKeyboard* inputKeys) {
         player.velocity[1] = 0.0f;
     }
 
-    if (inputKeys->space) {
+    if (inputKeys->space && gameState == MAIN_GAME) {
         firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
     }
 }
@@ -482,19 +523,7 @@ void game_controller(GameController* controllerInput) {
     player.velocity[0] = SHIP_VELOCITY * controllerInput->leftStickX;
     player.velocity[1] = -SHIP_VELOCITY * controllerInput->leftStickY;
 
-    if (player.velocity[0] < -1.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
-    } else if (player.velocity[0] < 0.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_LEFT);
-    } else if (player.velocity[0] > 1.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_RIGHT);
-    } else if (player.velocity[0] > 0.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_RIGHT);
-    } else {
-        entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
-    }
-
-    if (controllerInput->aButton) {
+    if (controllerInput->aButton && gameState == MAIN_GAME) {
         firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
     }
 }

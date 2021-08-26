@@ -21,39 +21,20 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _PLATFORM_INTERFACE_H_
-#define _PLATFORM_INTERFACE_H_
-#include <stdbool.h>
+#ifndef _GAME_EVENTS_H_
+#define _GAME_EVENTS_H_
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
-	bool left;
-	bool right;
-	bool up;
-	bool down;
-	bool space;
-	bool ctrl;
-	bool changed;
-} GameKeyboard;
+    uint32_t start;
+    uint32_t duration;
+} EventsEvent;
 
-typedef struct {
-	float leftStickX;
-	float leftStickY;
-	bool aButton;
-} GameController;
-
-// Must be implemented by game, to be used by platform layer.
-void game_init(void);
-void game_update(void);
-void game_draw(void);
-void game_resize(int width, int height);
-void game_keyboard(GameKeyboard* inputKeys);
-void game_controller(GameController* controllerInput);
-
-// Must be implemented by platform layer, to be used by game.
-typedef struct PlatformSound PlatformSound;
-bool platform_initAudio(void);
-PlatformSound* platform_loadSound(const char* fileName);
-void platform_playSound(PlatformSound* sound, bool loop);
+void events_start(uint32_t currentTick, EventsEvent* event, uint32_t delay);
+void events_transition(uint32_t currentTick, EventsEvent* endEvent, EventsEvent* startEvent, uint32_t delay);
+bool events_entering(uint32_t currentTick, EventsEvent* event);
+bool events_during(uint32_t currentTick, EventsEvent* event);
+bool events_exiting(uint32_t currentTick, EventsEvent* event);
 
 #endif

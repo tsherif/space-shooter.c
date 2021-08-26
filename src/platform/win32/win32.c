@@ -278,7 +278,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             inputKeys.changed = false;
         }
 
-        game_update(ticks);
+        game_update();
         game_draw();
 
         SwapBuffers(deviceContext);
@@ -295,12 +295,11 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         minTime = frameTime < minTime ? frameTime : minTime;
         maxTime = frameTime > maxTime ? frameTime : maxTime;
 
-        if (ticks == 600) {
+        if (ticks % 600 == 1) {
             char buffer[1024];
             snprintf(buffer, 1024, "space-shooter.c (win32): Frame Time Average: %.2fms, Min: %.2fms, Max: %.2fms", averageTime, minTime, maxTime);
             SetWindowTextA(window, buffer);
             totalTime = 0.0f;
-            ticks = 0;
         }
     }
 
