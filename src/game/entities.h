@@ -24,24 +24,13 @@
 #ifndef _GAME_ENTITIES_H_
 #define _GAME_ENTITIES_H_
 #include "renderer.h"
-#include "sprites.h"
 
 typedef struct {
-    float* position;           // vec2 pointer into Renderer_RenderList arrays
-    float* currentSpritePanel; // vec2 pointer into Renderer_RenderList arrays
-    uint8_t* whiteOut;         // pointer into Renderer_RenderList arrays
-    float* scale;              // pointer into Renderer_RenderList arrays
-    float* alpha;              // pointer into Renderer_RenderList arrays
-    float velocity[2];
-    uint8_t currentAnimation;
-    uint8_t animationTick;
-    Sprites_Sprite* sprite;
-    uint8_t health;
-} EntitiesEntity;
-
-typedef struct {
-    EntitiesEntity entities[RENDERER_DRAWLIST_MAX];
-    uint8_t count;
+    MIXIN_STRUCT(Renderer_RenderList, renderList);
+    float velocity[RENDERER_DRAWLIST_MAX * 2];
+    uint8_t currentAnimation[RENDERER_DRAWLIST_MAX];
+    uint8_t animationTick[RENDERER_DRAWLIST_MAX];
+    uint8_t health[RENDERER_DRAWLIST_MAX];
 } EntitiesList;
 
 typedef struct {
@@ -63,12 +52,12 @@ typedef struct {
     bool reset;
 } EntitiesFromTextOptions;
 
-extern void entities_updateAnimationPanel(EntitiesEntity* entity);
-extern void entities_setAnimation(EntitiesEntity* entity, uint8_t animation);
+extern void entities_updateAnimationPanel(EntitiesList* list, uint8_t i);
+extern void entities_setAnimation(EntitiesList* list, uint8_t i, uint8_t animation);
 extern void entities_updateAnimations(EntitiesList* list);
-extern void entities_spawn(EntitiesList* list, Sprites_Sprite* sprite, EntitiesInitOptions* opts);
-extern void entities_init(EntitiesEntity* entity, EntitiesInitOptions* opts);
+extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts);
+extern void entities_init(EntitiesList* list, uint8_t i, EntitiesInitOptions* opts);
 extern void entities_kill(EntitiesList* list, uint8_t i);
-extern void entities_fromText(EntitiesList* list, Sprites_Sprite* sprite, const char* text, EntitiesFromTextOptions* opts);
+extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts);
 
 #endif

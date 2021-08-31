@@ -173,19 +173,19 @@ void renderer_beforeFrame(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void renderer_draw(Renderer_RenderList* list, uint8_t count) {
-    if (count == 0) {
+void renderer_draw(Renderer_RenderList* list) {
+    if (list->count == 0) {
         return;
     }
 
 
     glBindTexture(GL_TEXTURE_2D, list->texture);
-    glUniform2fv(panelPixelSizeLocation, 1, list->panelDims);
-    glUniform2fv(spriteSheetDimensionsLocation, 1, list->sheetDims);
+    glUniform2fv(panelPixelSizeLocation, 1, list->sprite->panelDims);
+    glUniform2fv(spriteSheetDimensionsLocation, 1, list->sprite->sheetDims);
 
-    for (uint8_t i = 0; i < count; ++i) {
-        glUniform2fv(pixelOffsetLocation, 1, list->positions + i * 2);
-        glUniform2fv(panelIndexLocation, 1, list->currentSpritePanels + i * 2);
+    for (uint8_t i = 0; i < list->count; ++i) {
+        glUniform2fv(pixelOffsetLocation, 1, list->position + i * 2);
+        glUniform2fv(panelIndexLocation, 1, list->currentSpritePanel + i * 2);
         glUniform1f(whiteOutLocation, list->whiteOut[i]);
         glUniform1f(scaleLocation, list->scale[i]);
         glUniform1f(alphaLocation, list->alpha[i]);

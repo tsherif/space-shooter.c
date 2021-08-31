@@ -24,8 +24,9 @@
 #ifndef _GAME_SPRITES_H_
 #define _GAME_SPRITES_H_
 
+#include <stdbool.h>
+#include <stdint.h>
 #include "utils.h"
-#include "renderer.h"
 
 // Animations
 #define SPRITES_SHIP_CENTER       0
@@ -89,9 +90,10 @@ typedef struct {
 } Sprites_Animation;
 
 typedef struct {
-    MIXIN_STRUCT(Renderer_RenderList, renderList);
     Sprites_CollisionBox collisionBox;
     Sprites_Animation* animations;
+    float sheetDims[2];
+    float panelDims[2];
     uint8_t numAnimations;
 } Sprites_Sprite;
 

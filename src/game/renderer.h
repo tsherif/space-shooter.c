@@ -25,24 +25,25 @@
 #define _GAME_RENDERER_H_
 #include <stdbool.h>
 #include "../../lib/simple-opengl-loader.h"
+#include "sprites.h"
 
 #define RENDERER_DRAWLIST_MAX 255
 
 typedef struct {
-    float panelDims[2];
-    float sheetDims[2];
-    GLuint texture;
-    float positions[RENDERER_DRAWLIST_MAX * 2];
-    float currentSpritePanels[RENDERER_DRAWLIST_MAX * 2];
-    uint8_t whiteOut[RENDERER_DRAWLIST_MAX];
+    float position[RENDERER_DRAWLIST_MAX * 2];
+    float currentSpritePanel[RENDERER_DRAWLIST_MAX * 2];
     float scale[RENDERER_DRAWLIST_MAX];
     float alpha[RENDERER_DRAWLIST_MAX];
+    uint8_t whiteOut[RENDERER_DRAWLIST_MAX];
+    Sprites_Sprite* sprite;
+    GLuint texture;
+    uint8_t count;
 } Renderer_RenderList;
 
 void renderer_init(int width, int height);
 bool renderer_loadTexture(const char* fileName, GLuint* texture);
 void renderer_resize(int width, int height);
 void renderer_beforeFrame(void);
-void renderer_draw(Renderer_RenderList* list, uint8_t count);
+void renderer_draw(Renderer_RenderList* list);
 
 #endif
