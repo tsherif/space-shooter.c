@@ -29,7 +29,7 @@ Current State
 - [x] Crashes kill enemy and player
 - [x] Text Rendering
 - [ ] Multiple levels
-- [ ] Title screen
+- [x] Title screen
 - [ ] Keep score
 - [ ] Linux support
 

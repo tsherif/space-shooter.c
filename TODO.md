@@ -17,7 +17,7 @@
 - [ ] Stars passing
 - [ ] Multiple levels
 - [x] Text Rendering
-- [ ] Title screen
+- [x] Title screen
 - [ ] Keep score
 - [x] Scale using ~~a framebuffer~~ the viewport
 - [x] Get rid of copying into render list
