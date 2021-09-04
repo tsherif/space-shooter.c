@@ -23,31 +23,48 @@
 
 #include "events.h"
 
-static bool enabled(EventsEvent* event) {
-    return event->start != 0;
+void events_start(EventsSequence* sequence) {
+    if (sequence->enabled) {
+        return;
+    }
+
+    sequence->enabled = true;
+    sequence->ticks = 0;
+    sequence->current = 0;
+    sequence->events[0].t = 0.0f;
 }
 
-static void disable(EventsEvent* event) {
-    event->start = 0;
+void events_update(EventsSequence* sequence) {
+    if (!sequence->enabled) {
+        return;
+    }
+
+    ++sequence->ticks;
+
+    EventsEvent* event = sequence->events + sequence->current;
+    if (sequence->ticks > event->delay + event->duration) {
+        sequence->ticks = 0;
+        ++sequence->current;
+        if (sequence->current == sequence->count || sequence->current == EVENTS_MAX_SEQUENCE) {
+            sequence->enabled = false;
+            return;
+        }
+        event = sequence->events + sequence->current;
+    }
+
+    if (event->duration > 0 && sequence->ticks > event->delay) {
+        event->t = (float) (sequence->ticks - event->delay) / event->duration;
+    } else {
+        event->t = 0.0f;
+    }
 }
 
-void events_start(uint32_t currentTick, EventsEvent* event, uint32_t delay) {
-    event->start = currentTick + 1 + delay;
-}
+bool events_on(EventsSequence* sequence, uint32_t id) {
+    if (!sequence->enabled) {
+        return false;
+    }
 
-void events_transition(uint32_t currentTick, EventsEvent* endEvent, EventsEvent* startEvent, uint32_t delay) {
-    disable(endEvent);
-    events_start(currentTick, startEvent, delay);
-}
+    EventsEvent* event = sequence->events + sequence->current;
 
-bool events_entering(uint32_t currentTick, EventsEvent* event) {
-    return enabled(event) && event->start == currentTick;
-} 
-
-bool events_during(uint32_t currentTick, EventsEvent* event) {
-    return enabled(event) && currentTick >= event->start && currentTick <= event->start + event->duration;
-}
-
-bool events_exiting(uint32_t currentTick, EventsEvent* event) {
-    return enabled(event) && currentTick == event->start + event->duration;
+    return event->id == id && sequence->ticks >= event->delay;
 }

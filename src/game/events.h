@@ -26,15 +26,25 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define EVENTS_MAX_SEQUENCE 32
+
 typedef struct {
-    uint32_t start;
+    uint32_t delay;
     uint32_t duration;
+    uint32_t id;
+    float t;
 } EventsEvent;
 
-void events_start(uint32_t currentTick, EventsEvent* event, uint32_t delay);
-void events_transition(uint32_t currentTick, EventsEvent* endEvent, EventsEvent* startEvent, uint32_t delay);
-bool events_entering(uint32_t currentTick, EventsEvent* event);
-bool events_during(uint32_t currentTick, EventsEvent* event);
-bool events_exiting(uint32_t currentTick, EventsEvent* event);
+typedef struct {
+    EventsEvent events[EVENTS_MAX_SEQUENCE];
+    uint32_t ticks;
+    uint8_t count;
+    uint8_t current;
+    bool enabled;
+} EventsSequence;
+
+void events_start(EventsSequence* sequence);
+void events_update(EventsSequence* sequence);
+bool events_on(EventsSequence* sequence, uint32_t id);
 
 #endif

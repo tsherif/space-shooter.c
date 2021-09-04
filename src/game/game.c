@@ -95,11 +95,29 @@ static enum {
 
 static uint32_t gameTick = 1; // 0 reserved for disabled events
 
-static EventsEvent titleDisplayEvent;
-static EventsEvent titleFadeEvent = {
-    .duration = 400
+enum {
+    TITLE_DISPLAY,
+    TITLE_FADE,
+    MAIN_GAME_START
 };
-static EventsEvent mainGameEvent;
+
+EventsSequence titleSequence = {
+    .events = {
+        { 
+            .delay = 300,
+            .id =  TITLE_DISPLAY
+        },
+        {
+            .delay = 300,
+            .duration = 400,
+            .id = TITLE_FADE
+        },
+        { 
+            .id = MAIN_GAME_START
+        }
+    },
+    .count = 3
+};
 
 static float randomRange(float min, float max) {
     float range = max - min;
@@ -282,37 +300,39 @@ void game_init(void) {
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
-    events_start(0, &titleDisplayEvent, 300);
+    events_start(&titleSequence);
 }
 
 static void titleScreen(uint32_t tick) {
-    if (events_entering(tick, &titleDisplayEvent)) {
+    if (events_on(&titleSequence, TITLE_DISPLAY)) {
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 65.0f, 
             .scale = 0.75f
         });
-        events_transition(tick, &titleDisplayEvent, &titleFadeEvent, 300);
     }
 
-    if (events_during(tick, &titleFadeEvent)) {
+    if (events_on(&titleSequence, TITLE_FADE)) {
+        EventsEvent* event = titleSequence.events + titleSequence.current;
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 65.0f, 
             .scale = 0.75f,
             .reset = true,
-            .transparency = (float) (tick - titleFadeEvent.start) / titleFadeEvent.duration
+            .transparency = event->t
         });
     }
 
-    if (events_exiting(tick, &titleFadeEvent)) {
+    if (events_on(&titleSequence, MAIN_GAME_START)) {
         textEntities.count = 0;
-        events_transition(tick, &titleFadeEvent, &mainGameEvent, 0);
+        gameState = MAIN_GAME;
     }
 
     if (tick % 20 == 0) {
         entities_updateAnimations(&player.entity);  
     }
+
+    events_update(&titleSequence);
 }
 
 
@@ -479,10 +499,6 @@ static void mainGame(uint32_t tick) {
 }
 
 void game_update() {
-    if (events_entering(gameTick, &mainGameEvent)) {
-        gameState = MAIN_GAME;
-    }
-
     if (gameState == TITLE) {
         titleScreen(gameTick);
     } else {
