@@ -42,7 +42,14 @@ void events_update(EventsSequence* sequence) {
     ++sequence->ticks;
 
     EventsEvent* event = sequence->events + sequence->current;
-    if (sequence->ticks > event->delay + event->duration) {
+    uint32_t duration = event->duration;
+
+    // duration of 0 or 1 will last for 1 tick
+    if (duration == 0) {
+        duration = 1;
+    }
+
+    if (sequence->ticks >= event->delay + duration) {
         sequence->ticks = 0;
         ++sequence->current;
         if (sequence->current == sequence->count || sequence->current == EVENTS_MAX_SEQUENCE) {
@@ -52,8 +59,8 @@ void events_update(EventsSequence* sequence) {
         event = sequence->events + sequence->current;
     }
 
-    if (event->duration > 0 && sequence->ticks > event->delay) {
-        event->t = (float) (sequence->ticks - event->delay) / event->duration;
+    if (duration > 1 && sequence->ticks > event->delay) {
+        event->t = (float) (sequence->ticks - event->delay) / (duration - 1);
     } else {
         event->t = 0.0f;
     }
