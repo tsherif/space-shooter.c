@@ -24,18 +24,19 @@
 #include "events.h"
 
 void events_start(EventsSequence* sequence) {
-    if (sequence->enabled) {
+    if (sequence->running) {
         return;
     }
 
-    sequence->enabled = true;
+    sequence->running = true;
     sequence->ticks = 0;
     sequence->current = 0;
+    sequence->complete = false;
     sequence->events[0].t = 0.0f;
 }
 
 void events_update(EventsSequence* sequence) {
-    if (!sequence->enabled) {
+    if (!sequence->running) {
         return;
     }
 
@@ -53,7 +54,8 @@ void events_update(EventsSequence* sequence) {
         sequence->ticks = 0;
         ++sequence->current;
         if (sequence->current == sequence->count || sequence->current == EVENTS_MAX_SEQUENCE) {
-            sequence->enabled = false;
+            sequence->running = false;
+            sequence->complete = true;
             return;
         }
         event = sequence->events + sequence->current;
@@ -67,7 +69,7 @@ void events_update(EventsSequence* sequence) {
 }
 
 bool events_on(EventsSequence* sequence, uint32_t id) {
-    if (!sequence->enabled) {
+    if (!sequence->running) {
         return false;
     }
 

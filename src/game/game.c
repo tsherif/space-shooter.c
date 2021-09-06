@@ -96,27 +96,54 @@ static enum {
 static uint32_t gameTick = 1; // 0 reserved for disabled events
 
 enum {
+    TITLE_START,
     TITLE_DISPLAY,
     TITLE_FADE,
-    MAIN_GAME_START
+    SUBTITLE_START,
+    SUBTITLE_DISPLAY,
+    SUBTITLE_FADE
+};
+
+EventsSequence titleControls = {
+    .events = {
+        { 
+            .delay = 250,
+            .id =  TITLE_START
+        },
+        { 
+            .delay = 250,
+            .id =  SUBTITLE_START
+        }
+    },
+    .count = 2
 };
 
 EventsSequence titleSequence = {
     .events = {
         { 
-            .delay = 300,
+            .duration = 300,
             .id =  TITLE_DISPLAY
         },
         {
-            .delay = 300,
             .duration = 400,
             .id = TITLE_FADE
-        },
-        { 
-            .id = MAIN_GAME_START
         }
     },
-    .count = 3
+    .count = 2
+};
+
+EventsSequence subtitleSequence = {
+    .events = {
+        { 
+            .duration = 300,
+            .id =  SUBTITLE_DISPLAY
+        },
+        {
+            .duration = 400,
+            .id = SUBTITLE_FADE
+        }
+    },
+    .count = 2
 };
 
 static float randomRange(float min, float max) {
@@ -300,14 +327,24 @@ void game_init(void) {
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
-    events_start(&titleSequence);
+    events_start(&titleControls);
 }
 
 static void titleScreen(uint32_t tick) {
+    textEntities.count = 0;
+
+    if (events_on(&titleControls, TITLE_START)) {
+        events_start(&titleSequence);
+    }
+
+    if (events_on(&titleControls, SUBTITLE_START)) {
+        events_start(&subtitleSequence);
+    }
+
     if (events_on(&titleSequence, TITLE_DISPLAY)) {
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 65.0f, 
+            .y = 62.0f, 
             .scale = 0.75f
         });
     }
@@ -316,14 +353,31 @@ static void titleScreen(uint32_t tick) {
         EventsEvent* event = titleSequence.events + titleSequence.current;
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 65.0f, 
+            .y = 62.0f, 
             .scale = 0.75f,
-            .reset = true,
             .transparency = event->t
         });
     }
 
-    if (events_on(&titleSequence, MAIN_GAME_START)) {
+    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY)) {
+        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 64.0f,
+            .y = 85.0f, 
+            .scale = 0.4f
+        });
+    }
+
+    if (events_on(&subtitleSequence, SUBTITLE_FADE)) {
+        EventsEvent* event = subtitleSequence.events + subtitleSequence.current;
+        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 64.0f,
+            .y = 85.0f, 
+            .scale = 0.4f,
+            .transparency = event->t
+        });
+    }
+
+    if (titleSequence.complete && subtitleSequence.complete) {
         textEntities.count = 0;
         gameState = MAIN_GAME;
     }
@@ -332,7 +386,9 @@ static void titleScreen(uint32_t tick) {
         entities_updateAnimations(&player.entity);  
     }
 
+    events_update(&titleControls);
     events_update(&titleSequence);
+    events_update(&subtitleSequence);
 }
 
 

@@ -40,7 +40,8 @@ typedef struct {
     uint32_t ticks;
     uint8_t count;
     uint8_t current;
-    bool enabled;
+    bool running;
+    bool complete;
 } EventsSequence;
 
 void events_start(EventsSequence* sequence);
