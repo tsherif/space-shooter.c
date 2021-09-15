@@ -47,16 +47,19 @@
 #define SMALL_ENEMY_SPAWN_PROBABILITY 0.002f
 #define SMALL_ENEMY_BULLET_PROBABILITY 0.002f
 #define SMALL_ENEMY_HEALTH 1
+#define SMALL_ENEMY_POINTS 1
 
 #define MEDIUM_ENEMY_VELOCITY 0.1f
 #define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0006f
 #define MEDIUM_ENEMY_BULLET_PROBABILITY 0.005f
 #define MEDIUM_ENEMY_HEALTH 5
+#define MEDIUM_ENEMY_POINTS 5
 
 #define LARGE_ENEMY_VELOCITY 0.04f
 #define LARGE_ENEMY_SPAWN_PROBABILITY 0.0002f
 #define LARGE_ENEMY_BULLET_PROBABILITY 0.02f
 #define LARGE_ENEMY_HEALTH 10
+#define LARGE_ENEMY_POINTS 25
 
 #define ENEMY_BULLET_SPEED 0.3f
 
@@ -66,6 +69,7 @@ typedef struct {
     MIXIN_STRUCT(EntitiesList, entity);
     uint16_t bulletThrottle;
     uint16_t deadCounter;
+    uint16_t score;
 } Player;
 
 typedef struct {
@@ -93,7 +97,11 @@ static enum {
     MAIN_GAME
 } gameState = TITLE;
 
-static uint32_t gameTick = 1; // 0 reserved for disabled events
+#define SCORE_BUFFER_LENGTH 5 
+static char scoreString[SCORE_BUFFER_LENGTH];
+
+static uint32_t gameTick = 0;
+
 
 enum {
     TITLE_START,
@@ -104,7 +112,7 @@ enum {
     SUBTITLE_FADE
 };
 
-EventsSequence titleControls = {
+static EventsSequence titleControls = {
     .events = {
         { 
             .delay = 250,
@@ -118,7 +126,7 @@ EventsSequence titleControls = {
     .count = 2
 };
 
-EventsSequence titleSequence = {
+static EventsSequence titleSequence = {
     .events = {
         { 
             .duration = 300,
@@ -132,7 +140,7 @@ EventsSequence titleSequence = {
     .count = 2
 };
 
-EventsSequence subtitleSequence = {
+static EventsSequence subtitleSequence = {
     .events = {
         { 
             .duration = 300,
@@ -145,6 +153,17 @@ EventsSequence subtitleSequence = {
     },
     .count = 2
 };
+
+static void uint16ToString(uint16_t n, char* buffer, int8_t bufferLength) {
+    buffer[bufferLength - 1] = '\0';
+    int8_t i = bufferLength - 2;
+
+    while (i >= 0) {
+        buffer[i] = '0' + (n % 10);
+        n /= 10;
+        --i;
+    }
+}
 
 static float randomRange(float min, float max) {
     float range = max - min;
@@ -233,7 +252,14 @@ static bool boxCollision(float min1[2], float max1[2], float min2[2], float max2
     return true;
 }
 
-static bool checkPlayerBulletCollision(float bulletMin[2], float bulletMax[2], EntitiesList* enemies, float explosionXOffset, float explosionYOffset) {
+static bool checkPlayerBulletCollision(
+    float bulletMin[2],
+    float bulletMax[2],
+    EntitiesList* enemies,
+    float explosionXOffset,
+    float explosionYOffset,
+    uint8_t points
+) {
     bool hit = false;
     Sprites_CollisionBox* enemyCollisionBox = &enemies->sprite->collisionBox;
     for (uint8_t i = 0; i < enemies->count; ++i) {
@@ -257,6 +283,7 @@ static bool checkPlayerBulletCollision(float bulletMin[2], float bulletMax[2], E
                 });
                 platform_playSound(explosionSound, false);
                 entities_kill(enemies, i);
+                player.score += points;
             } else {
                 platform_playSound(enemyHit, false);
                 enemies->whiteOut[i] = 1;
@@ -326,6 +353,8 @@ void game_init(void) {
     enemyBullets.texture = bulletTexture;
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
+
+    uint16ToString(0, scoreString, SCORE_BUFFER_LENGTH);
 
     events_start(&titleControls);
 }
@@ -438,9 +467,9 @@ static void mainGame(uint32_t tick) {
             position[1] + playerBulletCollisionBox->max[1]
         };
         
-        if (checkPlayerBulletCollision(bulletMin, bulletMax, &smallEnemies, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET) ||
-            checkPlayerBulletCollision(bulletMin, bulletMax, &mediumEnemies, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET) ||
-            checkPlayerBulletCollision(bulletMin, bulletMax, &largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET)) {
+        if (checkPlayerBulletCollision(bulletMin, bulletMax, &smallEnemies, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET, SMALL_ENEMY_POINTS) ||
+            checkPlayerBulletCollision(bulletMin, bulletMax, &mediumEnemies, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET, MEDIUM_ENEMY_POINTS) ||
+            checkPlayerBulletCollision(bulletMin, bulletMax, &largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET, LARGE_ENEMY_POINTS)) {
             entities_kill(&playerBullets, i);
         }  
     }
@@ -542,6 +571,14 @@ static void mainGame(uint32_t tick) {
                     
         }
     }
+
+    uint16ToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
+    entities_fromText(&textEntities, scoreString, &(EntitiesFromTextOptions) {
+        .x = 10.0f,
+        .y = GAME_HEIGHT - 20.0f, 
+        .scale = 0.4f,
+        .reset = true
+    });
 
     if (tick % 20 == 0) {
         entities_updateAnimations(&player.entity);  
