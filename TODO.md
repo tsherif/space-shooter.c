@@ -18,7 +18,7 @@
 - [ ] Multiple levels
 - [x] Text Rendering
 - [x] Title screen
-- [ ] Keep score
+- [x] Keep score
 - [x] Scale using ~~a framebuffer~~ the viewport
 - [x] Get rid of copying into render list
 - [ ] Instanced draws

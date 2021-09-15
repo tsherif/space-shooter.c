@@ -30,7 +30,7 @@ Current State
 - [x] Text Rendering
 - [ ] Multiple levels
 - [x] Title screen
-- [ ] Keep score
+- [x] Keep score
 - [ ] Linux support
 
 (A more detailed todo list lives [here](./TODO.md).)
