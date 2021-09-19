@@ -105,6 +105,7 @@ extern Sprites_Sprite sprites_playerBullet;
 extern Sprites_Sprite sprites_enemyBullet;
 extern Sprites_Sprite sprites_explosion;
 extern Sprites_Sprite sprites_text;
+extern Sprites_Sprite sprites_whitePixel;
 
 extern float sprites_shipBulletOffset[2];
 extern float sprites_shipExplosionOffset[2];

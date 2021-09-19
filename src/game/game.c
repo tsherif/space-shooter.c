@@ -65,6 +65,14 @@
 
 #define COLLISION_SCALE 0.7f
 
+#define STAR_PROBABILITY 0.03f
+#define STARS_MIN_VELOCITY 0.01f
+#define STARS_MAX_VELOCITY 0.1f
+#define STARS_MIN_TRANSPARENCY 0.0f
+#define STARS_MAX_TRANSPARENCY 0.9f
+#define STARS_MIN_SCALE 1.0f
+#define STARS_MAX_SCALE 4.0f
+
 typedef struct {
     MIXIN_STRUCT(EntitiesList, entity);
     uint16_t bulletThrottle;
@@ -90,6 +98,7 @@ static EntitiesList largeEnemies = { .sprite = &sprites_largeEnemy };
 static EntitiesList playerBullets = { .sprite = &sprites_playerBullet };
 static EntitiesList enemyBullets = { .sprite = &sprites_enemyBullet };
 static EntitiesList explosions = { .sprite = &sprites_explosion };
+static EntitiesList stars = { .sprite = &sprites_whitePixel };
 static EntitiesList textEntities = { .sprite = &sprites_text };
 
 static enum {
@@ -99,6 +108,8 @@ static enum {
 
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
+
+static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 
 static uint32_t gameTick = 0;
 
@@ -165,9 +176,12 @@ static void uint16ToString(uint16_t n, char* buffer, int8_t bufferLength) {
     }
 }
 
+static float lerp(float min, float max, float t) {
+    return min + t * (max - min);
+}
+
 static float randomRange(float min, float max) {
-    float range = max - min;
-    return min + ((float) rand() / (RAND_MAX + 1)) * range;
+    return lerp(min, max, (float) rand() / (RAND_MAX + 1));
 }
 
 static void firePlayerBullet(float x, float y) {
@@ -338,6 +352,16 @@ void game_init(void) {
         .y = GAME_HEIGHT - player.sprite->panelDims[1] * 2.0f
     });
 
+    for (uint8_t i = 0; i < 40; ++i) {
+        float t = randomRange(0.0f, 1.0f);
+        entities_spawn(&stars, &(EntitiesInitOptions) {
+            .x = randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
+            .y = randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]), 
+            .vy = lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
+            .transparency = lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
+        });
+    }
+
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
     renderer_loadTexture("assets/sprites/ship.png", &player.texture);
@@ -346,6 +370,7 @@ void game_init(void) {
     renderer_loadTexture("assets/sprites/enemy-big.png", &largeEnemies.texture);
     renderer_loadTexture("assets/sprites/explosion.png", &explosions.texture);
     renderer_loadTexture("assets/sprites/pixelspritefont32.png", &textEntities.texture);
+    renderer_dataTexture(whitePixelData, 1, 1, &stars.texture);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
     renderer_loadTexture("assets/sprites/laser-bolts.png", &bulletTexture);
@@ -359,7 +384,23 @@ void game_init(void) {
     events_start(&titleControls);
 }
 
+static void updateStars(void) {
+    if (randomRange(0.0f, 1.0f) < STAR_PROBABILITY) {
+        float t = randomRange(0.0f, 1.0f);
+        entities_spawn(&stars, &(EntitiesInitOptions) {
+            .x = randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
+            .y = -sprites_whitePixel.panelDims[1], 
+            .vy = lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
+            .transparency = lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
+        }); 
+    }
+
+    updateEntities(&stars, 0.0f);
+}
+
 static void titleScreen(uint32_t tick) {
+    updateStars();
+
     textEntities.count = 0;
 
     if (events_on(&titleControls, TITLE_START)) {
@@ -420,8 +461,9 @@ static void titleScreen(uint32_t tick) {
     events_update(&subtitleSequence);
 }
 
-
 static void mainGame(uint32_t tick) {
+    updateStars();
+
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
         entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
@@ -639,6 +681,8 @@ void game_controller(GameController* controllerInput) {
 
 void game_draw(void) {
     renderer_beforeFrame();
+
+    renderer_draw(&stars.renderList);
 
     if (player.deadCounter == 0) {
         renderer_draw(&player.renderList);

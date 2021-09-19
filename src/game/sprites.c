@@ -235,6 +235,11 @@ extern Sprites_Sprite sprites_text = {
     .numAnimations = sizeof(fontAnimations) / sizeof(fontAnimations[0])
 };
 
+extern Sprites_Sprite sprites_whitePixel = {
+    .panelDims = { 1, 1 },
+    .sheetDims = { 1.0f, 1.0f },
+};
+
 extern int8_t sprites_charToAnimationIndex(char c) {
     if (c >= 'A' && c <= 'Z') {
         return c - 'A';

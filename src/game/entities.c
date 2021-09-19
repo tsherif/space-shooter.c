@@ -79,7 +79,9 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     list->alpha[i]            = 1.0f - opts->transparency;
     list->health[i]           = opts->health;
 
-    entities_updateAnimationPanel(list, i);
+    if (list->sprite->animations) {
+        entities_updateAnimationPanel(list, i);
+    }
 
     ++list->count;
 }

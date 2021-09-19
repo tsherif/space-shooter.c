@@ -14,7 +14,7 @@
 - [x] Player explodes
 - [x] Explosion sound
 - [x] Crashes kill enemy and player
-- [ ] Stars passing
+- [x] Stars passing
 - [ ] Multiple levels
 - [x] Text Rendering
 - [x] Title screen
