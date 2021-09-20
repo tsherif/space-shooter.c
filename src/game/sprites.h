@@ -84,7 +84,7 @@ typedef enum {
 } Sprites_AnimationEndBehavior;
 
 typedef struct {
-    uint8_t frames[32][2];
+    float frames[32][2];
     uint8_t numFrames;
     Sprites_AnimationEndBehavior endBehavior;
 } Sprites_Animation;

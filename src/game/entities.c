@@ -24,7 +24,7 @@
 #include "entities.h"
 
 extern void entities_updateAnimationPanel(EntitiesList* list, uint8_t i) {
-    uint8_t* panel = list->sprite->animations[list->currentAnimation[i]].frames[list->animationTick[i]];
+    float* panel = list->sprite->animations[list->currentAnimation[i]].frames[list->animationTick[i]];
     float* currentSpritePanel = list->currentSpritePanel + i * 2;
 
     currentSpritePanel[0] = panel[0];
@@ -108,25 +108,6 @@ extern void entities_kill(EntitiesList* list, uint8_t i) {
     list->health[i]           = list->health[last];
 
     --list->count;
-}
-
-extern void updateEntityAnimations(EntitiesList* list) {
-    for (uint8_t i = 0; i < list->count; ++i) {
-        uint8_t numFrames = list->sprite->animations[list->currentAnimation[i]].numFrames;
-        ++list->animationTick[i];
-        if (list->animationTick[i] == numFrames) {
-            Sprites_AnimationEndBehavior endBehavior = list->sprite->animations[list->currentAnimation[i]].endBehavior;
-
-            if (endBehavior == SPRITES_ANIMATION_END_KILL) {
-                entities_kill(list, i);
-                continue;
-            } else {
-                list->animationTick[i] = 0; 
-            }
-        }
-
-        entities_updateAnimationPanel(list, i);
-    }
 }
 
 extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts) {
