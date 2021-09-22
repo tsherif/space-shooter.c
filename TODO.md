@@ -21,7 +21,7 @@
 - [x] Keep score
 - [x] Scale using ~~a framebuffer~~ the viewport
 - [x] Get rid of copying into render list
-- [ ] Instanced draws
+- [x] Instanced draws
 - [ ] Clean up globals 
 - [ ] Robust WAV file parsing
 - [ ] Get rid of win32 error messages in the renderer
@@ -34,4 +34,5 @@
 - [x] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes
-- [ ] BUG? Controller button presses don't seem responsive.
+- [ ] BUG? Controller button presses don't seem responsive
+- [ ] BMP for sprites, remove stb_image dep

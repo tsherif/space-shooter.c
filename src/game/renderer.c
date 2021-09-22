@@ -25,15 +25,16 @@
 #include "renderer.h"
 #include "../../lib/stb_image.h"
 
-static GLuint pixelSizeLocation;
-static GLuint panelPixelSizeLocation;
-static GLuint spriteSheetLocation;
-static GLuint spriteSheetDimensionsLocation;
-static GLuint panelIndexLocation;
-static GLuint pixelOffsetLocation;
-static GLuint whiteOutLocation;
-static GLuint scaleLocation;
-static GLuint alphaLocation;
+static GLuint pixelSizeUniform;
+static GLuint spriteSheetUniform;
+static GLuint panelPixelSizeUniform;
+static GLuint spriteSheetDimensionsUniform;
+
+static GLuint panelIndexBuffer;
+static GLuint pixelOffsetBuffer;
+static GLuint scaleBuffer;
+static GLuint whiteOutBuffer;
+static GLuint alphaBuffer;
 
 static uint16_t windowWidth;
 static uint16_t windowHeight;
@@ -55,30 +56,36 @@ void renderer_init(int width, int height) {
 
     const char* vsSource = "#version 450\n"
     "layout (location=0) in vec2 position;\n"
-    "uniform vec2 pixelOffset;\n"
-    "uniform vec2 pixelSize;\n"
+    "layout (location=1) in vec2 pixelOffset;\n"
+    "layout (location=2) in vec2 panelIndex;\n"
+    "layout (location=3) in float scale;\n"
+    "layout (location=4) in float alpha;\n"
+    "layout (location=5) in float whiteOut;\n"
     "uniform vec2 panelPixelSize;\n"
-    "uniform vec2 panelIndex;\n"
     "uniform vec2 spriteSheetDimensions;\n"
-    "uniform float scale;\n"
+    "uniform vec2 pixelSize;\n"
     "out vec2 vUV;\n"
+    "out float vAlpha;\n"
+    "out float vWhiteOut;"
     "void main() {\n"
     "    vec2 uv = position;\n"
     "    vUV = (uv + panelIndex) / spriteSheetDimensions;\n"
+    "    vWhiteOut = whiteOut;\n"
+    "    vAlpha = alpha;\n"
     "    vec2 clipOffset = pixelOffset * pixelSize - 1.0;\n"
     "    gl_Position = vec4((position * panelPixelSize * pixelSize * scale + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
     "}\n";
 
     const char* fsSource = "#version 450\n"
     "in vec2 vUV;\n"
+    "in float vAlpha;"
+    "in float vWhiteOut;"
     "uniform sampler2D spriteSheet;\n"
-    "uniform bool whiteOut;"
-    "uniform float alpha;"
     "out vec4 fragColor;\n"
     "void main() {\n"
     "    fragColor = texture(spriteSheet, vUV);\n"
-    "    if (whiteOut) fragColor.rgb = vec3(1.0);\n"
-    "    fragColor.a *= alpha;\n"
+    "    if (vWhiteOut != 0.0) fragColor.rgb = vec3(1.0);\n"
+    "    fragColor.a *= vAlpha;\n"
     "    fragColor.rgb *= fragColor.a;\n"
     "}\n";
 
@@ -102,28 +109,28 @@ void renderer_init(int width, int height) {
     if (result != GL_TRUE) {
         MessageBoxA(NULL, "Program failed to link!", "FAILURE", MB_OK);
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
+        char buffer[1024];
         if (result != GL_TRUE) {
-            MessageBoxA(NULL, "Vertex shader failed to compile!", "FAILURE", MB_OK);
+            glGetShaderInfoLog(vertexShader, 1024, NULL, buffer);
+            MessageBoxA(NULL, buffer, "Vertex Shader Failed to Compile", MB_OK);
         }
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
         if (result != GL_TRUE) {
-            MessageBoxA(NULL, "Fragment shader failed to compile!", "FAILURE", MB_OK);
+            glGetShaderInfoLog(fragmentShader, 1024, NULL, buffer);
+            MessageBoxA(NULL, buffer, "Fragment Shader Failed to Compile", MB_OK);
         }
     }
 
 
     glUseProgram(program);
-    pixelSizeLocation = glGetUniformLocation(program, "pixelSize");
-    panelPixelSizeLocation = glGetUniformLocation(program, "panelPixelSize");
-    spriteSheetLocation = glGetUniformLocation(program, "spriteSheet");
-    spriteSheetDimensionsLocation = glGetUniformLocation(program, "spriteSheetDimensions");
-    panelIndexLocation = glGetUniformLocation(program, "panelIndex");
-    pixelOffsetLocation = glGetUniformLocation(program, "pixelOffset");
-    whiteOutLocation = glGetUniformLocation(program, "whiteOut");
-    scaleLocation = glGetUniformLocation(program, "scale");
-    alphaLocation = glGetUniformLocation(program, "alpha");
 
-    glUniform2f(pixelSizeLocation, 2.0f / width, 2.0f / height);
+    pixelSizeUniform = glGetUniformLocation(program, "pixelSize");
+    panelPixelSizeUniform = glGetUniformLocation(program, "panelPixelSize");
+    spriteSheetDimensionsUniform = glGetUniformLocation(program, "spriteSheetDimensions");
+    spriteSheetUniform = glGetUniformLocation(program, "spriteSheet");
+
+    glUniform2f(pixelSizeUniform, 2.0f / width, 2.0f / height);
+    glUniform1i(spriteSheetUniform, 0);
 
     float positions[] = {
         0.0f, 0.0f,
@@ -142,7 +149,43 @@ void renderer_init(int width, int height) {
     glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(0);
-    glUniform1i(spriteSheetLocation, 0);
+
+    // Instanced attributes
+
+    glGenBuffers(1, &pixelOffsetBuffer);
+    glGenBuffers(1, &pixelOffsetBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, pixelOffsetBuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribDivisor(1, 1);
+    glEnableVertexAttribArray(1);
+
+    glGenBuffers(1, &panelIndexBuffer);
+    glGenBuffers(1, &panelIndexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, panelIndexBuffer);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribDivisor(2, 1);
+    glEnableVertexAttribArray(2);
+
+    glGenBuffers(1, &scaleBuffer);
+    glGenBuffers(1, &scaleBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, scaleBuffer);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribDivisor(3, 1);
+    glEnableVertexAttribArray(3);
+
+    glGenBuffers(1, &alphaBuffer);
+    glGenBuffers(1, &alphaBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, alphaBuffer);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribDivisor(4, 1);
+    glEnableVertexAttribArray(4);
+
+    glGenBuffers(1, &whiteOutBuffer);
+    glGenBuffers(1, &whiteOutBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, whiteOutBuffer);
+    glVertexAttribPointer(5, 1, GL_UNSIGNED_BYTE, GL_FALSE, 0, NULL);
+    glVertexAttribDivisor(5, 1);
+    glEnableVertexAttribArray(5);
 }
 
 bool renderer_loadTexture(const char* fileName, GLuint* texture) {
@@ -212,18 +255,24 @@ void renderer_draw(Renderer_RenderList* list) {
         return;
     }
 
-
     glBindTexture(GL_TEXTURE_2D, list->texture);
-    glUniform2fv(panelPixelSizeLocation, 1, list->sprite->panelDims);
-    glUniform2fv(spriteSheetDimensionsLocation, 1, list->sprite->sheetDims);
+    glUniform2fv(panelPixelSizeUniform, 1, list->sprite->panelDims);
+    glUniform2fv(spriteSheetDimensionsUniform, 1, list->sprite->sheetDims);
 
-    for (uint8_t i = 0; i < list->count; ++i) {
-        glUniform2fv(pixelOffsetLocation, 1, list->position + i * 2);
-        glUniform2fv(panelIndexLocation, 1, list->currentSpritePanel + i * 2);
-        glUniform1f(whiteOutLocation, list->whiteOut[i]);
-        glUniform1f(scaleLocation, list->scale[i]);
-        glUniform1f(alphaLocation, list->alpha[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, pixelOffsetBuffer);
+    glBufferData(GL_ARRAY_BUFFER, list->count * 2 * sizeof(float), list->position, GL_DYNAMIC_DRAW);
 
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    }
+    glBindBuffer(GL_ARRAY_BUFFER, panelIndexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, list->count * 2 * sizeof(float), list->currentSpritePanel, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, scaleBuffer);
+    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->scale, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, alphaBuffer);
+    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->alpha, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, whiteOutBuffer);
+    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(uint8_t), list->whiteOut, GL_DYNAMIC_DRAW);
+
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, list->count);
 }
