@@ -23,6 +23,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "renderer.h"
+#include "../shared/platform-interface.h"
 #include "../../lib/stb_image.h"
 
 static GLuint pixelSizeUniform;
@@ -105,19 +106,20 @@ void renderer_init(int width, int height) {
     GLint result;
     glGetProgramiv(program, GL_LINK_STATUS, &result);
 
-    // TODO(Tarek): Get rid of these.
     if (result != GL_TRUE) {
-        MessageBoxA(NULL, "Program failed to link!", "FAILURE", MB_OK);
+        platform_debugLog("Program failed to link!");
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
         char buffer[1024];
         if (result != GL_TRUE) {
+            platform_debugLog("Vertex shader failed to compile!");
             glGetShaderInfoLog(vertexShader, 1024, NULL, buffer);
-            MessageBoxA(NULL, buffer, "Vertex Shader Failed to Compile", MB_OK);
+            platform_debugLog(buffer);
         }
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
         if (result != GL_TRUE) {
+            platform_debugLog("Fragment shader failed to compile!");
             glGetShaderInfoLog(fragmentShader, 1024, NULL, buffer);
-            MessageBoxA(NULL, buffer, "Fragment Shader Failed to Compile", MB_OK);
+            platform_debugLog(buffer);
         }
     }
 

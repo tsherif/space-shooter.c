@@ -305,3 +305,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     return (int) message.wParam;
 }
+
+void platform_debugLog(const char* message) {
+    OutputDebugStringA(message);  
+    OutputDebugStringA("\n");  
+}

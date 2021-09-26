@@ -24,7 +24,7 @@
 - [x] Instanced draws
 - [ ] Clean up globals 
 - [ ] Robust WAV file parsing
-- [ ] Get rid of win32 error messages in the renderer
+- [x] Get rid of win32 error messages in the renderer
 - [x] Fullscreen
 - [x] Loop music
 - [ ] Shaders as external files
@@ -34,5 +34,5 @@
 - [x] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes
-- [ ] BUG? Controller button presses don't seem responsive
+- [ ] Clean up controls (e.g. rapid fire while moving)
 - [ ] BMP for sprites, remove stb_image dep
