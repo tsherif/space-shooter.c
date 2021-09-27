@@ -364,54 +364,20 @@ void game_init(void) {
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
-    UtilsImage image = { 0 };
-    uint8_t* bmpData = platform_loadBinFile("assets/sprites/ship.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &player.texture);
-    utils_freeImage(&image);
-    free(bmpData);
-
-    bmpData = platform_loadBinFile("assets/sprites/enemy-small.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &smallEnemies.texture);
-    utils_freeImage(&image);
-    free(bmpData);
-
-    bmpData = platform_loadBinFile("assets/sprites/enemy-medium.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &mediumEnemies.texture);
-    utils_freeImage(&image);
-    free(bmpData);
-
-    bmpData = platform_loadBinFile("assets/sprites/enemy-big.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &largeEnemies.texture);
-    utils_freeImage(&image);
-    free(bmpData);
-
-    bmpData = platform_loadBinFile("assets/sprites/explosion.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &explosions.texture);
-    utils_freeImage(&image);
-    free(bmpData);
-
-    bmpData = platform_loadBinFile("assets/sprites/pixelspritefont32.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &textEntities.texture);
-    utils_freeImage(&image);
-    free(bmpData);
+    renderer_initBmpTexture("assets/sprites/ship.bmp", &player.texture);
+    renderer_initBmpTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture);
+    renderer_initBmpTexture("assets/sprites/enemy-medium.bmp", &mediumEnemies.texture);
+    renderer_initBmpTexture("assets/sprites/enemy-big.bmp", &largeEnemies.texture);
+    renderer_initBmpTexture("assets/sprites/explosion.bmp", &explosions.texture);
+    renderer_initBmpTexture("assets/sprites/pixelspritefont32.bmp", &textEntities.texture);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
-    bmpData = platform_loadBinFile("assets/sprites/laser-bolts.bmp");
-    utils_bmpToImage(bmpData, &image);
-    renderer_dataTexture(image.data, image.width, image.height, &bulletTexture);
-    utils_freeImage(&image);
-    free(bmpData);
+    renderer_initBmpTexture("assets/sprites/laser-bolts.bmp", &bulletTexture);
 
     playerBullets.texture = bulletTexture;
     enemyBullets.texture = bulletTexture;
 
-    renderer_dataTexture(whitePixelData, 1, 1, &stars.texture);
+    renderer_initDataTexture(whitePixelData, 1, 1, &stars.texture);
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
