@@ -1,12 +1,11 @@
 space-shooter.c [WIP]
 =====================
-A top-down space shooter written in C with minimal dependencies.
+A top-down space shooter written in C using only system libraries.
 
 Uses:
 - Windowing: Win32
 - Rendering: OpenGL
 - Audio: XAudio2
-- Image Loading: stb_image
 
 Current State
 -------------

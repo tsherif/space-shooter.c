@@ -29,6 +29,7 @@
 #include <xinput.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <malloc.h>
 #include <math.h>
 #include <profileapi.h>
 #include "../../../lib/create-opengl-window.h"
@@ -309,4 +310,51 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 void platform_debugLog(const char* message) {
     OutputDebugStringA(message);  
     OutputDebugStringA("\n");  
+}
+
+uint8_t* platform_loadBinFile(const char* fileName) {
+    HANDLE file = CreateFileA(
+      fileName,
+      GENERIC_READ,
+      FILE_SHARE_READ,
+      NULL,
+      OPEN_EXISTING,
+      FILE_ATTRIBUTE_NORMAL,
+      NULL
+    );
+
+    char errorMessage[1024];
+    if (file == INVALID_HANDLE_VALUE) {        
+        snprintf(errorMessage, 1024, "Failed to load file: %s!", fileName);
+        platform_debugLog(errorMessage);
+        CloseHandle(file);
+        return NULL;
+    }
+
+    LARGE_INTEGER fileSize = { 0 }; 
+    if (!GetFileSizeEx(file, &fileSize)) {
+        snprintf(errorMessage, 1024, "Failed to set file size: %s!", fileName);
+        platform_debugLog(errorMessage);
+        CloseHandle(file);
+        return NULL;
+    }
+
+    if (fileSize.HighPart > 0) {
+        snprintf(errorMessage, 1024, "File too large: %s!", fileName);
+        platform_debugLog(errorMessage);
+        CloseHandle(file);
+        return NULL;
+    }
+
+    DWORD bytesRead = 0;
+    BYTE* data = (BYTE*) malloc(fileSize.LowPart);
+
+    if (!ReadFile(file, data, fileSize.LowPart, &bytesRead, NULL)) {
+        snprintf(errorMessage, 1024, "Failed to read file: %s!", fileName);
+        platform_debugLog(errorMessage);
+        CloseHandle(file);
+        return NULL;
+    }
+
+    return (uint8_t *) data;
 }

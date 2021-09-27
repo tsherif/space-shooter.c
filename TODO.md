@@ -35,4 +35,4 @@
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes
 - [ ] Clean up controls (e.g. rapid fire while moving)
-- [ ] BMP for sprites, remove stb_image dep
+- [x] BMP for sprites, remove stb_image dep

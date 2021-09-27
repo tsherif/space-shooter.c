@@ -56,5 +56,6 @@ bool platform_initAudio(void);
 PlatformSound* platform_loadSound(const char* fileName);
 void platform_playSound(PlatformSound* sound, bool loop);
 void platform_debugLog(const char* message);
+uint8_t* platform_loadBinFile(const char* fileName);
 
 #endif

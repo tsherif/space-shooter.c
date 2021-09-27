@@ -23,10 +23,20 @@
 
 #ifndef _GAME_UTILS_H_
 #define _GAME_UTILS_H_
+#include <stdbool.h>
+#include <stdint.h>
 
+typedef struct {
+	uint8_t* data;
+	uint16_t width;
+	uint16_t height;
+} UtilsImage;
 
 // Allows for use of the mixin struct members directly
 // or through the named struct.
 #define MIXIN_STRUCT(type, name) union { type; type name; }
+
+bool utils_bmpToImage(uint8_t* bmpData, UtilsImage* image);
+void utils_freeImage(UtilsImage* image);
 
 #endif
