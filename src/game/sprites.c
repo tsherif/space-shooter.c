@@ -240,7 +240,7 @@ extern Sprites_Sprite sprites_whitePixel = {
     .sheetDims = { 1.0f, 1.0f },
 };
 
-extern int8_t sprites_charToAnimationIndex(char c) {
+extern int32_t sprites_charToAnimationIndex(char c) {
     if (c >= 'A' && c <= 'Z') {
         return c - 'A';
     }
@@ -257,7 +257,7 @@ extern int8_t sprites_charToAnimationIndex(char c) {
         return 35;
     }
 
-    uint8_t i = 0; 
+    int32_t i = 0; 
     while (PUNCTUATION[i]) {
         if (c == PUNCTUATION[i]) {
             return i + 36;

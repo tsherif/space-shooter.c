@@ -43,7 +43,7 @@ void events_update(EventsSequence* sequence) {
     ++sequence->ticks;
 
     EventsEvent* event = sequence->events + sequence->current;
-    uint32_t duration = event->duration;
+    int32_t duration = event->duration;
 
     // duration of 0 or 1 will last for 1 tick
     if (duration == 0) {
@@ -68,7 +68,7 @@ void events_update(EventsSequence* sequence) {
     }
 }
 
-bool events_on(EventsSequence* sequence, uint32_t id) {
+bool events_on(EventsSequence* sequence, int32_t id) {
     if (!sequence->running) {
         return false;
     }

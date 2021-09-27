@@ -28,9 +28,9 @@
 typedef struct {
     MIXIN_STRUCT(Renderer_RenderList, renderList);
     float velocity[RENDERER_DRAWLIST_MAX * 2];
-    uint8_t currentAnimation[RENDERER_DRAWLIST_MAX];
-    uint8_t animationTick[RENDERER_DRAWLIST_MAX];
-    uint8_t health[RENDERER_DRAWLIST_MAX];
+    int32_t currentAnimation[RENDERER_DRAWLIST_MAX];
+    int32_t animationTick[RENDERER_DRAWLIST_MAX];
+    int32_t health[RENDERER_DRAWLIST_MAX];
 } EntitiesList;
 
 typedef struct {
@@ -38,8 +38,8 @@ typedef struct {
     float y;
     float vx;
     float vy;
-    uint8_t currentAnimation;
-    uint8_t health;
+    int32_t currentAnimation;
+    int32_t health;
     float scale;
     float transparency;
 } EntitiesInitOptions;
@@ -52,12 +52,12 @@ typedef struct {
     bool reset;
 } EntitiesFromTextOptions;
 
-extern void entities_updateAnimationPanel(EntitiesList* list, uint8_t i);
-extern void entities_setAnimation(EntitiesList* list, uint8_t i, uint8_t animation);
+extern void entities_updateAnimationPanel(EntitiesList* list, int32_t i);
+extern void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation);
 extern void entities_updateAnimations(EntitiesList* list);
 extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts);
-extern void entities_init(EntitiesList* list, uint8_t i, EntitiesInitOptions* opts);
-extern void entities_kill(EntitiesList* list, uint8_t i);
+extern void entities_init(EntitiesList* list, int32_t i, EntitiesInitOptions* opts);
+extern void entities_kill(EntitiesList* list, int32_t i);
 extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts);
 
 #endif

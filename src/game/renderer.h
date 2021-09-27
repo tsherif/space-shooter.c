@@ -37,11 +37,11 @@ typedef struct {
     uint8_t whiteOut[RENDERER_DRAWLIST_MAX];
     Sprites_Sprite* sprite;
     GLuint texture;
-    uint8_t count;
+    int32_t count;
 } Renderer_RenderList;
 
 void renderer_init(int width, int height);
-void renderer_initDataTexture(uint8_t* data, uint16_t width, uint16_t height, GLuint* texture);
+void renderer_initDataTexture(uint8_t* data, int32_t width, int32_t height, GLuint* texture);
 bool renderer_initBmpTexture(const char* fileName, GLuint* texture);
 void renderer_resize(int width, int height);
 void renderer_beforeFrame(void);

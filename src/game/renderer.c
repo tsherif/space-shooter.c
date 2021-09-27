@@ -36,19 +36,19 @@ static GLuint scaleBuffer;
 static GLuint whiteOutBuffer;
 static GLuint alphaBuffer;
 
-static uint16_t windowWidth;
-static uint16_t windowHeight;
-static uint16_t gameWidth;
-static uint16_t gameHeight;
-static uint16_t gameScreenOffsetX;
-static uint16_t gameScreenOffsetY;
-static uint16_t gameScreenWidth;
-static uint16_t gameScreenHeight;
+static int32_t windowWidth;
+static int32_t windowHeight;
+static int32_t gameWidth;
+static int32_t gameHeight;
+static int32_t gameScreenOffsetX;
+static int32_t gameScreenOffsetY;
+static int32_t gameScreenWidth;
+static int32_t gameScreenHeight;
 
 typedef struct {
     uint8_t* data;
-    uint16_t width;
-    uint16_t height;
+    int32_t width;
+    int32_t height;
 } Image;
 
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
@@ -95,22 +95,22 @@ static bool bmpToImage(uint8_t* bmpData, Image* image) {
 
     uint8_t* bmpImage = bmpData + imageOffset;
     
-    uint32_t numPixels = width * height;
+    int32_t numPixels = width * height;
     uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
 
-    for (uint32_t i = 0; i < numPixels;  ++i) {
-        uint16_t row = i / width;
-        uint16_t col = i % width;
-        uint16_t mirrorRow = height - row - 1;
-        uint32_t mirrorI = mirrorRow * width + col;
+    for (int32_t i = 0; i < numPixels;  ++i) {
+        int32_t row = i / width;
+        int32_t col = i % width;
+        int32_t mirrorRow = height - row - 1;
+        int32_t mirrorI = mirrorRow * width + col;
 
-        uint32_t byteI = i * 4;
+        int32_t byteI = i * 4;
         uint8_t b = bmpImage[byteI];
         uint8_t g = bmpImage[byteI + 1];
         uint8_t r = bmpImage[byteI + 2];
         uint8_t a = bmpImage[byteI + 3];
 
-        uint32_t mirrorByteI = mirrorI * 4;
+        int32_t mirrorByteI = mirrorI * 4;
         imageData[mirrorByteI]     = r;
         imageData[mirrorByteI + 1] = g;
         imageData[mirrorByteI + 2] = b;
@@ -118,8 +118,8 @@ static bool bmpToImage(uint8_t* bmpData, Image* image) {
     }
 
     image->data = imageData;
-    image->width = (uint16_t) width;
-    image->height = (uint16_t) height;
+    image->width = width;
+    image->height = height;
 
     return true;
 }
@@ -279,7 +279,7 @@ void renderer_init(int width, int height) {
     glEnableVertexAttribArray(5);
 }
 
-void renderer_initDataTexture(uint8_t* data, uint16_t width, uint16_t height, GLuint* texture) {
+void renderer_initDataTexture(uint8_t* data, int32_t width, int32_t height, GLuint* texture) {
     glGenTextures(1, texture);
     glBindTexture(GL_TEXTURE_2D, *texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -311,17 +311,17 @@ bool renderer_initBmpTexture(const char* fileName, GLuint* texture) {
     return true;
 }
 
-void renderer_resize(int width, int height) {
+void renderer_resize(int32_t width, int32_t height) {
     windowWidth = width;
     windowHeight = height;
 
     float aspect = (float) gameWidth / gameHeight;
     gameScreenWidth = width;
-    gameScreenHeight = (uint16_t) (width / aspect);
+    gameScreenHeight = (int32_t) (width / aspect);
 
     if (gameScreenHeight > height) {
         gameScreenHeight = height;
-        gameScreenWidth = (uint16_t) (aspect * gameScreenHeight);
+        gameScreenWidth = (int32_t) (aspect * gameScreenHeight);
     }
 
     gameScreenOffsetX = (width - gameScreenWidth) / 2;

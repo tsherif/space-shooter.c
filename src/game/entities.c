@@ -23,7 +23,7 @@
 
 #include "entities.h"
 
-extern void entities_updateAnimationPanel(EntitiesList* list, uint8_t i) {
+extern void entities_updateAnimationPanel(EntitiesList* list, int32_t i) {
     float* panel = list->sprite->animations[list->currentAnimation[i]].frames[list->animationTick[i]];
     float* currentSpritePanel = list->currentSpritePanel + i * 2;
 
@@ -31,7 +31,7 @@ extern void entities_updateAnimationPanel(EntitiesList* list, uint8_t i) {
     currentSpritePanel[1] = panel[1];
 }
 
-extern void entities_setAnimation(EntitiesList* list, uint8_t i, uint8_t animation) {
+extern void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation) {
     if (list->currentAnimation[i] == animation) {
         return;
     }
@@ -42,8 +42,8 @@ extern void entities_setAnimation(EntitiesList* list, uint8_t i, uint8_t animati
 }
 
 extern void entities_updateAnimations(EntitiesList* list) {
-    for (uint8_t i = 0; i < list->count; ++i) {
-        uint8_t numFrames = list->sprite->animations[list->currentAnimation[i]].numFrames;
+    for (int32_t i = 0; i < list->count; ++i) {
+        int32_t numFrames = list->sprite->animations[list->currentAnimation[i]].numFrames;
         ++list->animationTick[i];
         if (list->animationTick[i] == numFrames) {
             Sprites_AnimationEndBehavior endBehavior = list->sprite->animations[list->currentAnimation[i]].endBehavior;
@@ -65,7 +65,7 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
         return;
     }
 
-    uint8_t i = list->count;
+    int32_t i = list->count;
     float* position = list->position + i * 2;
     float* velocity = list->velocity + i * 2;
 
@@ -86,12 +86,12 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     ++list->count;
 }
 
-extern void entities_kill(EntitiesList* list, uint8_t i) {
+extern void entities_kill(EntitiesList* list, int32_t i) {
     if (i >= list->count) {
         return;
     }
 
-    uint8_t last = list->count - 1;
+    int32_t last = list->count - 1;
     float* position = list->position + i * 2;
     float* velocity = list->velocity + i * 2;
     float* lastPosition = list->position + last * 2;
@@ -111,14 +111,14 @@ extern void entities_kill(EntitiesList* list, uint8_t i) {
 }
 
 extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts) {
-    uint8_t i = 0;
+    int32_t i = 0;
 
     if (opts->reset) {
         list->count = 0;
     }
 
     while (text[i] && list->count < RENDERER_DRAWLIST_MAX) {
-        int8_t animationIndex = sprites_charToAnimationIndex(text[i]);
+        int32_t animationIndex = sprites_charToAnimationIndex(text[i]);
 
         if (animationIndex < 0) {
             ++i;

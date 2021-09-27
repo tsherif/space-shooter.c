@@ -85,7 +85,7 @@ typedef enum {
 
 typedef struct {
     float frames[32][2];
-    uint8_t numFrames;
+    int32_t numFrames;
     Sprites_AnimationEndBehavior endBehavior;
 } Sprites_Animation;
 
@@ -94,7 +94,7 @@ typedef struct {
     Sprites_Animation* animations;
     float sheetDims[2];
     float panelDims[2];
-    uint8_t numAnimations;
+    int32_t numAnimations;
 } Sprites_Sprite;
 
 extern Sprites_Sprite sprites_ship;
@@ -116,6 +116,6 @@ extern float sprites_mediumEnemyExplosionOffset[2];
 extern float sprites_largeEnemyBulletOffset[2];
 extern float sprites_largeEnemyExplosionOffset[2];
 
-extern int8_t sprites_charToAnimationIndex(char c);
+extern int32_t sprites_charToAnimationIndex(char c);
 
 #endif
