@@ -25,6 +25,7 @@
 #define CREATE_OPENGL_WINDOW_H
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +38,7 @@ typedef struct {
 	WNDPROC winCallback;
 	int width;
 	int height;
+    bool vsync;
 } CreateOpenGLWindowArgs;
 
 HWND createOpenGLWindow(CreateOpenGLWindowArgs* args);
@@ -240,7 +242,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     wglMakeCurrent(deviceContext, gl);
 
-    if (wglSwapIntervalEXT) {
+    if (args->vsync && wglSwapIntervalEXT) {
         wglSwapIntervalEXT(1);
     }
 

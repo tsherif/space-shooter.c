@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <math.h>
@@ -37,6 +38,9 @@
 
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
+
+#define TICK_DURATION 6944
+#define TICK_TOLERANCE 1000
 
 #define SHIP_VELOCITY 0.5f
 #define SHIP_BULLET_VELOCITY (-1.5f)
@@ -112,6 +116,7 @@ static char scoreString[SCORE_BUFFER_LENGTH];
 static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 
 static uint32_t gameTick = 0;
+static int32_t tickTime = 0;
 
 enum {
     TITLE_START,
@@ -634,14 +639,23 @@ static void mainGame(uint32_t tick) {
     }
 }
 
-void game_update() {
-    if (gameState == TITLE) {
-        titleScreen(gameTick);
-    } else {
-        mainGame(gameTick);  
+bool game_update(uint64_t elapsedTime) {
+    tickTime += (int32_t) elapsedTime;
+
+    bool updated = false;
+    while (tickTime > -TICK_TOLERANCE) {
+        if (gameState == TITLE) {
+            titleScreen(gameTick);
+        } else {
+            mainGame(gameTick);  
+        }
+
+        tickTime -= TICK_DURATION;
+        ++gameTick;
+        updated = true;
     }
 
-    ++gameTick;
+    return updated;
 }
 
 void game_resize(int width, int height) {

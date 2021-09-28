@@ -165,7 +165,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = winProc,
         .width = INITIAL_WINDOW_WIDTH,
-        .height = INITIAL_WINDOW_HEIGHT
+        .height = INITIAL_WINDOW_HEIGHT,
+        .vsync = true
     });
 
     if (!sogl_loadOpenGL()) {
@@ -213,18 +214,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     //////////////////////////////////
 
     MSG message;
-    LARGE_INTEGER startTicks, endTicks, elapsedTime, tickFrequency;
-    QueryPerformanceFrequency(&tickFrequency);
+    LARGE_INTEGER lastPerfCount, tickFrequency;
     uint32_t ticks = 0;
-    float frameTime = 0.0f;
-    float totalTime = 0.0f;
-    float averageTime = 0.0f;
-    float minTime = 10000.0f;
-    float maxTime = -10000.0f;
+    QueryPerformanceFrequency(&tickFrequency);
+    QueryPerformanceCounter(&lastPerfCount);
     running = true;
 
     while (running) {
-        QueryPerformanceCounter(&startTicks);
         while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&message);
             DispatchMessage(&message);
@@ -279,29 +275,17 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             inputKeys.changed = false;
         }
 
-        game_update();
+        LARGE_INTEGER perfCount;
+        QueryPerformanceCounter(&perfCount);
+        uint64_t elapsedTime = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000;
+        elapsedTime /= tickFrequency.QuadPart;
+
+        game_update(elapsedTime);
         game_draw();
-
         SwapBuffers(deviceContext);
-        QueryPerformanceCounter(&endTicks);
 
-        elapsedTime.QuadPart = (endTicks.QuadPart - startTicks.QuadPart) * 1000000;
-        elapsedTime.QuadPart /= tickFrequency.QuadPart;
-
-        frameTime = elapsedTime.QuadPart / 1000.0f;
+        lastPerfCount = perfCount;
         ++ticks;
-
-        totalTime += frameTime;
-        averageTime = totalTime / ticks;
-        minTime = frameTime < minTime ? frameTime : minTime;
-        maxTime = frameTime > maxTime ? frameTime : maxTime;
-
-        if (ticks % 600 == 1) {
-            char buffer[1024];
-            snprintf(buffer, 1024, "space-shooter.c (win32): Frame Time Average: %.2fms, Min: %.2fms, Max: %.2fms", averageTime, minTime, maxTime);
-            SetWindowTextA(window, buffer);
-            totalTime = 0.0f;
-        }
     }
 
     return (int) message.wParam;
