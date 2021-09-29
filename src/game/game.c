@@ -39,43 +39,45 @@
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
 
-#define TICK_DURATION 6944
+#define TICK_DURATION 16666
 #define TICK_TOLERANCE 1000
 
-#define SHIP_VELOCITY 0.5f
-#define SHIP_BULLET_VELOCITY (-1.5f)
-#define SHIP_BULLET_THROTTLE 20
-#define SHIP_DEAD_COUNTER 500
+#define SHIP_VELOCITY 1.25f
+#define SHIP_BULLET_VELOCITY (-3.75f)
+#define SHIP_BULLET_THROTTLE 8
+#define SHIP_DEAD_COUNTER 200
 
-#define SMALL_ENEMY_VELOCITY 0.2f
-#define SMALL_ENEMY_SPAWN_PROBABILITY 0.002f
-#define SMALL_ENEMY_BULLET_PROBABILITY 0.002f
+#define SMALL_ENEMY_VELOCITY 0.5f
+#define SMALL_ENEMY_SPAWN_PROBABILITY 0.005f
+#define SMALL_ENEMY_BULLET_PROBABILITY 0.005f
 #define SMALL_ENEMY_HEALTH 1
 #define SMALL_ENEMY_POINTS 1
 
-#define MEDIUM_ENEMY_VELOCITY 0.1f
-#define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0006f
-#define MEDIUM_ENEMY_BULLET_PROBABILITY 0.005f
+#define MEDIUM_ENEMY_VELOCITY 0.25f
+#define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0015f
+#define MEDIUM_ENEMY_BULLET_PROBABILITY 0.0125f
 #define MEDIUM_ENEMY_HEALTH 5
 #define MEDIUM_ENEMY_POINTS 5
 
-#define LARGE_ENEMY_VELOCITY 0.04f
-#define LARGE_ENEMY_SPAWN_PROBABILITY 0.0002f
-#define LARGE_ENEMY_BULLET_PROBABILITY 0.02f
+#define LARGE_ENEMY_VELOCITY 0.1f
+#define LARGE_ENEMY_SPAWN_PROBABILITY 0.0005f
+#define LARGE_ENEMY_BULLET_PROBABILITY 0.05f
 #define LARGE_ENEMY_HEALTH 10
 #define LARGE_ENEMY_POINTS 25
 
-#define ENEMY_BULLET_SPEED 0.3f
+#define ENEMY_BULLET_SPEED 0.75f
 
 #define COLLISION_SCALE 0.7f
 
-#define STAR_PROBABILITY 0.03f
-#define STARS_MIN_VELOCITY 0.01f
-#define STARS_MAX_VELOCITY 0.1f
+#define STAR_PROBABILITY 0.075f
+#define STARS_MIN_VELOCITY 0.025f
+#define STARS_MAX_VELOCITY 0.25f
 #define STARS_MIN_TRANSPARENCY 0.0f
 #define STARS_MAX_TRANSPARENCY 0.9f
 #define STARS_MIN_SCALE 1.0f
 #define STARS_MAX_SCALE 4.0f
+
+#define TICKS_PER_ANIMATION 8
 
 typedef struct {
     MIXIN_STRUCT(EntitiesList, entity);
@@ -130,11 +132,11 @@ enum {
 static EventsSequence titleControls = {
     .events = {
         { 
-            .delay = 250,
+            .delay = 100,
             .id =  TITLE_START
         },
         { 
-            .delay = 250,
+            .delay = 100,
             .id =  SUBTITLE_START
         }
     },
@@ -144,11 +146,11 @@ static EventsSequence titleControls = {
 static EventsSequence titleSequence = {
     .events = {
         { 
-            .duration = 300,
+            .duration = 120,
             .id =  TITLE_DISPLAY
         },
         {
-            .duration = 400,
+            .duration = 160,
             .id = TITLE_FADE
         }
     },
@@ -158,11 +160,11 @@ static EventsSequence titleSequence = {
 static EventsSequence subtitleSequence = {
     .events = {
         { 
-            .duration = 300,
+            .duration = 120,
             .id =  SUBTITLE_DISPLAY
         },
         {
-            .duration = 400,
+            .duration = 160,
             .id = SUBTITLE_FADE
         }
     },
@@ -458,7 +460,7 @@ static void titleScreen(uint32_t tick) {
         gameState = MAIN_GAME;
     }
 
-    if (tick % 20 == 0) {
+    if (tick % TICKS_PER_ANIMATION == 0) {
         entities_updateAnimations(&player.entity);  
     }
 
@@ -628,7 +630,7 @@ static void mainGame(uint32_t tick) {
         .reset = true
     });
 
-    if (tick % 20 == 0) {
+    if (tick % TICKS_PER_ANIMATION == 0) {
         entities_updateAnimations(&player.entity);  
         entities_updateAnimations(&playerBullets);  
         entities_updateAnimations(&smallEnemies);
