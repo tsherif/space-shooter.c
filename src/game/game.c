@@ -643,7 +643,7 @@ bool game_update(uint64_t elapsedTime) {
     tickTime += (int32_t) elapsedTime;
 
     bool updated = false;
-    while (tickTime > -TICK_TOLERANCE) {
+    while (tickTime - TICK_DURATION > -TICK_TOLERANCE) {
         if (gameState == TITLE) {
             titleScreen(gameTick);
         } else {
