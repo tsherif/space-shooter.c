@@ -23,57 +23,71 @@
 
 #include "events.h"
 
+void events_update(EventsSequence* sequence, int32_t time) {
+    if (!sequence->running) {
+        return;
+    }
+
+    sequence->currentCount = 0;
+    int32_t lastTime = sequence->time;
+    int32_t currentTime = lastTime + time;
+
+    int32_t start = 0;
+    int32_t end = 0;
+    for (int32_t i = 0; i < sequence->count; ++i) {
+        EventsEvent* event = sequence->events + i;
+        start = end + event->delay;
+        end = start + event->duration;
+        if (start <= currentTime && end >= lastTime) {
+            sequence->current[sequence->currentCount] = i;
+            ++sequence->currentCount;
+            if (event->duration > 0) {
+                event->alpha = (float) (currentTime - start) / event->duration;
+                if (event->alpha > 1.0f) {
+                    event->alpha = 1.0f;
+                } 
+            } else {
+                event->alpha = 0.0f;
+            }
+        }
+    }
+
+    if (lastTime > end) {
+        sequence->currentCount = false;
+        sequence->running = false;
+        sequence->complete = true;    
+    }
+
+    sequence->time = currentTime;
+}
+
 void events_start(EventsSequence* sequence) {
     if (sequence->running) {
         return;
     }
 
     sequence->running = true;
-    sequence->ticks = 0;
-    sequence->current = 0;
+    sequence->time = 0;
+    sequence->currentCount = 0;
     sequence->complete = false;
-    sequence->events[0].t = 0.0f;
+
+    events_update(sequence, 0);
 }
 
-void events_update(EventsSequence* sequence) {
-    if (!sequence->running) {
-        return;
-    }
-
-    ++sequence->ticks;
-
-    EventsEvent* event = sequence->events + sequence->current;
-    int32_t duration = event->duration;
-
-    // duration of 0 or 1 will last for 1 tick
-    if (duration == 0) {
-        duration = 1;
-    }
-
-    if (sequence->ticks >= event->delay + duration) {
-        sequence->ticks = 0;
-        ++sequence->current;
-        if (sequence->current == sequence->count || sequence->current == EVENTS_MAX_SEQUENCE) {
-            sequence->running = false;
-            sequence->complete = true;
-            return;
-        }
-        event = sequence->events + sequence->current;
-    }
-
-    if (duration > 1 && sequence->ticks > event->delay) {
-        event->t = (float) (sequence->ticks - event->delay) / (duration - 1);
-    } else {
-        event->t = 0.0f;
-    }
-}
-
-bool events_on(EventsSequence* sequence, int32_t id) {
+bool events_on(EventsSequence* sequence, int32_t id, float* alpha) {
     if (!sequence->running) {
         return false;
     }
 
-    EventsEvent* event = sequence->events + sequence->current;
+    for (int32_t i = 0; i < sequence->currentCount; ++i) {
+        EventsEvent* event = sequence->events + sequence->current[i];
+        if (event->id == id) {
+            if (alpha) {
+                *alpha = event->alpha;
+            }
+            return true;
+        }
+    }
 
-    return event->id == id && sequence->ticks >= event->delay;
+    return false;
 }

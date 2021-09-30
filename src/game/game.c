@@ -132,11 +132,11 @@ enum {
 static EventsSequence titleControls = {
     .events = {
         { 
-            .delay = 100,
+            .delay = 100 * 16666,
             .id =  TITLE_START
         },
         { 
-            .delay = 100,
+            .delay = 100 * 16666,
             .id =  SUBTITLE_START
         }
     },
@@ -146,11 +146,11 @@ static EventsSequence titleControls = {
 static EventsSequence titleSequence = {
     .events = {
         { 
-            .duration = 120,
+            .duration = 120 * 16666,
             .id =  TITLE_DISPLAY
         },
         {
-            .duration = 160,
+            .duration = 160 * 16666,
             .id = TITLE_FADE
         }
     },
@@ -160,11 +160,11 @@ static EventsSequence titleSequence = {
 static EventsSequence subtitleSequence = {
     .events = {
         { 
-            .duration = 120,
+            .duration = 120 * 16666,
             .id =  SUBTITLE_DISPLAY
         },
         {
-            .duration = 160,
+            .duration = 160 * 16666,
             .id = SUBTITLE_FADE
         }
     },
@@ -406,20 +406,20 @@ static void updateStars(void) {
     updateEntities(&stars, 0.0f);
 }
 
-static void titleScreen(uint32_t tick) {
+static void titleScreen(uint32_t tick, uint32_t time) {
     updateStars();
 
     textEntities.count = 0;
 
-    if (events_on(&titleControls, TITLE_START)) {
+    if (events_on(&titleControls, TITLE_START, NULL)) {
         events_start(&titleSequence);
     }
 
-    if (events_on(&titleControls, SUBTITLE_START)) {
+    if (events_on(&titleControls, SUBTITLE_START, NULL)) {
         events_start(&subtitleSequence);
     }
 
-    if (events_on(&titleSequence, TITLE_DISPLAY)) {
+    if (events_on(&titleSequence, TITLE_DISPLAY, NULL)) {
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
@@ -427,17 +427,17 @@ static void titleScreen(uint32_t tick) {
         });
     }
 
-    if (events_on(&titleSequence, TITLE_FADE)) {
-        EventsEvent* event = titleSequence.events + titleSequence.current;
+    float alpha;
+    if (events_on(&titleSequence, TITLE_FADE, &alpha)) {
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
             .scale = 0.75f,
-            .transparency = event->t
+            .transparency = alpha
         });
     }
 
-    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY)) {
+    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY, NULL)) {
         entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
@@ -445,13 +445,12 @@ static void titleScreen(uint32_t tick) {
         });
     }
 
-    if (events_on(&subtitleSequence, SUBTITLE_FADE)) {
-        EventsEvent* event = subtitleSequence.events + subtitleSequence.current;
+    if (events_on(&subtitleSequence, SUBTITLE_FADE, &alpha)) {
         entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
             .scale = 0.4f,
-            .transparency = event->t
+            .transparency = alpha
         });
     }
 
@@ -464,12 +463,12 @@ static void titleScreen(uint32_t tick) {
         entities_updateAnimations(&player.entity);  
     }
 
-    events_update(&titleControls);
-    events_update(&titleSequence);
-    events_update(&subtitleSequence);
+    events_update(&titleControls, time);
+    events_update(&titleSequence, time);
+    events_update(&subtitleSequence, time);
 }
 
-static void mainGame(uint32_t tick) {
+static void mainGame(uint32_t tick, uint32_t time) {
     updateStars();
 
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
@@ -642,22 +641,19 @@ static void mainGame(uint32_t tick) {
 }
 
 bool game_update(uint64_t elapsedTime) {
-    tickTime += (int32_t) elapsedTime;
-
-    bool updated = false;
-    while (tickTime - TICK_DURATION > -TICK_TOLERANCE) {
-        if (gameState == TITLE) {
-            titleScreen(gameTick);
-        } else {
-            mainGame(gameTick);  
-        }
-
-        tickTime -= TICK_DURATION;
-        ++gameTick;
-        updated = true;
+    if (elapsedTime > 33333) {
+        elapsedTime = 33333;
     }
 
-    return updated;
+    if (gameState == TITLE) {
+        titleScreen(gameTick, (uint32_t) elapsedTime);
+    } else {
+        mainGame(gameTick, (uint32_t) elapsedTime);  
+    }
+
+    ++gameTick;
+
+    return true;
 }
 
 void game_resize(int width, int height) {

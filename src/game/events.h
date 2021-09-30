@@ -32,20 +32,21 @@ typedef struct {
     int32_t delay;
     int32_t duration;
     int32_t id;
-    float t;
+    float alpha;
 } EventsEvent;
 
 typedef struct {
     EventsEvent events[EVENTS_MAX_SEQUENCE];
-    int32_t ticks;
+    int32_t time;
     int32_t count;
-    int32_t current;
+    int32_t current[EVENTS_MAX_SEQUENCE];
+    int32_t currentCount;
     bool running;
     bool complete;
 } EventsSequence;
 
 void events_start(EventsSequence* sequence);
-void events_update(EventsSequence* sequence);
-bool events_on(EventsSequence* sequence, int32_t id);
+void events_update(EventsSequence* sequence, int32_t time);
+bool events_on(EventsSequence* sequence, int32_t id, float* alpha);
 
 #endif
