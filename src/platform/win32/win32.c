@@ -280,7 +280,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         uint64_t elapsedTime = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000;
         elapsedTime /= tickFrequency.QuadPart;
 
-        game_update(elapsedTime);
+        game_update(elapsedTime / 1000.0f);
         game_draw();
         SwapBuffers(deviceContext);
 

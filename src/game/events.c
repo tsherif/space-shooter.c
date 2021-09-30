@@ -23,24 +23,27 @@
 
 #include "events.h"
 
-void events_update(EventsSequence* sequence, int32_t time) {
+void events_update(EventsSequence* sequence, float time) {
     if (!sequence->running) {
         return;
     }
 
-    sequence->currentCount = 0;
-    int32_t lastTime = sequence->time;
-    int32_t currentTime = lastTime + time;
+    sequence->triggeredEvents = NULL;
+    sequence->triggeredCount = 0;
+    float lastTime = sequence->time;
+    float currentTime = lastTime + time;
 
-    int32_t start = 0;
-    int32_t end = 0;
+    float start = 0;
+    float end = 0;
     for (int32_t i = 0; i < sequence->count; ++i) {
         EventsEvent* event = sequence->events + i;
         start = end + event->delay;
         end = start + event->duration;
         if (start <= currentTime && end >= lastTime) {
-            sequence->current[sequence->currentCount] = i;
-            ++sequence->currentCount;
+            if (!sequence->triggeredEvents) {
+                sequence->triggeredEvents = event;     
+            }
+            ++sequence->triggeredCount;
             if (event->duration > 0) {
                 event->alpha = (float) (currentTime - start) / event->duration;
                 if (event->alpha > 1.0f) {
@@ -53,7 +56,8 @@ void events_update(EventsSequence* sequence, int32_t time) {
     }
 
     if (lastTime > end) {
-        sequence->currentCount = false;
+        sequence->triggeredEvents = NULL;
+        sequence->triggeredCount = 0;
         sequence->running = false;
         sequence->complete = true;    
     }
@@ -68,26 +72,9 @@ void events_start(EventsSequence* sequence) {
 
     sequence->running = true;
     sequence->time = 0;
-    sequence->currentCount = 0;
+    sequence->triggeredEvents = NULL;
+    sequence->triggeredCount = 0;
     sequence->complete = false;
 
     events_update(sequence, 0);
-}
-
-bool events_on(EventsSequence* sequence, int32_t id, float* alpha) {
-    if (!sequence->running) {
-        return false;
-    }
-
-    for (int32_t i = 0; i < sequence->currentCount; ++i) {
-        EventsEvent* event = sequence->events + sequence->current[i];
-        if (event->id == id) {
-            if (alpha) {
-                *alpha = event->alpha;
-            }
-            return true;
-        }
-    }
-
-    return false;
 }

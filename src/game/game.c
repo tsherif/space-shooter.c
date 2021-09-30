@@ -132,11 +132,11 @@ enum {
 static EventsSequence titleControls = {
     .events = {
         { 
-            .delay = 100 * 16666,
+            .delay = 1600.0f,
             .id =  TITLE_START
         },
         { 
-            .delay = 100 * 16666,
+            .delay = 1600.0f,
             .id =  SUBTITLE_START
         }
     },
@@ -146,11 +146,11 @@ static EventsSequence titleControls = {
 static EventsSequence titleSequence = {
     .events = {
         { 
-            .duration = 120 * 16666,
+            .duration = 2000.0f,
             .id =  TITLE_DISPLAY
         },
         {
-            .duration = 160 * 16666,
+            .duration = 2500.0f,
             .id = TITLE_FADE
         }
     },
@@ -160,11 +160,11 @@ static EventsSequence titleSequence = {
 static EventsSequence subtitleSequence = {
     .events = {
         { 
-            .duration = 120 * 16666,
+            .duration = 2000.0f,
             .id =  SUBTITLE_DISPLAY
         },
         {
-            .duration = 160 * 16666,
+            .duration = 2500.0f,
             .id = SUBTITLE_FADE
         }
     },
@@ -406,52 +406,60 @@ static void updateStars(void) {
     updateEntities(&stars, 0.0f);
 }
 
-static void titleScreen(uint32_t tick, uint32_t time) {
+static void titleScreen(uint32_t tick, float time) {
     updateStars();
 
     textEntities.count = 0;
 
-    if (events_on(&titleControls, TITLE_START, NULL)) {
-        events_start(&titleSequence);
+    for (int32_t i = 0; i < titleControls.triggeredCount; ++i) {
+        EventsEvent* event = titleControls.triggeredEvents + i;
+        if (event->id == TITLE_START) {
+            events_start(&titleSequence);
+        } 
+
+        if (event->id == SUBTITLE_START) {
+            events_start(&subtitleSequence);
+        } 
     }
 
-    if (events_on(&titleControls, SUBTITLE_START, NULL)) {
-        events_start(&subtitleSequence);
+    for (int32_t i = 0; i < titleSequence.triggeredCount; ++i) {
+        EventsEvent* event = titleSequence.triggeredEvents + i;
+        if (event->id == TITLE_DISPLAY) {
+            entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - 127.0f,
+                .y = 62.0f, 
+                .scale = 0.75f
+            });
+        } 
+
+        if (event->id == TITLE_FADE) {
+            entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - 127.0f,
+                .y = 62.0f, 
+                .scale = 0.75f,
+                .transparency = event->alpha
+            });
+        } 
     }
 
-    if (events_on(&titleSequence, TITLE_DISPLAY, NULL)) {
-        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 62.0f, 
-            .scale = 0.75f
-        });
-    }
+    for (int32_t i = 0; i < subtitleSequence.triggeredCount; ++i) {
+        EventsEvent* event = subtitleSequence.triggeredEvents + i;
+        if (event->id == SUBTITLE_DISPLAY) {
+            entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - 64.0f,
+                .y = 85.0f, 
+                .scale = 0.4f
+            });
+        } 
 
-    float alpha;
-    if (events_on(&titleSequence, TITLE_FADE, &alpha)) {
-        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 62.0f, 
-            .scale = 0.75f,
-            .transparency = alpha
-        });
-    }
-
-    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY, NULL)) {
-        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 64.0f,
-            .y = 85.0f, 
-            .scale = 0.4f
-        });
-    }
-
-    if (events_on(&subtitleSequence, SUBTITLE_FADE, &alpha)) {
-        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 64.0f,
-            .y = 85.0f, 
-            .scale = 0.4f,
-            .transparency = alpha
-        });
+        if (event->id == SUBTITLE_FADE) {
+            entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - 64.0f,
+                .y = 85.0f, 
+                .scale = 0.4f,
+                .transparency = event->alpha
+            });
+        } 
     }
 
     if (titleSequence.complete && subtitleSequence.complete) {
@@ -468,7 +476,7 @@ static void titleScreen(uint32_t tick, uint32_t time) {
     events_update(&subtitleSequence, time);
 }
 
-static void mainGame(uint32_t tick, uint32_t time) {
+static void mainGame(uint32_t tick, float time) {
     updateStars();
 
     if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY) {
@@ -640,20 +648,18 @@ static void mainGame(uint32_t tick, uint32_t time) {
     }
 }
 
-bool game_update(uint64_t elapsedTime) {
-    if (elapsedTime > 33333) {
-        elapsedTime = 33333;
+void game_update(float elapsedTime) {
+    if (elapsedTime > 33.3f) {
+        elapsedTime = 33.3f;
     }
 
     if (gameState == TITLE) {
-        titleScreen(gameTick, (uint32_t) elapsedTime);
+        titleScreen(gameTick, elapsedTime);
     } else {
-        mainGame(gameTick, (uint32_t) elapsedTime);  
+        mainGame(gameTick, elapsedTime);  
     }
 
     ++gameTick;
-
-    return true;
 }
 
 void game_resize(int width, int height) {

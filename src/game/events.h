@@ -29,24 +29,23 @@
 #define EVENTS_MAX_SEQUENCE 32
 
 typedef struct {
-    int32_t delay;
-    int32_t duration;
+    float delay;
+    float duration;
     int32_t id;
     float alpha;
 } EventsEvent;
 
 typedef struct {
     EventsEvent events[EVENTS_MAX_SEQUENCE];
-    int32_t time;
+    float time;
     int32_t count;
-    int32_t current[EVENTS_MAX_SEQUENCE];
-    int32_t currentCount;
+    EventsEvent* triggeredEvents;
+    int32_t triggeredCount;
     bool running;
     bool complete;
 } EventsSequence;
 
 void events_start(EventsSequence* sequence);
-void events_update(EventsSequence* sequence, int32_t time);
-bool events_on(EventsSequence* sequence, int32_t id, float* alpha);
+void events_update(EventsSequence* sequence, float time);
 
 #endif

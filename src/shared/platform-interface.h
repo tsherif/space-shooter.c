@@ -44,7 +44,7 @@ typedef struct {
 
 // Must be implemented by game, to be used by platform layer.
 void game_init(void);
-bool game_update(uint64_t elapsedTime); // In microseconds
+void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
 void game_keyboard(GameKeyboard* inputKeys);
