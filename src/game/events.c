@@ -23,7 +23,7 @@
 
 #include "events.h"
 
-void events_update(EventsSequence* sequence, float time) {
+void events_update(EventsSequence* sequence, float dt) {
     if (!sequence->running) {
         return;
     }
@@ -31,7 +31,7 @@ void events_update(EventsSequence* sequence, float time) {
     sequence->triggeredEvents = NULL;
     sequence->triggeredCount = 0;
     float lastTime = sequence->time;
-    float currentTime = lastTime + time;
+    float currentTime = lastTime + dt;
 
     float start = 0;
     float end = 0;
@@ -45,7 +45,7 @@ void events_update(EventsSequence* sequence, float time) {
             }
             ++sequence->triggeredCount;
             if (event->duration > 0) {
-                event->alpha = (float) (currentTime - start) / event->duration;
+                event->alpha =(currentTime - start) / event->duration;
                 if (event->alpha > 1.0f) {
                     event->alpha = 1.0f;
                 } 
@@ -76,5 +76,5 @@ void events_start(EventsSequence* sequence) {
     sequence->triggeredCount = 0;
     sequence->complete = false;
 
-    events_update(sequence, 0);
+    events_update(sequence, 0.0f);
 }

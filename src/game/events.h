@@ -46,6 +46,6 @@ typedef struct {
 } EventsSequence;
 
 void events_start(EventsSequence* sequence);
-void events_update(EventsSequence* sequence, float time);
+void events_update(EventsSequence* sequence, float dt);
 
 #endif

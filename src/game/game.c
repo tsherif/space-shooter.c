@@ -76,7 +76,7 @@
 #define STARS_MIN_SCALE 1.0f
 #define STARS_MAX_SCALE 4.0f
 
-#define TIME_PER_ANIMATION 100
+#define TIME_PER_ANIMATION 100.0f
 
 typedef struct {
     MIXIN_STRUCT(EntitiesList, entity);
@@ -223,12 +223,12 @@ static void fireEnemyBullet(float x, float y) {
     platform_playSound(enemyBulletSound, false);
 }
 
-static void updateEntities(EntitiesList* list, float time, float killBuffer) {
+static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
     for (int32_t i = 0; i < list->count; ++i) {
         float* position = list->position + i * 2;
         float* velocity = list->velocity + i * 2;
-        position[0] += velocity[0] * time;
-        position[1] += velocity[1] * time;
+        position[0] += velocity[0] * dt;
+        position[1] += velocity[1] * dt;
 
         if (list->whiteOut[i]) {
             list->whiteOut[i] = 0;
@@ -391,8 +391,8 @@ void game_init(void) {
     events_start(&titleControls);
 }
 
-static void updateStars(float time) {
-    if (randomRange(0.0f, 1.0f) < STAR_PROBABILITY * time) {
+static void updateStars(float dt) {
+    if (randomRange(0.0f, 1.0f) < STAR_PROBABILITY * dt) {
         float t = randomRange(0.0f, 1.0f);
         entities_spawn(&stars, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
@@ -402,11 +402,11 @@ static void updateStars(float time) {
         }); 
     }
 
-    updateEntities(&stars, time, 0.0f);
+    updateEntities(&stars, dt, 0.0f);
 }
 
-static void titleScreen(float time) {
-    updateStars(time);
+static void titleScreen(float dt) {
+    updateStars(dt);
 
     textEntities.count = 0;
 
@@ -470,15 +470,15 @@ static void titleScreen(float time) {
         entities_updateAnimations(&player.entity);  
     }
 
-    events_update(&titleControls, time);
-    events_update(&titleSequence, time);
-    events_update(&subtitleSequence, time);
+    events_update(&titleControls, dt);
+    events_update(&titleSequence, dt);
+    events_update(&subtitleSequence, dt);
 }
 
-static void mainGame(float time) {
-    updateStars(time);
+static void mainGame(float dt) {
+    updateStars(dt);
 
-    if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * time) {
+    if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
@@ -487,7 +487,7 @@ static void mainGame(float time) {
         }); 
     }
 
-    if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY * time) {
+    if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&mediumEnemies, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
@@ -496,7 +496,7 @@ static void mainGame(float time) {
         });
     }
 
-    if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY * time) {
+    if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&largeEnemies, &(EntitiesInitOptions) {
             .x = randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
@@ -505,11 +505,11 @@ static void mainGame(float time) {
         });
     }
 
-    updateEntities(&smallEnemies, time, 0.0f);
-    updateEntities(&mediumEnemies, time, 0.0f);
-    updateEntities(&largeEnemies, time, 0.0f);
-    updateEntities(&playerBullets, time, 32.0f);
-    updateEntities(&enemyBullets, time, 32.0f);
+    updateEntities(&smallEnemies, dt, 0.0f);
+    updateEntities(&mediumEnemies, dt, 0.0f);
+    updateEntities(&largeEnemies, dt, 0.0f);
+    updateEntities(&playerBullets, dt, 32.0f);
+    updateEntities(&enemyBullets, dt, 32.0f);
 
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBullet.collisionBox;
     for (int32_t i = 0; i < playerBullets.count; ++i) {
@@ -531,11 +531,11 @@ static void mainGame(float time) {
     }
 
     if (player.bulletThrottle > 0.0f) {
-        player.bulletThrottle -= time; 
+        player.bulletThrottle -= dt; 
     }
 
     if (player.deadTimer > 0.0f) {
-        player.deadTimer -= time;
+        player.deadTimer -= dt;
     } else {
         if (player.velocity[0] < -1.0f) {
             entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
@@ -549,8 +549,8 @@ static void mainGame(float time) {
             entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
         }
 
-        player.position[0] += player.velocity[0] * time;
-        player.position[1] += player.velocity[1] * time;
+        player.position[0] += player.velocity[0] * dt;
+        player.position[1] += player.velocity[1] * dt;
 
         if (player.position[0] < 0.0f) {
             player.position[0] = 0.0f;
@@ -569,21 +569,21 @@ static void mainGame(float time) {
         }
 
         for (int32_t i = 0; i < smallEnemies.count; ++i) {
-            if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * time) {
+            if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
                 float* position = smallEnemies.position + i * 2;
                 fireEnemyBullet(position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
             }
         }
 
         for (int32_t i = 0; i < mediumEnemies.count; ++i) {
-            if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * time) {
+            if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
                 float* position = mediumEnemies.position + i * 2;
                 fireEnemyBullet(position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
             }
         }
 
         for (int32_t i = 0; i < largeEnemies.count; ++i) {
-            if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * time) {
+            if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
                 float* position = largeEnemies.position + i * 2;
                 fireEnemyBullet(position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
             }
@@ -649,7 +649,7 @@ static void mainGame(float time) {
     }
 }
 
-void update(float dt) {
+void updateState(float dt) {
     animationTime += dt;
 
     if (gameState == TITLE) {
@@ -671,11 +671,11 @@ void game_update(float elapsedTime) {
     tickTime += elapsedTime;
 
     while (tickTime - TICK_DURATION > 0.0f) {
-        update(TICK_DURATION);    
+        updateState(TICK_DURATION);    
         tickTime -= TICK_DURATION;
     }
 
-    update(tickTime);
+    updateState(tickTime);
     tickTime = 0.0f;
 }
 
