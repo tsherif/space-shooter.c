@@ -39,6 +39,8 @@
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
 
+#define TICK_DURATION 16.6667f
+
 #define SHIP_VELOCITY 0.075f
 #define SHIP_BULLET_VELOCITY (-0.2f)
 #define SHIP_BULLET_THROTTLE 100.0f
@@ -114,7 +116,7 @@ static char scoreString[SCORE_BUFFER_LENGTH];
 
 static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 
-static int32_t tickTime = 0;
+static float tickTime = 0.0f;
 static float animationTime = 0.0f;
 
 enum {
@@ -647,22 +649,34 @@ static void mainGame(float time) {
     }
 }
 
-void game_update(float elapsedTime) {
-    if (elapsedTime > 33.3f) {
-        elapsedTime = 33.3f;
-    }
-
-    animationTime += elapsedTime;
+void update(float dt) {
+    animationTime += dt;
 
     if (gameState == TITLE) {
-        titleScreen(elapsedTime);
+        titleScreen(dt);
     } else {
-        mainGame(elapsedTime);  
+        mainGame(dt);  
     }
 
     if (animationTime > TIME_PER_ANIMATION) {
         animationTime = 0.0f;
     }
+}
+
+void game_update(float elapsedTime) {
+    if (elapsedTime > 33.3f) {
+        elapsedTime = 33.3f;
+    }
+
+    tickTime += elapsedTime;
+
+    while (tickTime - TICK_DURATION > 0.0f) {
+        update(TICK_DURATION);    
+        tickTime -= TICK_DURATION;
+    }
+
+    update(tickTime);
+    tickTime = 0.0f;
 }
 
 void game_resize(int width, int height) {
