@@ -670,13 +670,15 @@ void game_update(float elapsedTime) {
 
     tickTime += elapsedTime;
 
-    while (tickTime - TICK_DURATION > 0.0f) {
-        updateState(TICK_DURATION);    
-        tickTime -= TICK_DURATION;
-    }
+    if (tickTime > TICK_DURATION) {
+        while (tickTime > TICK_DURATION) {
+            updateState(TICK_DURATION);    
+            tickTime -= TICK_DURATION;
+        }
 
-    updateState(tickTime);
-    tickTime = 0.0f;
+        updateState(tickTime);
+        tickTime = 0.0f;
+    }
 }
 
 void game_resize(int width, int height) {
