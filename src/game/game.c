@@ -406,6 +406,10 @@ static void updateStars(float dt) {
 }
 
 static void titleScreen(float dt) {
+    events_beforeFrame(&titleControls, dt);
+    events_beforeFrame(&titleSequence, dt);
+    events_beforeFrame(&subtitleSequence, dt);
+    
     updateStars(dt);
 
     textEntities.count = 0;
@@ -469,10 +473,6 @@ static void titleScreen(float dt) {
     if (animationTime > TIME_PER_ANIMATION) {
         entities_updateAnimations(&player.entity);  
     }
-
-    events_update(&titleControls, dt);
-    events_update(&titleSequence, dt);
-    events_update(&subtitleSequence, dt);
 }
 
 static void mainGame(float dt) {

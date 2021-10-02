@@ -23,7 +23,19 @@
 
 #include "events.h"
 
-void events_update(EventsSequence* sequence, float dt) {
+void events_start(EventsSequence* sequence) {
+    if (sequence->running) {
+        return;
+    }
+
+    sequence->running = true;
+    sequence->time = 0;
+    sequence->triggeredEvents = NULL;
+    sequence->triggeredCount = 0;
+    sequence->complete = false;
+}
+
+void events_beforeFrame(EventsSequence* sequence, float dt) {
     if (!sequence->running) {
         return;
     }
@@ -63,18 +75,4 @@ void events_update(EventsSequence* sequence, float dt) {
     }
 
     sequence->time = currentTime;
-}
-
-void events_start(EventsSequence* sequence) {
-    if (sequence->running) {
-        return;
-    }
-
-    sequence->running = true;
-    sequence->time = 0;
-    sequence->triggeredEvents = NULL;
-    sequence->triggeredCount = 0;
-    sequence->complete = false;
-
-    events_update(sequence, 0.0f);
 }
