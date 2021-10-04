@@ -34,5 +34,5 @@
 - [x] Hit animation
 - [x] Enemies can fire from offscreen
 - [x] Collision boxes
-- [ ] Clean up controls (e.g. rapid fire while moving)
+- [x] Clean up controls (e.g. rapid fire while moving)
 - [x] BMP for sprites, remove stb_image dep

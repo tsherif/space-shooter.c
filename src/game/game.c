@@ -668,6 +668,16 @@ void game_update(float elapsedTime) {
         elapsedTime = 33.3f;
     }
 
+    PlatformInput input;
+    platform_getInput(&input);
+
+    player.velocity[0] = SHIP_VELOCITY * input.velocity[0];
+    player.velocity[1] = -SHIP_VELOCITY * input.velocity[1];
+
+    if (input.shoot && gameState == MAIN_GAME) {
+        firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
+    }
+
     tickTime += elapsedTime;
 
     if (tickTime > TICK_DURATION) {
@@ -684,37 +694,6 @@ void game_update(float elapsedTime) {
 void game_resize(int width, int height) {
     renderer_resize(width, height);
     game_draw();
-}
-
-void game_keyboard(GameKeyboard* inputKeys) {
-    if (inputKeys->left) {
-        player.velocity[0] = -SHIP_VELOCITY;
-    } else if (inputKeys->right) {
-        player.velocity[0] = SHIP_VELOCITY;
-    } else {
-        player.velocity[0] = 0.0f;
-    }
-
-    if (inputKeys->up) {
-        player.velocity[1] = -SHIP_VELOCITY;
-    } else if (inputKeys->down) {
-        player.velocity[1] = SHIP_VELOCITY;
-    } else {
-        player.velocity[1] = 0.0f;
-    }
-
-    if (inputKeys->space && gameState == MAIN_GAME) {
-        firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
-    }
-}
-
-void game_controller(GameController* controllerInput) {
-    player.velocity[0] = SHIP_VELOCITY * controllerInput->leftStickX;
-    player.velocity[1] = -SHIP_VELOCITY * controllerInput->leftStickY;
-
-    if (controllerInput->aButton && gameState == MAIN_GAME) {
-        firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
-    }
 }
 
 void game_draw(void) {

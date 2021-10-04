@@ -36,13 +36,23 @@
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/platform-interface.h"
 
-static bool running = false;
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
 
-GameKeyboard inputKeys;
-GameController controllerInput;
-bool fullScreen = false;
+static struct {
+    bool left;
+    bool right;
+    bool up;
+    bool down;
+    bool space;
+    bool lastSpace;
+    bool ctrl;
+} keyboard;
+
+static bool running = false;
+static bool fullScreen = false;
+static int controllerIndex = -1;
+static bool lastAButton = false;
 
 static bool gamepadEquals(XINPUT_GAMEPAD* gp1, XINPUT_GAMEPAD* gp2) {
     return gp1->wButtons == gp2->wButtons &&
@@ -87,31 +97,25 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             bool isDown = (lParam & (1 << 31)) == 0;
             switch (wParam) {
                 case VK_LEFT:    {
-                    inputKeys.left  = isDown;
-                    inputKeys.changed = true;
+                    keyboard.left  = isDown;
                 } break;
                 case VK_RIGHT:   {
-                    inputKeys.right = isDown;
-                    inputKeys.changed = true;
+                    keyboard.right = isDown;
                 } break;
                 case VK_UP:      {
-                    inputKeys.up    = isDown;
-                    inputKeys.changed = true;
+                    keyboard.up    = isDown;
                 } break;
                 case VK_DOWN:    {
-                    inputKeys.down  = isDown;
-                    inputKeys.changed = true;
+                    keyboard.down  = isDown;
                 } break;
                 case VK_SPACE:   {
-                    inputKeys.space = isDown;
-                    inputKeys.changed = true;
+                    keyboard.space = isDown;
                 } break;
                 case VK_CONTROL: {
-                    inputKeys.ctrl  = isDown;
-                    inputKeys.changed = true;
+                    keyboard.ctrl  = isDown;
                 } break;
                 case 'F': {
-                    if (isDown && inputKeys.ctrl) {
+                    if (isDown && keyboard.ctrl) {
                         fullScreen = !fullScreen;
                         int  x = 100;
                         int  y = 100;
@@ -180,9 +184,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     }
 
     XINPUT_STATE controllerState;
-    XINPUT_GAMEPAD lastGamePadState;
-
-    int controllerIndex = -1;
 
     for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
         if (XInputGetState(i, &controllerState) == ERROR_SUCCESS) {
@@ -238,41 +239,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
                     break;
                 }
             }
-        } else if (controllerIndex > -1) {
-            if (XInputGetState(controllerIndex, &controllerState) == ERROR_SUCCESS) {
-                if (!gamepadEquals(&controllerState.Gamepad, &lastGamePadState)) {
-                    float x = controllerState.Gamepad.sThumbLX;
-                    float y = controllerState.Gamepad.sThumbLY;
-
-                    float mag = (float) sqrt(x * x + y * y);
-                    x /= mag;
-                    y /= mag;
-
-                    if (mag > 32767.0f) {
-                        mag = 32767.0f;
-                    }
-
-                    if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
-                        mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-                        mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-                        controllerInput.leftStickX = x * mag;
-                        controllerInput.leftStickY = y * mag;
-                    } else {
-                        controllerInput.leftStickX = 0.0f;
-                        controllerInput.leftStickY = 0.0f;
-                    }
-                    controllerInput.aButton = controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-                    game_controller(&controllerInput);
-                    lastGamePadState = controllerState.Gamepad;
-                }
-            } else {
-                controllerIndex = -1;
-            }
-        }
-
-        if (inputKeys.changed) {
-            game_keyboard(&inputKeys);
-            inputKeys.changed = false;
         }
 
         LARGE_INTEGER perfCount;
@@ -289,6 +255,60 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     }
 
     return (int) message.wParam;
+}
+
+void platform_getInput(PlatformInput* input) {
+    input->velocity[0] = 0.0f;
+    input->velocity[1] = 0.0f;
+    input->shoot = false;
+
+    XINPUT_STATE controllerState;
+    if (controllerIndex > -1 && XInputGetState(controllerIndex, &controllerState) == ERROR_SUCCESS) {
+        float x = controllerState.Gamepad.sThumbLX;
+        float y = controllerState.Gamepad.sThumbLY;
+
+        float mag = (float) sqrt(x * x + y * y);
+        x /= mag;
+        y /= mag;
+
+        if (mag > 32767.0f) {
+            mag = 32767.0f;
+        }
+
+        if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
+            mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+            mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+            input->velocity[0] = x * mag;
+            input->velocity[1] = y * mag;
+        } else {
+            input->velocity[0] = 0.0f;
+            input->velocity[1] = 0.0f;
+        }
+        bool aButton = controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
+        if (aButton && !lastAButton) {
+            input->shoot = true;
+        }
+        lastAButton = aButton;
+    } else {
+        controllerIndex = -1;
+    }
+
+    if (keyboard.left) {
+        input->velocity[0] = -1.0f;
+    } else if (keyboard.right) {
+        input->velocity[0] = 1.0f;
+    }
+
+    if (keyboard.up) {
+        input->velocity[1] = 1.0f;
+    } else if (keyboard.down) {
+        input->velocity[1] = -1.0f;
+    }
+
+    if (keyboard.space && !keyboard.lastSpace) {
+        input->shoot = true;
+    }
+    keyboard.lastSpace = keyboard.space;
 }
 
 void platform_debugLog(const char* message) {
