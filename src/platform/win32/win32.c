@@ -257,7 +257,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     return (int) message.wParam;
 }
 
-void platform_getInput(PlatformInput* input) {
+void platform_getInput(GameInput* input) {
     input->velocity[0] = 0.0f;
     input->velocity[1] = 0.0f;
     input->shoot = false;

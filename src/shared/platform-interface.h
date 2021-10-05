@@ -27,26 +27,25 @@
 #include <stdint.h>
 
 // Must be implemented by game, to be used by platform layer.
+typedef struct {
+    uint8_t* data;
+    uint32_t size;
+} GameBuffer;
+
+typedef struct {
+	float velocity[2];
+	bool shoot;
+} GameInput;
+
 void game_init(void);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
 
 // Must be implemented by platform layer, to be used by game.
-typedef struct {
-    uint32_t size;
-    uint8_t* data;
-} PlatformSound;
-
-typedef struct {
-	float velocity[2];
-	bool shoot;
-} PlatformInput;
-
-void platform_getInput(PlatformInput* input);
+void platform_getInput(GameInput* input);
 bool platform_initAudio(void);
-PlatformSound* platform_loadSound(const char* fileName);
-void platform_playSound(PlatformSound* sound, bool loop);
+void platform_playSound(GameBuffer* sound, bool loop);
 void platform_debugLog(const char* message);
 uint8_t* platform_loadBinFile(const char* fileName);
 

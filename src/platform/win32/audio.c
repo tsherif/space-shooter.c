@@ -71,7 +71,7 @@ static struct {
     IXAudio2* xaudio;
     IXAudio2MasteringVoice* xaudioMasterVoice;
     Channel channels[MAX_CHANNELS];
-    PlatformSound sounds[MAX_SOUNDS];
+    GameBuffer sounds[MAX_SOUNDS];
     size_t numSounds;
     IXAudio2VoiceCallback callbacks;
 } audioEngine = {
@@ -139,7 +139,7 @@ bool platform_initAudio(void) {
     return true;
 }
 
-void platform_playSound(PlatformSound* sound, bool loop) {;
+void platform_playSound(GameBuffer* sound, bool loop) {;
     for (int i = 0; i < MAX_CHANNELS; ++i) {
         if (!audioEngine.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audioEngine.channels[i].buffer;

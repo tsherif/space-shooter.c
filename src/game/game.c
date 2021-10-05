@@ -90,11 +90,11 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-static PlatformSound music;
-static PlatformSound shipBulletSound;
-static PlatformSound enemyBulletSound;
-static PlatformSound explosionSound;
-static PlatformSound enemyHit;
+static GameBuffer music;
+static GameBuffer shipBulletSound;
+static GameBuffer enemyBulletSound;
+static GameBuffer explosionSound;
+static GameBuffer enemyHit;
 
 static Player player = { .sprite = &sprites_ship };
 static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
@@ -189,20 +189,7 @@ static float randomRange(float min, float max) {
     return lerp(min, max, (float) rand() / (RAND_MAX + 1));
 }
 
-// ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // RIFF chunk
-// ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size (for all subchunks)
-// ReadFile(audioFile, &fileFormat, sizeof(DWORD), &bytesRead, NULL);    // WAVE format
-// ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // First subchunk (should be 'fmt')
-// ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size for format
-// ReadFile(audioFile, &audioFormat, chunkDataSize, &bytesRead, NULL);   // Wave format struct
-
-// ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // Next subchunk (should be 'data')
-// ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size for data
-
-// BYTE* audioData = (BYTE*) malloc(chunkDataSize);
-// ReadFile(audioFile, audioData, chunkDataSize, &bytesRead, NULL);      // FINALLY!
-
-static bool wavToSound(uint8_t* data, PlatformSound* sound) {
+static bool wavToSound(uint8_t* data, GameBuffer* sound) {
     int32_t offset = 0;
     uint32_t chunkType = 0;
     uint32_t chunkSize = 0;
@@ -736,7 +723,7 @@ void game_update(float elapsedTime) {
         elapsedTime = 33.3f;
     }
 
-    PlatformInput input;
+    GameInput input;
     platform_getInput(&input);
 
     player.velocity[0] = SHIP_VELOCITY * input.velocity[0];
