@@ -25,13 +25,8 @@
 #include <windows.h>
 #include <xaudio2.h>
 #include <stdbool.h>
+#include "../../shared/buffer.h"
 #include "../../shared/platform-interface.h"
-
-
-#define FOURCC_RIFF 'FFIR';
-#define FOURCC_DATA 'atad';
-#define FOURCC_FMT  ' tmf';
-#define FOURCC_WAVE 'EVAW';
 
 #define AUDIO_SAMPLE_RATE 44100
 #define AUDIO_CHANNELS 2
@@ -71,7 +66,7 @@ static struct {
     IXAudio2* xaudio;
     IXAudio2MasteringVoice* xaudioMasterVoice;
     Channel channels[MAX_CHANNELS];
-    GameBuffer sounds[MAX_SOUNDS];
+    BufferBuffer sounds[MAX_SOUNDS];
     size_t numSounds;
     IXAudio2VoiceCallback callbacks;
 } audioEngine = {
@@ -139,7 +134,7 @@ bool platform_initAudio(void) {
     return true;
 }
 
-void platform_playSound(GameBuffer* sound, bool loop) {;
+void platform_playSound(BufferBuffer* sound, bool loop) {;
     for (int i = 0; i < MAX_CHANNELS; ++i) {
         if (!audioEngine.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audioEngine.channels[i].buffer;

@@ -29,6 +29,7 @@
 #include <string.h>
 #include <math.h>
 #include "../../lib/simple-opengl-loader.h"
+#include "../shared/buffer.h"
 #include "../shared/platform-interface.h"
 #include "utils.h"
 #include "renderer.h"
@@ -90,11 +91,11 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-static GameBuffer music;
-static GameBuffer shipBulletSound;
-static GameBuffer enemyBulletSound;
-static GameBuffer explosionSound;
-static GameBuffer enemyHit;
+static BufferBuffer music;
+static BufferBuffer shipBulletSound;
+static BufferBuffer enemyBulletSound;
+static BufferBuffer explosionSound;
+static BufferBuffer enemyHit;
 
 static Player player = { .sprite = &sprites_ship };
 static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
@@ -189,37 +190,41 @@ static float randomRange(float min, float max) {
     return lerp(min, max, (float) rand() / (RAND_MAX + 1));
 }
 
-static bool wavToSound(uint8_t* data, GameBuffer* sound) {
+static bool wavToSound(BufferBuffer* soundData, BufferBuffer* sound) {
     int32_t offset = 0;
     uint32_t chunkType = 0;
     uint32_t chunkSize = 0;
     uint32_t fileFormat = 0;
 
-    chunkType = *(uint32_t *) data;
+    chunkType = *(uint32_t *) soundData->data;
     offset +=  2 * sizeof(uint32_t);
 
     if (chunkType != 0x46464952) { // "RIFF" little-endian
         return false;
     }
 
-    fileFormat = *(uint32_t *) (data + offset);
+    fileFormat = *(uint32_t *) (soundData->data + offset);
     offset += sizeof(uint32_t);
 
     if (fileFormat != 0x45564157) { // "WAVE" little-endian
         return false;
     }
 
-    while (true) {
-        chunkType = *(uint32_t *) (data + offset);
+    while (offset + 2 * sizeof(uint32_t) < soundData->size) {
+        chunkType = *(uint32_t *) (soundData->data + offset);
         offset +=  sizeof(uint32_t);
 
-        chunkSize = *(uint32_t *) (data + offset);
+        chunkSize = *(uint32_t *) (soundData->data + offset);
         offset +=  sizeof(uint32_t);
+
+        if (offset + chunkSize > soundData->size) {
+            return false;
+        }
 
         if (chunkType == 0x61746164) {
             sound->size = chunkSize;
             sound->data = (uint8_t *) malloc(chunkSize);
-            memcpy(sound->data, data + offset, chunkSize);
+            memcpy(sound->data, soundData->data + offset, chunkSize);
             break;
         }
 
@@ -384,26 +389,26 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
 void game_init(void) {
     srand((unsigned int) time(NULL));
 
-    // TODO(Tarek): binfile should return file size, so parsing can check it
-    uint8_t* soundData = platform_loadBinFile("assets/audio/music.wav");
-    wavToSound(soundData, &music);
-    free(soundData);
+    BufferBuffer soundData = { 0 };
+    platform_loadBinFile("assets/audio/music.wav", &soundData);
+    wavToSound(&soundData, &music);
+    buffer_free(&soundData);
 
-    soundData = platform_loadBinFile("assets/audio/Laser_002.wav");
-    wavToSound(soundData, &shipBulletSound);
-    free(soundData);
+    platform_loadBinFile("assets/audio/Laser_002.wav", &soundData);
+    wavToSound(&soundData, &shipBulletSound);
+    buffer_free(&soundData);
 
-    soundData = platform_loadBinFile("assets/audio/Hit_Hurt2.wav");
-    wavToSound(soundData, &enemyBulletSound);
-    free(soundData);
+    platform_loadBinFile("assets/audio/Hit_Hurt2.wav", &soundData);
+    wavToSound(&soundData, &enemyBulletSound);
+    buffer_free(&soundData);
 
-    soundData = platform_loadBinFile("assets/audio/Explode1.wav");
-    wavToSound(soundData, &explosionSound);
-    free(soundData);
+    platform_loadBinFile("assets/audio/Explode1.wav", &soundData);
+    wavToSound(&soundData, &explosionSound);
+    buffer_free(&soundData);
 
-    soundData = platform_loadBinFile("assets/audio/Jump1.wav");
-    wavToSound(soundData, &enemyHit);
-    free(soundData);
+    platform_loadBinFile("assets/audio/Jump1.wav", &soundData);
+    wavToSound(&soundData, &enemyHit);
+    buffer_free(&soundData);
 
     platform_playSound(&music, true);
 

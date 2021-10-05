@@ -23,6 +23,7 @@
 
 #include <malloc.h>
 #include "renderer.h"
+#include "../shared/buffer.h"
 #include "../shared/platform-interface.h"
 
 static GLuint pixelSizeUniform;
@@ -52,40 +53,40 @@ typedef struct {
 } Image;
 
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
-static bool bmpToImage(uint8_t* bmpData, Image* image) {
-    uint16_t type = *(uint16_t *) bmpData;
+static bool bmpToImage(BufferBuffer* imageBuffer, Image* image) {
+    uint16_t type = *(uint16_t *) imageBuffer->data;
 
     if (type != 0x4d42) {
         platform_debugLog("utils_bmpToRgba: Invalid BMP data.");
         return false;
     }
-    uint32_t imageOffset   = *(uint32_t *) (bmpData + 10);
+    uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
     
-    uint32_t dibHeaderSize = *(uint32_t *) (bmpData + 14);
+    uint32_t dibHeaderSize = *(uint32_t *) (imageBuffer->data + 14);
     if (dibHeaderSize < 70) {
         platform_debugLog("utils_bmpToRgba: Unsupported DIB header.");
         return false;
     }
 
-    int32_t width          = *(int32_t *)  (bmpData + 18);
-    int32_t height         = *(int32_t *)  (bmpData + 22);
+    int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
+    int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
 
-    uint16_t bpp           = *(uint16_t *) (bmpData + 28);
+    uint16_t bpp           = *(uint16_t *) (imageBuffer->data + 28);
     if (bpp != 32) {
         platform_debugLog("utils_bmpToRgba: Unsupported bpp, must be 32.");
         return false;
     }
 
-    uint32_t compression   = *(uint32_t *) (bmpData + 30);
+    uint32_t compression   = *(uint32_t *) (imageBuffer->data + 30);
     if (compression != 3) {
         platform_debugLog("utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
         return false;
     }
 
-    uint32_t redMask       = *(uint32_t *) (bmpData + 54);
-    uint32_t greenMask     = *(uint32_t *) (bmpData + 58);
-    uint32_t blueMask      = *(uint32_t *) (bmpData + 62);
-    uint32_t alphaMask     = *(uint32_t *) (bmpData + 66);
+    uint32_t redMask       = *(uint32_t *) (imageBuffer->data + 54);
+    uint32_t greenMask     = *(uint32_t *) (imageBuffer->data + 58);
+    uint32_t blueMask      = *(uint32_t *) (imageBuffer->data + 62);
+    uint32_t alphaMask     = *(uint32_t *) (imageBuffer->data + 66);
 
     if (redMask != 0x00ff0000 || greenMask != 0x0000ff00 || blueMask != 0x000000ff || alphaMask != 0xff000000) {
         platform_debugLog("utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
@@ -93,7 +94,7 @@ static bool bmpToImage(uint8_t* bmpData, Image* image) {
     }
 
 
-    uint8_t* bmpImage = bmpData + imageOffset;
+    uint8_t* bmpImage = imageBuffer->data + imageOffset;
     
     int32_t numPixels = width * height;
     uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
@@ -291,22 +292,22 @@ void renderer_initDataTexture(uint8_t* data, int32_t width, int32_t height, GLui
 }
 
 bool renderer_initBmpTexture(const char* fileName, GLuint* texture) {
+    BufferBuffer imageBuffer = { 0 };
     Image image = { 0 };
-    uint8_t* bmpData = platform_loadBinFile(fileName);
-
-    if (!bmpData) {
+    ;
+    if (!platform_loadBinFile(fileName, &imageBuffer)) {
         return false;
     }
 
-    if (!bmpToImage(bmpData, &image)) {
-        free(bmpData);
+    if (!bmpToImage(&imageBuffer, &image)) {
+        buffer_free(&imageBuffer);
         return false;
     }
 
     renderer_initDataTexture(image.data, image.width, image.height, texture);
 
     freeImage(&image);
-    free(bmpData);
+    buffer_free(&imageBuffer);
 
     return true;
 }

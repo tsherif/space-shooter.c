@@ -34,6 +34,7 @@
 #include <profileapi.h>
 #include "../../../lib/create-opengl-window.h"
 #include "../../../lib/simple-opengl-loader.h"
+#include "../../shared/buffer.h"
 #include "../../shared/platform-interface.h"
 
 #define INITIAL_WINDOW_WIDTH 1200
@@ -316,7 +317,7 @@ void platform_debugLog(const char* message) {
     OutputDebugStringA("\n");  
 }
 
-uint8_t* platform_loadBinFile(const char* fileName) {
+bool platform_loadBinFile(const char* fileName, BufferBuffer* buffer) {
     HANDLE file = CreateFileA(
       fileName,
       GENERIC_READ,
@@ -332,7 +333,7 @@ uint8_t* platform_loadBinFile(const char* fileName) {
         snprintf(errorMessage, 1024, "Failed to load file: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
-        return NULL;
+        return false;
     }
 
     LARGE_INTEGER fileSize = { 0 }; 
@@ -340,14 +341,14 @@ uint8_t* platform_loadBinFile(const char* fileName) {
         snprintf(errorMessage, 1024, "Failed to set file size: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
-        return NULL;
+        return false;
     }
 
     if (fileSize.HighPart > 0) {
         snprintf(errorMessage, 1024, "File too large: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
-        return NULL;
+        return false;
     }
 
     DWORD bytesRead = 0;
@@ -357,8 +358,11 @@ uint8_t* platform_loadBinFile(const char* fileName) {
         snprintf(errorMessage, 1024, "Failed to read file: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
-        return NULL;
+        return false;
     }
 
-    return (uint8_t *) data;
+    buffer->data = data;
+    buffer->size = fileSize.LowPart;
+
+    return true;
 }
