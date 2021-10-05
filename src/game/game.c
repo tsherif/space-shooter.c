@@ -90,11 +90,11 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-static PlatformSound* music;
-static PlatformSound* shipBulletSound;
-static PlatformSound* enemyBulletSound;
-static PlatformSound* explosionSound;
-static PlatformSound* enemyHit;
+static PlatformSound music;
+static PlatformSound shipBulletSound;
+static PlatformSound enemyBulletSound;
+static PlatformSound explosionSound;
+static PlatformSound enemyHit;
 
 static Player player = { .sprite = &sprites_ship };
 static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
@@ -189,6 +189,59 @@ static float randomRange(float min, float max) {
     return lerp(min, max, (float) rand() / (RAND_MAX + 1));
 }
 
+// ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // RIFF chunk
+// ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size (for all subchunks)
+// ReadFile(audioFile, &fileFormat, sizeof(DWORD), &bytesRead, NULL);    // WAVE format
+// ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // First subchunk (should be 'fmt')
+// ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size for format
+// ReadFile(audioFile, &audioFormat, chunkDataSize, &bytesRead, NULL);   // Wave format struct
+
+// ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // Next subchunk (should be 'data')
+// ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size for data
+
+// BYTE* audioData = (BYTE*) malloc(chunkDataSize);
+// ReadFile(audioFile, audioData, chunkDataSize, &bytesRead, NULL);      // FINALLY!
+
+static bool wavToSound(uint8_t* data, PlatformSound* sound) {
+    int32_t offset = 0;
+    uint32_t chunkType = 0;
+    uint32_t chunkSize = 0;
+    uint32_t fileFormat = 0;
+
+    chunkType = *(uint32_t *) data;
+    offset +=  2 * sizeof(uint32_t);
+
+    if (chunkType != 0x46464952) { // "RIFF" little-endian
+        return false;
+    }
+
+    fileFormat = *(uint32_t *) (data + offset);
+    offset += sizeof(uint32_t);
+
+    if (fileFormat != 0x45564157) { // "WAVE" little-endian
+        return false;
+    }
+
+    while (true) {
+        chunkType = *(uint32_t *) (data + offset);
+        offset +=  sizeof(uint32_t);
+
+        chunkSize = *(uint32_t *) (data + offset);
+        offset +=  sizeof(uint32_t);
+
+        if (chunkType == 0x61746164) {
+            sound->size = chunkSize;
+            sound->data = (uint8_t *) malloc(chunkSize);
+            memcpy(sound->data, data + offset, chunkSize);
+            break;
+        }
+
+        offset += chunkSize;
+    }
+
+    return true;
+}
+
 static void firePlayerBullet(float x, float y) {
     if (
         player.bulletThrottle > 0.0f || 
@@ -202,7 +255,7 @@ static void firePlayerBullet(float x, float y) {
         .y = y, 
         .vy = SHIP_BULLET_VELOCITY
     });
-    platform_playSound(shipBulletSound, false);
+    platform_playSound(&shipBulletSound, false);
     player.bulletThrottle = SHIP_BULLET_THROTTLE;
 }
 
@@ -220,7 +273,7 @@ static void fireEnemyBullet(float x, float y) {
         .vy = (dy / d) * ENEMY_BULLET_SPEED
     });
 
-    platform_playSound(enemyBulletSound, false);
+    platform_playSound(&enemyBulletSound, false);
 }
 
 static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
@@ -300,11 +353,11 @@ static bool checkPlayerBulletCollision(
                     .x = position[0] + explosionXOffset, 
                     .y = position[1] + explosionYOffset
                 });
-                platform_playSound(explosionSound, false);
+                platform_playSound(&explosionSound, false);
                 entities_kill(enemies, i);
                 player.score += points;
             } else {
-                platform_playSound(enemyHit, false);
+                platform_playSound(&enemyHit, false);
                 enemies->whiteOut[i] = 1;
             }
         }    
@@ -344,13 +397,28 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
 void game_init(void) {
     srand((unsigned int) time(NULL));
 
-    music = platform_loadSound("assets/audio/music.wav");
-    shipBulletSound = platform_loadSound("assets/audio/Laser_002.wav");
-    enemyBulletSound = platform_loadSound("assets/audio/Hit_Hurt2.wav");
-    explosionSound = platform_loadSound("assets/audio/Explode1.wav");
-    enemyHit = platform_loadSound("assets/audio/Jump1.wav");
+    // TODO(Tarek): binfile should return file size, so parsing can check it
+    uint8_t* soundData = platform_loadBinFile("assets/audio/music.wav");
+    wavToSound(soundData, &music);
+    free(soundData);
 
-    platform_playSound(music, true);
+    soundData = platform_loadBinFile("assets/audio/Laser_002.wav");
+    wavToSound(soundData, &shipBulletSound);
+    free(soundData);
+
+    soundData = platform_loadBinFile("assets/audio/Hit_Hurt2.wav");
+    wavToSound(soundData, &enemyBulletSound);
+    free(soundData);
+
+    soundData = platform_loadBinFile("assets/audio/Explode1.wav");
+    wavToSound(soundData, &explosionSound);
+    free(soundData);
+
+    soundData = platform_loadBinFile("assets/audio/Jump1.wav");
+    wavToSound(soundData, &enemyHit);
+    free(soundData);
+
+    platform_playSound(&music, true);
 
     entities_spawn(&player.entity, & (EntitiesInitOptions) {
         .x = (GAME_WIDTH - player.sprite->panelDims[0]) / 2,
@@ -620,7 +688,7 @@ static void mainGame(float dt) {
                 .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
             });
 
-            platform_playSound(explosionSound, false);
+            platform_playSound(&explosionSound, false);
             player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
             player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
             player.deadTimer = SHIP_DEAD_TIME;

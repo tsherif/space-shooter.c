@@ -46,12 +46,6 @@ static WAVEFORMATEX AUDIO_SOURCE_FORMAT = {
   .cbSize = 0
 };
 
-struct PlatformSound {
-    WAVEFORMATEXTENSIBLE format;
-    DWORD size;
-    BYTE* data;
-};
-
 typedef struct {
     IXAudio2SourceVoice* voice;
     XAUDIO2_BUFFER buffer;
@@ -158,58 +152,4 @@ void platform_playSound(PlatformSound* sound, bool loop) {;
             break;
         }
     }
-}
-
-PlatformSound* platform_loadSound(const char* fileName) {
-    HANDLE audioFile = CreateFileA(
-      fileName,
-      GENERIC_READ,
-      FILE_SHARE_READ,
-      NULL,
-      OPEN_EXISTING,
-      FILE_ATTRIBUTE_NORMAL,
-      NULL
-    );
-
-    if (audioFile == INVALID_HANDLE_VALUE) {
-        MessageBoxA(NULL, "Failed to load audio!", "FAILURE", MB_OK);
-        return NULL;
-    }
-
-    if (SetFilePointer(audioFile, 0, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
-        MessageBoxA(NULL, "Failed to set file pointer!", "FAILURE", MB_OK);
-        return NULL;
-    }
-
-    PlatformSound* sound = audioEngine.sounds + audioEngine.numSounds;
-
-    DWORD chunkType;
-    DWORD chunkDataSize;
-    DWORD fileFormat;
-
-    DWORD offset = 0;
-    DWORD bytesRead = 0;
-
-    // TODO(Tarek): This assumes chunk order. It should search for the different chunks.
-    // TODO(Tarek): Error checking
-    ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // RIFF chunk
-    ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size (for all subchunks)
-    ReadFile(audioFile, &fileFormat, sizeof(DWORD), &bytesRead, NULL);    // WAVE format
-    ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // First subchunk (should be 'fmt')
-    ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size for format
-    ReadFile(audioFile, &sound->format, chunkDataSize, &bytesRead, NULL); // Wave format struct
-
-    ReadFile(audioFile, &chunkType, sizeof(DWORD), &bytesRead, NULL);     // Next subchunk (should be 'data')
-    ReadFile(audioFile, &chunkDataSize, sizeof(DWORD), &bytesRead, NULL); // Data size for data
-
-    BYTE* audioData = (BYTE*) malloc(chunkDataSize);
-    ReadFile(audioFile, audioData, chunkDataSize, &bytesRead, NULL);      // FINALLY!
-
-    sound->size = chunkDataSize;
-    sound->data = audioData;
-
-    CloseHandle(audioFile);
-
-    ++audioEngine.numSounds;
-    return sound;
 }
