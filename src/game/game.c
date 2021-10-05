@@ -29,9 +29,9 @@
 #include <string.h>
 #include <math.h>
 #include "../../lib/simple-opengl-loader.h"
-#include "../shared/buffer.h"
+#include "../shared/macros.h"
+#include "../shared/data.h"
 #include "../shared/platform-interface.h"
-#include "utils.h"
 #include "renderer.h"
 #include "sprites.h"
 #include "entities.h"
@@ -91,11 +91,11 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-static BufferBuffer music;
-static BufferBuffer shipBulletSound;
-static BufferBuffer enemyBulletSound;
-static BufferBuffer explosionSound;
-static BufferBuffer enemyHit;
+static DataBuffer music;
+static DataBuffer shipBulletSound;
+static DataBuffer enemyBulletSound;
+static DataBuffer explosionSound;
+static DataBuffer enemyHit;
 
 static Player player = { .sprite = &sprites_ship };
 static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
@@ -190,7 +190,7 @@ static float randomRange(float min, float max) {
     return lerp(min, max, (float) rand() / (RAND_MAX + 1));
 }
 
-static bool wavToSound(BufferBuffer* soundData, BufferBuffer* sound) {
+static bool wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     int32_t offset = 0;
     uint32_t chunkType = 0;
     uint32_t chunkSize = 0;
@@ -389,26 +389,26 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
 void game_init(void) {
     srand((unsigned int) time(NULL));
 
-    BufferBuffer soundData = { 0 };
+    DataBuffer soundData = { 0 };
     platform_loadBinFile("assets/audio/music.wav", &soundData);
     wavToSound(&soundData, &music);
-    buffer_free(&soundData);
+    data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Laser_002.wav", &soundData);
     wavToSound(&soundData, &shipBulletSound);
-    buffer_free(&soundData);
+    data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Hit_Hurt2.wav", &soundData);
     wavToSound(&soundData, &enemyBulletSound);
-    buffer_free(&soundData);
+    data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Explode1.wav", &soundData);
     wavToSound(&soundData, &explosionSound);
-    buffer_free(&soundData);
+    data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Jump1.wav", &soundData);
     wavToSound(&soundData, &enemyHit);
-    buffer_free(&soundData);
+    data_freeBuffer(&soundData);
 
     platform_playSound(&music, true);
 

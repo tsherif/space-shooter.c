@@ -25,7 +25,7 @@
 #define _PLATFORM_INTERFACE_H_
 #include <stdbool.h>
 #include <stdint.h>
-#include "buffer.h"
+#include "data.h"
 
 // Must be implemented by game, to be used by platform layer.
 typedef struct {
@@ -41,8 +41,8 @@ void game_resize(int width, int height);
 // Must be implemented by platform layer, to be used by game.
 void platform_getInput(GameInput* input);
 bool platform_initAudio(void);
-void platform_playSound(BufferBuffer* sound, bool loop);
+void platform_playSound(DataBuffer* sound, bool loop);
 void platform_debugLog(const char* message);
-bool platform_loadBinFile(const char* fileName, BufferBuffer* buffer);
+bool platform_loadBinFile(const char* fileName, DataBuffer* buffer);
 
 #endif

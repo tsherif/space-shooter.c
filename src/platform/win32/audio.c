@@ -25,7 +25,7 @@
 #include <windows.h>
 #include <xaudio2.h>
 #include <stdbool.h>
-#include "../../shared/buffer.h"
+#include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 
 #define AUDIO_SAMPLE_RATE 44100
@@ -66,7 +66,7 @@ static struct {
     IXAudio2* xaudio;
     IXAudio2MasteringVoice* xaudioMasterVoice;
     Channel channels[MAX_CHANNELS];
-    BufferBuffer sounds[MAX_SOUNDS];
+    DataBuffer sounds[MAX_SOUNDS];
     size_t numSounds;
     IXAudio2VoiceCallback callbacks;
 } audioEngine = {
@@ -134,7 +134,7 @@ bool platform_initAudio(void) {
     return true;
 }
 
-void platform_playSound(BufferBuffer* sound, bool loop) {;
+void platform_playSound(DataBuffer* sound, bool loop) {;
     for (int i = 0; i < MAX_CHANNELS; ++i) {
         if (!audioEngine.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audioEngine.channels[i].buffer;

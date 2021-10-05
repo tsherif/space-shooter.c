@@ -34,7 +34,7 @@
 #include <profileapi.h>
 #include "../../../lib/create-opengl-window.h"
 #include "../../../lib/simple-opengl-loader.h"
-#include "../../shared/buffer.h"
+#include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 
 #define INITIAL_WINDOW_WIDTH 1200
@@ -317,7 +317,7 @@ void platform_debugLog(const char* message) {
     OutputDebugStringA("\n");  
 }
 
-bool platform_loadBinFile(const char* fileName, BufferBuffer* buffer) {
+bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
     HANDLE file = CreateFileA(
       fileName,
       GENERIC_READ,

@@ -23,7 +23,7 @@
 
 #include <malloc.h>
 #include "renderer.h"
-#include "../shared/buffer.h"
+#include "../shared/data.h"
 #include "../shared/platform-interface.h"
 
 static GLuint pixelSizeUniform;
@@ -46,14 +46,8 @@ static int32_t gameScreenOffsetY;
 static int32_t gameScreenWidth;
 static int32_t gameScreenHeight;
 
-typedef struct {
-    uint8_t* data;
-    int32_t width;
-    int32_t height;
-} Image;
-
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
-static bool bmpToImage(BufferBuffer* imageBuffer, Image* image) {
+static bool bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     uint16_t type = *(uint16_t *) imageBuffer->data;
 
     if (type != 0x4d42) {
@@ -119,21 +113,11 @@ static bool bmpToImage(BufferBuffer* imageBuffer, Image* image) {
     }
 
     image->data = imageData;
+    image->size = numPixels * 4;
     image->width = width;
     image->height = height;
 
     return true;
-}
-
-static void freeImage(Image* image) {
-    if (!image->data) {
-        return;
-    }
-
-    free(image->data);
-    image->data = NULL;
-    image->width = 0;
-    image->height = 0;
 }
 
 void renderer_init(int width, int height) {
@@ -292,22 +276,22 @@ void renderer_initDataTexture(uint8_t* data, int32_t width, int32_t height, GLui
 }
 
 bool renderer_initBmpTexture(const char* fileName, GLuint* texture) {
-    BufferBuffer imageBuffer = { 0 };
-    Image image = { 0 };
-    ;
+    DataBuffer imageBuffer = { 0 };
+    DataImage image = { 0 };
+
     if (!platform_loadBinFile(fileName, &imageBuffer)) {
         return false;
     }
 
     if (!bmpToImage(&imageBuffer, &image)) {
-        buffer_free(&imageBuffer);
+        data_freeBuffer(&imageBuffer);
         return false;
     }
 
     renderer_initDataTexture(image.data, image.width, image.height, texture);
 
-    freeImage(&image);
-    buffer_free(&imageBuffer);
+    data_freeImage(&image);
+    data_freeBuffer(&imageBuffer);
 
     return true;
 }

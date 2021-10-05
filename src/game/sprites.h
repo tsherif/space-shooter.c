@@ -26,7 +26,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "utils.h"
+#include "../shared/macros.h"
 
 // Animations
 #define SPRITES_SHIP_CENTER       0

@@ -21,8 +21,8 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _GAME_UTILS_H_
-#define _GAME_UTILS_H_
+#ifndef _MACROS_H_
+#define _MACROS_H_
 
 // Allows for use of the mixin struct members directly
 // or through the named struct.
