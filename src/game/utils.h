@@ -21,23 +21,18 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _DATA_H_
-#define _DATA_H_
+#ifndef _GAME_UTILS_H_
+#define _GAME_UTILS_H_
 #include <stdint.h>
-#include "macros.h"
+#include <stdbool.h>
+#include "../shared/data.h"
 
-typedef struct {
-    uint8_t* data;
-    uint32_t size;
-} DataBuffer;
-
-typedef struct {
-    MIXIN_STRUCT(DataBuffer, buffer);
-    int32_t width;
-    int32_t height;
-} DataImage;
-
-void data_freeBuffer(DataBuffer* buffer);
-void data_freeImage(DataImage* image);
+void utils_init(void);
+float utils_lerp(float min, float max, float t);
+float utils_randomRange(float min, float max);
+bool utils_boxCollision(float min1[2], float max1[2], float min2[2], float max2[2], float scale);
+void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength); 
+bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image);
+bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound);
 
 #endif

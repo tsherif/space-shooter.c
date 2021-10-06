@@ -16,6 +16,8 @@
 - [x] Crashes kill enemy and player
 - [x] Stars passing
 - [ ] Multiple levels
+- [ ] Lives
+- [ ] Game over screen
 - [x] Text Rendering
 - [x] Title screen
 - [x] Keep score
@@ -23,7 +25,7 @@
 - [x] Get rid of copying into render list
 - [x] Instanced draws
 - [ ] Clean up globals 
-- [ ] Robust WAV file parsing
+- [ ] Errors checks in BMP/WAV file parsing
 - [x] Get rid of win32 error messages in the renderer
 - [x] Fullscreen
 - [x] Loop music

@@ -22,16 +22,14 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <time.h>
-#include <string.h>
 #include <math.h>
 #include "../../lib/simple-opengl-loader.h"
 #include "../shared/macros.h"
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
+#include "utils.h"
 #include "renderer.h"
 #include "sprites.h"
 #include "entities.h"
@@ -171,144 +169,6 @@ static EventsSequence subtitleSequence = {
     .count = 2
 };
 
-static void uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
-    buffer[bufferLength - 1] = '\0';
-    int32_t i = bufferLength - 2;
-
-    while (i >= 0) {
-        buffer[i] = '0' + (n % 10);
-        n /= 10;
-        --i;
-    }
-}
-
-static float lerp(float min, float max, float t) {
-    return min + t * (max - min);
-}
-
-static float randomRange(float min, float max) {
-    return lerp(min, max, (float) rand() / (RAND_MAX + 1));
-}
-
-// NOTE(Tarek): Hardcoded to load 32bpp BGRA  
-static bool bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
-    uint16_t type = *(uint16_t *) imageBuffer->data;
-
-    if (type != 0x4d42) {
-        platform_debugLog("utils_bmpToRgba: Invalid BMP data.");
-        return false;
-    }
-    uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
-    
-    uint32_t dibHeaderSize = *(uint32_t *) (imageBuffer->data + 14);
-    if (dibHeaderSize < 70) {
-        platform_debugLog("utils_bmpToRgba: Unsupported DIB header.");
-        return false;
-    }
-
-    int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
-    int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
-
-    uint16_t bpp           = *(uint16_t *) (imageBuffer->data + 28);
-    if (bpp != 32) {
-        platform_debugLog("utils_bmpToRgba: Unsupported bpp, must be 32.");
-        return false;
-    }
-
-    uint32_t compression   = *(uint32_t *) (imageBuffer->data + 30);
-    if (compression != 3) {
-        platform_debugLog("utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
-        return false;
-    }
-
-    uint32_t redMask       = *(uint32_t *) (imageBuffer->data + 54);
-    uint32_t greenMask     = *(uint32_t *) (imageBuffer->data + 58);
-    uint32_t blueMask      = *(uint32_t *) (imageBuffer->data + 62);
-    uint32_t alphaMask     = *(uint32_t *) (imageBuffer->data + 66);
-
-    if (redMask != 0x00ff0000 || greenMask != 0x0000ff00 || blueMask != 0x000000ff || alphaMask != 0xff000000) {
-        platform_debugLog("utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
-        return false;
-    }
-
-
-    uint8_t* bmpImage = imageBuffer->data + imageOffset;
-    
-    int32_t numPixels = width * height;
-    uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
-
-    for (int32_t i = 0; i < numPixels;  ++i) {
-        int32_t row = i / width;
-        int32_t col = i % width;
-        int32_t mirrorRow = height - row - 1;
-        int32_t mirrorI = mirrorRow * width + col;
-
-        int32_t byteI = i * 4;
-        uint8_t b = bmpImage[byteI];
-        uint8_t g = bmpImage[byteI + 1];
-        uint8_t r = bmpImage[byteI + 2];
-        uint8_t a = bmpImage[byteI + 3];
-
-        int32_t mirrorByteI = mirrorI * 4;
-        imageData[mirrorByteI]     = r;
-        imageData[mirrorByteI + 1] = g;
-        imageData[mirrorByteI + 2] = b;
-        imageData[mirrorByteI + 3] = a;
-    }
-
-    image->data = imageData;
-    image->size = numPixels * 4;
-    image->width = width;
-    image->height = height;
-
-    return true;
-}
-
-// TODO(Tarek): Check format. Should be 2-channel 44.1kHz
-static bool wavToSound(DataBuffer* soundData, DataBuffer* sound) {
-    int32_t offset = 0;
-    uint32_t chunkType = 0;
-    uint32_t chunkSize = 0;
-    uint32_t fileFormat = 0;
-
-    chunkType = *(uint32_t *) soundData->data;
-    offset +=  2 * sizeof(uint32_t);
-
-    if (chunkType != 0x46464952) { // "RIFF" little-endian
-        return false;
-    }
-
-    fileFormat = *(uint32_t *) (soundData->data + offset);
-    offset += sizeof(uint32_t);
-
-    if (fileFormat != 0x45564157) { // "WAVE" little-endian
-        return false;
-    }
-
-    while (offset + 2 * sizeof(uint32_t) < soundData->size) {
-        chunkType = *(uint32_t *) (soundData->data + offset);
-        offset +=  sizeof(uint32_t);
-
-        chunkSize = *(uint32_t *) (soundData->data + offset);
-        offset +=  sizeof(uint32_t);
-
-        if (offset + chunkSize > soundData->size) {
-            return false;
-        }
-
-        if (chunkType == 0x61746164) {
-            sound->size = chunkSize;
-            sound->data = (uint8_t *) malloc(chunkSize);
-            memcpy(sound->data, soundData->data + offset, chunkSize);
-            break;
-        }
-
-        offset += chunkSize;
-    }
-
-    return true;
-}
-
 static void firePlayerBullet(float x, float y) {
     if (
         player.bulletThrottle > 0.0f || 
@@ -365,32 +225,6 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
     }
 }
 
-static bool boxCollision(float min1[2], float max1[2], float min2[2], float max2[2]) {
-     float correctionFactor = (1.0 - COLLISION_SCALE) * 0.5;
-     float xCorrection1 = (max1[0] - min1[0]) * correctionFactor;
-     float yCorrection1 = (max1[1] - min1[1]) * correctionFactor;
-     float xCorrection2 = (max2[0] - min2[0]) * correctionFactor;
-     float yCorrection2 = (max2[1] - min2[1]) * correctionFactor;
- 
-    if (min1[0] + xCorrection1 > max2[0] - xCorrection2) {
-        return false;
-    }
-
-    if (min2[0] + xCorrection2 > max1[0] - xCorrection1) {
-        return false;
-    }
-
-    if (min1[1] + yCorrection1 > max2[1] - yCorrection2) {
-        return false;
-    }
-
-    if (min2[1] + yCorrection2 > max1[1] - yCorrection1) {
-        return false;
-    }
-
-    return true;
-}
-
 static bool checkPlayerBulletCollision(
     float bulletMin[2],
     float bulletMax[2],
@@ -412,7 +246,7 @@ static bool checkPlayerBulletCollision(
             position[1] + enemyCollisionBox->max[1]
         };
         
-        if (boxCollision(bulletMin, bulletMax, enemyMin, enemyMax)) {
+        if (utils_boxCollision(bulletMin, bulletMax, enemyMin, enemyMax, COLLISION_SCALE)) {
             hit = true;
             --enemies->health[i];
             if (enemies->health[i] == 0) {
@@ -446,7 +280,7 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
             position[0] + collisionBox->max[0],
             position[1] + collisionBox->max[1]
         };      
-        if (boxCollision(playerMin, playerMax, entityMin, entityMax)) {
+        if (utils_boxCollision(playerMin, playerMax, entityMin, entityMax, COLLISION_SCALE)) {
             playerHit = true;
             if (opts) {
                 entities_spawn(&explosions, &(EntitiesInitOptions) {
@@ -462,27 +296,27 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
 }
 
 void game_init(void) {
-    srand((unsigned int) time(NULL));
+    utils_init();
 
     DataBuffer soundData = { 0 };
     platform_loadBinFile("assets/audio/music.wav", &soundData);
-    wavToSound(&soundData, &music);
+    utils_wavToSound(&soundData, &music);
     data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Laser_002.wav", &soundData);
-    wavToSound(&soundData, &shipBulletSound);
+    utils_wavToSound(&soundData, &shipBulletSound);
     data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Hit_Hurt2.wav", &soundData);
-    wavToSound(&soundData, &enemyBulletSound);
+    utils_wavToSound(&soundData, &enemyBulletSound);
     data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Explode1.wav", &soundData);
-    wavToSound(&soundData, &explosionSound);
+    utils_wavToSound(&soundData, &explosionSound);
     data_freeBuffer(&soundData);
 
     platform_loadBinFile("assets/audio/Jump1.wav", &soundData);
-    wavToSound(&soundData, &enemyHit);
+    utils_wavToSound(&soundData, &enemyHit);
     data_freeBuffer(&soundData);
 
     platform_playSound(&music, true);
@@ -493,12 +327,12 @@ void game_init(void) {
     });
 
     for (int32_t i = 0; i < 40; ++i) {
-        float t = randomRange(0.0f, 1.0f);
+        float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&stars, &(EntitiesInitOptions) {
-            .x = randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
-            .y = randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]), 
-            .vy = lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
-            .transparency = lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
+            .y = utils_randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]), 
+            .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
+            .transparency = utils_lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
         });
     }
 
@@ -509,44 +343,44 @@ void game_init(void) {
     DataImage image = { 0 };
 
     platform_loadBinFile("assets/sprites/ship.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&player.texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     platform_loadBinFile("assets/sprites/enemy-small.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&smallEnemies.texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     platform_loadBinFile("assets/sprites/enemy-medium.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&mediumEnemies.texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     platform_loadBinFile("assets/sprites/enemy-big.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&largeEnemies.texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     platform_loadBinFile("assets/sprites/explosion.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&explosions.texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     platform_loadBinFile("assets/sprites/pixelspritefont32.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&textEntities.texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
     platform_loadBinFile("assets/sprites/laser-bolts.bmp", &imageData);
-    bmpToImage(&imageData, &image);
+    utils_bmpToImage(&imageData, &image);
     renderer_initTexture(&bulletTexture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
@@ -558,19 +392,19 @@ void game_init(void) {
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
-    uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
+    utils_uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
 
     events_start(&titleControls);
 }
 
 static void updateStars(float dt) {
-    if (randomRange(0.0f, 1.0f) < STAR_PROBABILITY * dt) {
-        float t = randomRange(0.0f, 1.0f);
+    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * dt) {
+        float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&stars, &(EntitiesInitOptions) {
-            .x = randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
             .y = -sprites_whitePixel.panelDims[1], 
-            .vy = lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
-            .transparency = lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
+            .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
+            .transparency = utils_lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
         }); 
     }
 
@@ -650,27 +484,27 @@ static void titleScreen(float dt) {
 static void mainGame(float dt) {
     updateStars(dt);
 
-    if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
-            .x = randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
             .vy = SMALL_ENEMY_VELOCITY,
             .health = SMALL_ENEMY_HEALTH
         }); 
     }
 
-    if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&mediumEnemies, &(EntitiesInitOptions) {
-            .x = randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
             .vy = MEDIUM_ENEMY_VELOCITY,
             .health = MEDIUM_ENEMY_HEALTH
         });
     }
 
-    if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&largeEnemies, &(EntitiesInitOptions) {
-            .x = randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
             .vy = LARGE_ENEMY_VELOCITY,
             .health = LARGE_ENEMY_HEALTH
@@ -741,21 +575,21 @@ static void mainGame(float dt) {
         }
 
         for (int32_t i = 0; i < smallEnemies.count; ++i) {
-            if (randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
+            if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
                 float* position = smallEnemies.position + i * 2;
                 fireEnemyBullet(position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
             }
         }
 
         for (int32_t i = 0; i < mediumEnemies.count; ++i) {
-            if (randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
+            if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
                 float* position = mediumEnemies.position + i * 2;
                 fireEnemyBullet(position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
             }
         }
 
         for (int32_t i = 0; i < largeEnemies.count; ++i) {
-            if (randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
+            if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
                 float* position = largeEnemies.position + i * 2;
                 fireEnemyBullet(position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
             }
@@ -800,7 +634,7 @@ static void mainGame(float dt) {
         }
     }
 
-    uintToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
+    utils_uintToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
     entities_fromText(&textEntities, scoreString, &(EntitiesFromTextOptions) {
         .x = 10.0f,
         .y = GAME_HEIGHT - 20.0f, 
