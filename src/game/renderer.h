@@ -41,8 +41,7 @@ typedef struct {
 } Renderer_RenderList;
 
 void renderer_init(int width, int height);
-void renderer_initDataTexture(uint8_t* data, int32_t width, int32_t height, GLuint* texture);
-bool renderer_initBmpTexture(const char* fileName, GLuint* texture);
+void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t height);
 void renderer_resize(int width, int height);
 void renderer_beforeFrame(void);
 void renderer_draw(Renderer_RenderList* list);

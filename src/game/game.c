@@ -190,6 +190,81 @@ static float randomRange(float min, float max) {
     return lerp(min, max, (float) rand() / (RAND_MAX + 1));
 }
 
+// NOTE(Tarek): Hardcoded to load 32bpp BGRA  
+static bool bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
+    uint16_t type = *(uint16_t *) imageBuffer->data;
+
+    if (type != 0x4d42) {
+        platform_debugLog("utils_bmpToRgba: Invalid BMP data.");
+        return false;
+    }
+    uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
+    
+    uint32_t dibHeaderSize = *(uint32_t *) (imageBuffer->data + 14);
+    if (dibHeaderSize < 70) {
+        platform_debugLog("utils_bmpToRgba: Unsupported DIB header.");
+        return false;
+    }
+
+    int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
+    int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
+
+    uint16_t bpp           = *(uint16_t *) (imageBuffer->data + 28);
+    if (bpp != 32) {
+        platform_debugLog("utils_bmpToRgba: Unsupported bpp, must be 32.");
+        return false;
+    }
+
+    uint32_t compression   = *(uint32_t *) (imageBuffer->data + 30);
+    if (compression != 3) {
+        platform_debugLog("utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
+        return false;
+    }
+
+    uint32_t redMask       = *(uint32_t *) (imageBuffer->data + 54);
+    uint32_t greenMask     = *(uint32_t *) (imageBuffer->data + 58);
+    uint32_t blueMask      = *(uint32_t *) (imageBuffer->data + 62);
+    uint32_t alphaMask     = *(uint32_t *) (imageBuffer->data + 66);
+
+    if (redMask != 0x00ff0000 || greenMask != 0x0000ff00 || blueMask != 0x000000ff || alphaMask != 0xff000000) {
+        platform_debugLog("utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
+        return false;
+    }
+
+
+    uint8_t* bmpImage = imageBuffer->data + imageOffset;
+    
+    int32_t numPixels = width * height;
+    uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
+
+    for (int32_t i = 0; i < numPixels;  ++i) {
+        int32_t row = i / width;
+        int32_t col = i % width;
+        int32_t mirrorRow = height - row - 1;
+        int32_t mirrorI = mirrorRow * width + col;
+
+        int32_t byteI = i * 4;
+        uint8_t b = bmpImage[byteI];
+        uint8_t g = bmpImage[byteI + 1];
+        uint8_t r = bmpImage[byteI + 2];
+        uint8_t a = bmpImage[byteI + 3];
+
+        int32_t mirrorByteI = mirrorI * 4;
+        imageData[mirrorByteI]     = r;
+        imageData[mirrorByteI + 1] = g;
+        imageData[mirrorByteI + 2] = b;
+        imageData[mirrorByteI + 3] = a;
+    }
+
+    image->data = imageData;
+    image->size = numPixels * 4;
+    image->width = width;
+    image->height = height;
+
+    return true;
+}
+
+// TODO(Tarek): Check format. Should be 2-channel 44.1kHz
 static bool wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     int32_t offset = 0;
     uint32_t chunkType = 0;
@@ -429,20 +504,57 @@ void game_init(void) {
 
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
-    renderer_initBmpTexture("assets/sprites/ship.bmp", &player.texture);
-    renderer_initBmpTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture);
-    renderer_initBmpTexture("assets/sprites/enemy-medium.bmp", &mediumEnemies.texture);
-    renderer_initBmpTexture("assets/sprites/enemy-big.bmp", &largeEnemies.texture);
-    renderer_initBmpTexture("assets/sprites/explosion.bmp", &explosions.texture);
-    renderer_initBmpTexture("assets/sprites/pixelspritefont32.bmp", &textEntities.texture);
+
+    DataBuffer imageData = { 0 };
+    DataImage image = { 0 };
+
+    platform_loadBinFile("assets/sprites/ship.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&player.texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+
+    platform_loadBinFile("assets/sprites/enemy-small.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&smallEnemies.texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+
+    platform_loadBinFile("assets/sprites/enemy-medium.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&mediumEnemies.texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+
+    platform_loadBinFile("assets/sprites/enemy-big.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&largeEnemies.texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+
+    platform_loadBinFile("assets/sprites/explosion.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&explosions.texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+
+    platform_loadBinFile("assets/sprites/pixelspritefont32.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&textEntities.texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
 
     GLuint bulletTexture; // Shared between player and enemy bullets.
-    renderer_initBmpTexture("assets/sprites/laser-bolts.bmp", &bulletTexture);
+    platform_loadBinFile("assets/sprites/laser-bolts.bmp", &imageData);
+    bmpToImage(&imageData, &image);
+    renderer_initTexture(&bulletTexture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
 
     playerBullets.texture = bulletTexture;
     enemyBullets.texture = bulletTexture;
 
-    renderer_initDataTexture(whitePixelData, 1, 1, &stars.texture);
+    renderer_initTexture(&stars.texture, whitePixelData, 1, 1);
 
     entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
