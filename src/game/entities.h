@@ -42,6 +42,7 @@ typedef struct {
     int32_t health;
     float scale;
     float transparency;
+    uint8_t whiteOut;
 } EntitiesInitOptions;
 
 typedef struct {

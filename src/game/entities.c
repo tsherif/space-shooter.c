@@ -78,6 +78,7 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     list->scale[i]            = opts->scale > 0.0f ? opts->scale : 1.0f;
     list->alpha[i]            = 1.0f - opts->transparency;
     list->health[i]           = opts->health;
+    list->whiteOut[i]         = opts->whiteOut;
 
     if (list->sprite->animations) {
         entities_updateAnimationPanel(list, i);

@@ -16,7 +16,7 @@
 - [x] Crashes kill enemy and player
 - [x] Stars passing
 - [ ] Multiple levels
-- [ ] Lives
+- [x] Lives
 - [ ] Game over screen
 - [x] Text Rendering
 - [x] Title screen

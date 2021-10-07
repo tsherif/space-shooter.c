@@ -44,6 +44,7 @@
 #define SHIP_BULLET_VELOCITY (-0.2f)
 #define SHIP_BULLET_THROTTLE 100.0f
 #define SHIP_DEAD_TIME 2000.0f
+#define SHIP_NUM_LIVES 3
 
 #define SMALL_ENEMY_VELOCITY 0.03f
 #define SMALL_ENEMY_SPAWN_PROBABILITY 0.0003f
@@ -82,6 +83,7 @@ typedef struct {
     float bulletThrottle;
     float deadTimer;
     int32_t score;
+    int32_t lives;
 } Player;
 
 typedef struct {
@@ -95,7 +97,7 @@ static DataBuffer enemyBulletSound;
 static DataBuffer explosionSound;
 static DataBuffer enemyHit;
 
-static Player player = { .sprite = &sprites_ship };
+static Player player = { .sprite = &sprites_ship, .lives = SHIP_NUM_LIVES };
 static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
 static EntitiesList mediumEnemies = { .sprite = &sprites_mediumEnemy };
 static EntitiesList largeEnemies = { .sprite = &sprites_largeEnemy };
@@ -104,6 +106,7 @@ static EntitiesList enemyBullets = { .sprite = &sprites_enemyBullet };
 static EntitiesList explosions = { .sprite = &sprites_explosion };
 static EntitiesList stars = { .sprite = &sprites_whitePixel };
 static EntitiesList textEntities = { .sprite = &sprites_text };
+static EntitiesList livesEntities = { .sprite = &sprites_ship };
 
 static enum {
     TITLE,
@@ -295,6 +298,18 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
     return playerHit;
 }
 
+static void livesToEntities(Player *player, EntitiesList* lives) {
+    lives->count = 0;
+    for (int32_t i = 0; i < player->lives; ++i) {
+        entities_spawn(lives, &(EntitiesInitOptions) { 
+            .x = 12.5f + i * (player->sprite->panelDims[0] * 0.55f + 0.5f),
+            .y = GAME_HEIGHT - 32.0f, 
+            .scale = 0.45f,
+            .whiteOut = 1
+        });
+    }
+}
+
 void game_init(void) {
     utils_init();
 
@@ -342,11 +357,15 @@ void game_init(void) {
     DataBuffer imageData = { 0 };
     DataImage image = { 0 };
 
+    GLuint shipTexture; // Shared between player and enemy bullets.
     platform_loadBinFile("assets/sprites/ship.bmp", &imageData);
     utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&player.texture, image.data, image.width, image.height);
+    renderer_initTexture(&shipTexture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
+
+    player.texture = shipTexture;
+    livesEntities.texture = shipTexture;
 
     platform_loadBinFile("assets/sprites/enemy-small.bmp", &imageData);
     utils_bmpToImage(&imageData, &image);
@@ -483,6 +502,7 @@ static void titleScreen(float dt) {
 
 static void mainGame(float dt) {
     updateStars(dt);
+    livesToEntities(&player, &livesEntities);
 
     if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
@@ -540,97 +560,99 @@ static void mainGame(float dt) {
         player.bulletThrottle -= dt; 
     }
 
-    if (player.deadTimer > 0.0f) {
-        player.deadTimer -= dt;
-    } else {
-        if (player.velocity[0] < -1.0f) {
-            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
-        } else if (player.velocity[0] < 0.0f) {
-            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_LEFT);
-        } else if (player.velocity[0] > 1.0f) {
-            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_RIGHT);
-        } else if (player.velocity[0] > 0.0f) {
-            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_RIGHT);
+    if (player.lives > 0) {
+        if (player.deadTimer > 0.0f) {
+            player.deadTimer -= dt;
         } else {
-            entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
-        }
-
-        player.position[0] += player.velocity[0] * dt;
-        player.position[1] += player.velocity[1] * dt;
-
-        if (player.position[0] < 0.0f) {
-            player.position[0] = 0.0f;
-        }
-
-        if (player.position[0] + player.sprite->panelDims[0] > GAME_WIDTH) {
-            player.position[0] = GAME_WIDTH - player.sprite->panelDims[0];
-        }
-
-        if (player.position[1] < 0.0f) {
-            player.position[1] = 0.0f;
-        }
-
-        if (player.position[1] + player.sprite->panelDims[1] > GAME_HEIGHT) {
-            player.position[1] = GAME_HEIGHT - player.sprite->panelDims[1];
-        }
-
-        for (int32_t i = 0; i < smallEnemies.count; ++i) {
-            if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
-                float* position = smallEnemies.position + i * 2;
-                fireEnemyBullet(position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
+            if (player.velocity[0] < -1.0f) {
+                entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
+            } else if (player.velocity[0] < 0.0f) {
+                entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_LEFT);
+            } else if (player.velocity[0] > 1.0f) {
+                entities_setAnimation(&player.entity, 0, SPRITES_SHIP_RIGHT);
+            } else if (player.velocity[0] > 0.0f) {
+                entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER_RIGHT);
+            } else {
+                entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
             }
-        }
 
-        for (int32_t i = 0; i < mediumEnemies.count; ++i) {
-            if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
-                float* position = mediumEnemies.position + i * 2;
-                fireEnemyBullet(position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
+            player.position[0] += player.velocity[0] * dt;
+            player.position[1] += player.velocity[1] * dt;
+
+            if (player.position[0] < 0.0f) {
+                player.position[0] = 0.0f;
             }
-        }
 
-        for (int32_t i = 0; i < largeEnemies.count; ++i) {
-            if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
-                float* position = largeEnemies.position + i * 2;
-                fireEnemyBullet(position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
+            if (player.position[0] + player.sprite->panelDims[0] > GAME_WIDTH) {
+                player.position[0] = GAME_WIDTH - player.sprite->panelDims[0];
             }
-        }
 
-        Sprites_CollisionBox* shipCollisionBox = &sprites_ship.collisionBox;
-        float shipMin[] = {
-            player.position[0] + shipCollisionBox->min[0],
-            player.position[1] + shipCollisionBox->min[1]
-        };
-        float shipMax[] = {
-            player.position[0] + shipCollisionBox->max[0],
-            player.position[1] + shipCollisionBox->max[1]
-        };
+            if (player.position[1] < 0.0f) {
+                player.position[1] = 0.0f;
+            }
+
+            if (player.position[1] + player.sprite->panelDims[1] > GAME_HEIGHT) {
+                player.position[1] = GAME_HEIGHT - player.sprite->panelDims[1];
+            }
+
+            for (int32_t i = 0; i < smallEnemies.count; ++i) {
+                if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
+                    float* position = smallEnemies.position + i * 2;
+                    fireEnemyBullet(position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
+                }
+            }
+
+            for (int32_t i = 0; i < mediumEnemies.count; ++i) {
+                if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
+                    float* position = mediumEnemies.position + i * 2;
+                    fireEnemyBullet(position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
+                }
+            }
+
+            for (int32_t i = 0; i < largeEnemies.count; ++i) {
+                if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
+                    float* position = largeEnemies.position + i * 2;
+                    fireEnemyBullet(position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
+                }
+            }
+
+            Sprites_CollisionBox* shipCollisionBox = &sprites_ship.collisionBox;
+            float shipMin[] = {
+                player.position[0] + shipCollisionBox->min[0],
+                player.position[1] + shipCollisionBox->min[1]
+            };
+            float shipMax[] = {
+                player.position[0] + shipCollisionBox->max[0],
+                player.position[1] + shipCollisionBox->max[1]
+            };
 
 
-        bool bulletHit = checkPlayerCollision(shipMin, shipMax, &enemyBullets, NULL);
-        bool smallEnemyHit = checkPlayerCollision(shipMin, shipMax, &smallEnemies, &(PlayerCollisionExplosionOptions) {
-            .xOffset = SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
-            .yOffset = SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET
-        });
-        bool mediumEnemyHit = checkPlayerCollision(shipMin, shipMax, &mediumEnemies, &(PlayerCollisionExplosionOptions) {
-            .xOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
-            .yOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET
-        });
-        bool largeEnemyHit = checkPlayerCollision(shipMin, shipMax, &largeEnemies, &(PlayerCollisionExplosionOptions) {
-            .xOffset = SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
-            .yOffset = SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET
-        });
-
-        if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
-            entities_spawn(&explosions, &(EntitiesInitOptions) {
-                .x = player.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
-                .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
+            bool bulletHit = checkPlayerCollision(shipMin, shipMax, &enemyBullets, NULL);
+            bool smallEnemyHit = checkPlayerCollision(shipMin, shipMax, &smallEnemies, &(PlayerCollisionExplosionOptions) {
+                .xOffset = SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
+                .yOffset = SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET
+            });
+            bool mediumEnemyHit = checkPlayerCollision(shipMin, shipMax, &mediumEnemies, &(PlayerCollisionExplosionOptions) {
+                .xOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
+                .yOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET
+            });
+            bool largeEnemyHit = checkPlayerCollision(shipMin, shipMax, &largeEnemies, &(PlayerCollisionExplosionOptions) {
+                .xOffset = SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
+                .yOffset = SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET
             });
 
-            platform_playSound(&explosionSound, false);
-            player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
-            player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
-            player.deadTimer = SHIP_DEAD_TIME;
-                    
+            if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
+                entities_spawn(&explosions, &(EntitiesInitOptions) {
+                    .x = player.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
+                    .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
+                });
+
+                platform_playSound(&explosionSound, false);
+                player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
+                player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
+                player.deadTimer = SHIP_DEAD_TIME;
+                player.lives -= 1;
+            }
         }
     }
 
@@ -718,4 +740,5 @@ void game_draw(void) {
     renderer_draw(&enemyBullets.renderList);
     renderer_draw(&playerBullets.renderList);
     renderer_draw(&textEntities.renderList);
+    renderer_draw(&livesEntities.renderList);
 }
