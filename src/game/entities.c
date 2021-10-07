@@ -118,6 +118,8 @@ extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFrom
         list->count = 0;
     }
 
+    float scale = opts->scale > 0.0f ? opts->scale : 1.0f;
+
     while (text[i] && list->count < RENDERER_DRAWLIST_MAX) {
         int32_t animationIndex = sprites_charToAnimationIndex(text[i]);
 
@@ -127,9 +129,9 @@ extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFrom
         }
 
         entities_spawn(list, &(EntitiesInitOptions) { 
-            .x = opts->x + i * list->sprite->panelDims[0] * opts->scale * SPRITES_TEXT_SPACING_SCALE,
+            .x = opts->x + i * list->sprite->panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
             .y = opts->y,
-            .scale = opts->scale,
+            .scale = scale,
             .transparency = opts->transparency,
             .currentAnimation = animationIndex
         });

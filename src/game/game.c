@@ -111,7 +111,7 @@ static EntitiesList livesEntities = { .sprite = &sprites_ship };
 static enum {
     TITLE,
     MAIN_GAME
-} gameState = TITLE;
+} gameState;
 
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
@@ -503,6 +503,7 @@ static void titleScreen(float dt) {
 static void mainGame(float dt) {
     updateStars(dt);
     livesToEntities(&player, &livesEntities);
+    textEntities.count = 0;
 
     if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * dt) {
         entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
@@ -654,14 +655,19 @@ static void mainGame(float dt) {
                 player.lives -= 1;
             }
         }
+    } else {
+        entities_fromText(&textEntities, "Game Over", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 68.0f,
+            .scale = 1.2f
+        });
     }
 
     utils_uintToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
     entities_fromText(&textEntities, scoreString, &(EntitiesFromTextOptions) {
         .x = 10.0f,
         .y = GAME_HEIGHT - 20.0f, 
-        .scale = 0.4f,
-        .reset = true
+        .scale = 0.4f
     });
 
     if (animationTime > TIME_PER_ANIMATION) {
@@ -680,10 +686,9 @@ static void mainGame(float dt) {
 void updateState(float dt) {
     animationTime += dt;
 
-    if (gameState == TITLE) {
-        titleScreen(dt);
-    } else {
-        mainGame(dt);  
+    switch(gameState) {
+        case TITLE: titleScreen(dt); break;
+        case MAIN_GAME: mainGame(dt); break;
     }
 
     if (animationTime > TIME_PER_ANIMATION) {
