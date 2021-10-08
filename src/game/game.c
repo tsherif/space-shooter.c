@@ -111,7 +111,7 @@ static EntitiesList livesEntities = { .sprite = &sprites_ship };
 static enum {
     TITLE,
     MAIN_GAME
-} gameState = MAIN_GAME;
+} gameState = TITLE;
 
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
