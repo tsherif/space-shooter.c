@@ -43,6 +43,7 @@ typedef struct {
     int32_t triggeredCount;
     bool running;
     bool complete;
+    bool loop;
 } EventsSequence;
 
 void events_start(EventsSequence* sequence);

@@ -43,21 +43,21 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
     sequence->triggeredEvents = NULL;
     sequence->triggeredCount = 0;
     float lastTime = sequence->time;
-    float currentTime = lastTime + dt;
+    sequence->time = lastTime + dt;
 
-    float start = 0;
-    float end = 0;
+    float start = 0.0f;
+    float end = 0.0f;
     for (int32_t i = 0; i < sequence->count; ++i) {
         EventsEvent* event = sequence->events + i;
         start = end + event->delay;
         end = start + event->duration;
-        if (start <= currentTime && end >= lastTime) {
+        if (start <= sequence->time && end >= lastTime) {
             if (!sequence->triggeredEvents) {
                 sequence->triggeredEvents = event;     
             }
             ++sequence->triggeredCount;
-            if (event->duration > 0) {
-                event->alpha =(currentTime - start) / event->duration;
+            if (event->duration > 0.0f) {
+                event->alpha =(sequence->time - start) / event->duration;
                 if (event->alpha > 1.0f) {
                     event->alpha = 1.0f;
                 } 
@@ -68,11 +68,16 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
     }
 
     if (lastTime > end) {
-        sequence->triggeredEvents = NULL;
-        sequence->triggeredCount = 0;
-        sequence->running = false;
-        sequence->complete = true;    
+        if (sequence->loop) {
+            float loopDt = lastTime - end + dt; // Should be + dt I THINK
+            sequence->time = 0.0f;
+            events_beforeFrame(sequence, loopDt);
+        } else {
+            sequence->triggeredEvents = NULL;
+            sequence->triggeredCount = 0;
+            sequence->running = false;
+            sequence->complete = true;
+        }
     }
 
-    sequence->time = currentTime;
 }

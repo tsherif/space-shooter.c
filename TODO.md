@@ -17,7 +17,7 @@
 - [x] Stars passing
 - [ ] Multiple levels
 - [x] Lives
-- [ ] Game over screen
+- [x] Game over screen
 - [x] Text Rendering
 - [x] Title screen
 - [x] Keep score
@@ -38,3 +38,4 @@
 - [x] Collision boxes
 - [x] Clean up controls (e.g. rapid fire while moving)
 - [x] BMP for sprites, remove stb_image dep
+- [ ] Bug in fadeout: title display and title fade can be triggered at the same time

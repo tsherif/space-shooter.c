@@ -111,7 +111,7 @@ static EntitiesList livesEntities = { .sprite = &sprites_ship };
 static enum {
     TITLE,
     MAIN_GAME
-} gameState;
+} gameState = MAIN_GAME;
 
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
@@ -127,7 +127,8 @@ enum {
     TITLE_FADE,
     SUBTITLE_START,
     SUBTITLE_DISPLAY,
-    SUBTITLE_FADE
+    SUBTITLE_FADE,
+    GAME_OVER_RESTART_DISPLAY
 };
 
 static EventsSequence titleControls = {
@@ -170,6 +171,18 @@ static EventsSequence subtitleSequence = {
         }
     },
     .count = 2
+};
+
+static EventsSequence gameOverRestart = {
+    .events = {
+        { 
+            .delay = 1000.0f,
+            .duration = 1000.0f,
+            .id =  GAME_OVER_RESTART_DISPLAY
+        }
+    },
+    .count = 2,
+    .loop = true
 };
 
 static void firePlayerBullet(float x, float y) {
@@ -501,6 +514,9 @@ static void titleScreen(float dt) {
 }
 
 static void mainGame(float dt) {
+    GameInput input;
+    platform_getInput(&input);
+
     updateStars(dt);
     livesToEntities(&player, &livesEntities);
     textEntities.count = 0;
@@ -565,6 +581,13 @@ static void mainGame(float dt) {
         if (player.deadTimer > 0.0f) {
             player.deadTimer -= dt;
         } else {
+            player.velocity[0] = SHIP_VELOCITY * input.velocity[0];
+            player.velocity[1] = -SHIP_VELOCITY * input.velocity[1];
+
+            if (input.shoot) {
+                firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
+            }
+
             if (player.velocity[0] < -1.0f) {
                 entities_setAnimation(&player.entity, 0, SPRITES_SHIP_LEFT);
             } else if (player.velocity[0] < 0.0f) {
@@ -652,15 +675,35 @@ static void mainGame(float dt) {
                 player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
                 player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
                 player.deadTimer = SHIP_DEAD_TIME;
-                player.lives -= 1;
+                --player.lives;
+
+                if (player.lives == 0) {
+                    events_start(&gameOverRestart);
+                }
             }
         }
     } else {
+        events_beforeFrame(&gameOverRestart, dt);
+
         entities_fromText(&textEntities, "Game Over", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 68.0f,
             .scale = 1.2f
         });
+
+        if (gameOverRestart.triggeredEvents) {
+            entities_fromText(&textEntities, "Press 'Shoot' to Restart", &(EntitiesFromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - 107.0f,
+                .y = 104.0f,
+                .scale = 0.4f
+            }); 
+        }
+
+        if (input.shoot) {
+            player.lives = SHIP_NUM_LIVES;
+            player.score = 0;
+            player.deadTimer = 0.0f;
+        }
     }
 
     utils_uintToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
@@ -699,16 +742,6 @@ void updateState(float dt) {
 void game_update(float elapsedTime) {
     if (elapsedTime > 33.3f) {
         elapsedTime = 33.3f;
-    }
-
-    GameInput input;
-    platform_getInput(&input);
-
-    player.velocity[0] = SHIP_VELOCITY * input.velocity[0];
-    player.velocity[1] = -SHIP_VELOCITY * input.velocity[1];
-
-    if (input.shoot && gameState == MAIN_GAME) {
-        firePlayerBullet(player.position[0] + SPRITES_SHIP_BULLET_X_OFFSET, player.position[1] + SPRITES_SHIP_BULLET_Y_OFFSET);
     }
 
     tickTime += elapsedTime;

@@ -29,7 +29,7 @@ Current State
 - [x] Text Rendering
 - [ ] Multiple levels
 - [x] Lives
-- [ ] Game over screen
+- [x] Game over screen
 - [x] Title screen
 - [x] Keep score
 - [ ] Linux support
