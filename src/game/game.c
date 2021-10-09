@@ -452,55 +452,46 @@ static void titleScreen(float dt) {
 
     textEntities.count = 0;
 
-    for (int32_t i = 0; i < titleControls.triggeredCount; ++i) {
-        EventsEvent* event = titleControls.triggeredEvents + i;
-        if (event->id == TITLE_START) {
-            events_start(&titleSequence);
-        } 
-
-        if (event->id == SUBTITLE_START) {
-            events_start(&subtitleSequence);
-        } 
+    if (events_on(&titleControls, TITLE_START)) {
+        events_start(&titleSequence);
     }
 
-    for (int32_t i = 0; i < titleSequence.triggeredCount; ++i) {
-        EventsEvent* event = titleSequence.triggeredEvents + i;
-        if (event->id == TITLE_DISPLAY) {
-            entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-                .x = GAME_WIDTH / 2.0f - 127.0f,
-                .y = 62.0f, 
-                .scale = 0.75f
-            });
-        } 
-
-        if (event->id == TITLE_FADE) {
-            entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-                .x = GAME_WIDTH / 2.0f - 127.0f,
-                .y = 62.0f, 
-                .scale = 0.75f,
-                .transparency = event->alpha
-            });
-        } 
+    if (events_on(&titleControls, SUBTITLE_START)) {
+        events_start(&subtitleSequence);
     }
 
-    for (int32_t i = 0; i < subtitleSequence.triggeredCount; ++i) {
-        EventsEvent* event = subtitleSequence.triggeredEvents + i;
-        if (event->id == SUBTITLE_DISPLAY) {
-            entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
-                .x = GAME_WIDTH / 2.0f - 64.0f,
-                .y = 85.0f, 
-                .scale = 0.4f
-            });
-        } 
+    if (events_on(&titleSequence, TITLE_DISPLAY)) {
+        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 62.0f, 
+            .scale = 0.75f
+        });
+    }
 
-        if (event->id == SUBTITLE_FADE) {
-            entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
-                .x = GAME_WIDTH / 2.0f - 64.0f,
-                .y = 85.0f, 
-                .scale = 0.4f,
-                .transparency = event->alpha
-            });
-        } 
+    if (events_on(&titleSequence, TITLE_FADE)) {
+        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 62.0f, 
+            .scale = 0.75f,
+            .transparency = titleSequence.triggeredEvent->alpha
+        });
+    }
+
+    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY)) {
+        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 64.0f,
+            .y = 85.0f, 
+            .scale = 0.4f
+        });
+    }
+
+    if (events_on(&subtitleSequence, SUBTITLE_FADE)) {
+        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 64.0f,
+            .y = 85.0f, 
+            .scale = 0.4f,
+            .transparency = subtitleSequence.triggeredEvent->alpha
+        });
     }
 
     if (titleSequence.complete && subtitleSequence.complete) {
@@ -691,7 +682,7 @@ static void mainGame(float dt) {
             .scale = 1.2f
         });
 
-        if (gameOverRestart.triggeredEvents) {
+        if (events_on(&gameOverRestart, GAME_OVER_RESTART_DISPLAY)) {
             entities_fromText(&textEntities, "Press 'Shoot' to Restart", &(EntitiesFromTextOptions) {
                 .x = GAME_WIDTH / 2.0f - 107.0f,
                 .y = 104.0f,

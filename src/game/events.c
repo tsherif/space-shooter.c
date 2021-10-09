@@ -30,8 +30,7 @@ void events_start(EventsSequence* sequence) {
 
     sequence->running = true;
     sequence->time = 0;
-    sequence->triggeredEvents = NULL;
-    sequence->triggeredCount = 0;
+    sequence->triggeredEvent = NULL;
     sequence->complete = false;
 }
 
@@ -40,8 +39,7 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
         return;
     }
 
-    sequence->triggeredEvents = NULL;
-    sequence->triggeredCount = 0;
+    sequence->triggeredEvent = NULL;
     float lastTime = sequence->time;
     sequence->time = lastTime + dt;
 
@@ -52,10 +50,6 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
         start = end + event->delay;
         end = start + event->duration;
         if (start <= sequence->time && end >= lastTime) {
-            if (!sequence->triggeredEvents) {
-                sequence->triggeredEvents = event;     
-            }
-            ++sequence->triggeredCount;
             if (event->duration > 0.0f) {
                 event->alpha =(sequence->time - start) / event->duration;
                 if (event->alpha > 1.0f) {
@@ -64,20 +58,29 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
             } else {
                 event->alpha = 0.0f;
             }
+            sequence->triggeredEvent = event;
+            break;
         }
     }
 
-    if (lastTime > end) {
+    if (!sequence->triggeredEvent && lastTime > end) {
         if (sequence->loop) {
-            float loopDt = lastTime - end + dt; // Should be + dt I THINK
+            float loopDt = lastTime - end + dt;
             sequence->time = 0.0f;
             events_beforeFrame(sequence, loopDt);
         } else {
-            sequence->triggeredEvents = NULL;
-            sequence->triggeredCount = 0;
+            sequence->triggeredEvent = NULL;
             sequence->running = false;
             sequence->complete = true;
         }
     }
 
+}
+
+bool events_on(EventsSequence* sequence, int32_t id) {
+    if (!sequence->running || !sequence->triggeredEvent) {
+        return false;
+    }
+
+    return sequence->triggeredEvent->id == id;
 }

@@ -39,8 +39,7 @@ typedef struct {
     EventsEvent events[EVENTS_MAX_SEQUENCE];
     float time;
     int32_t count;
-    EventsEvent* triggeredEvents;
-    int32_t triggeredCount;
+    EventsEvent* triggeredEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
     bool running;
     bool complete;
     bool loop;
@@ -48,5 +47,6 @@ typedef struct {
 
 void events_start(EventsSequence* sequence);
 void events_beforeFrame(EventsSequence* sequence, float dt);
+bool events_on(EventsSequence* sequence, int32_t id);
 
 #endif
