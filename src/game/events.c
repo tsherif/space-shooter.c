@@ -34,6 +34,13 @@ void events_start(EventsSequence* sequence) {
     sequence->complete = false;
 }
 
+void events_stop(EventsSequence* sequence) {
+    sequence->running = false;
+    sequence->time = 0;
+    sequence->triggeredEvent = NULL;
+    sequence->complete = false;
+}
+
 void events_beforeFrame(EventsSequence* sequence, float dt) {
     if (!sequence->running) {
         return;

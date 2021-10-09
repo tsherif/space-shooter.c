@@ -122,12 +122,14 @@ static float tickTime = 0.0f;
 static float animationTime = 0.0f;
 
 enum {
+    NO_EVENT,
     TITLE_START,
     TITLE_DISPLAY,
     TITLE_FADE,
     SUBTITLE_START,
     SUBTITLE_DISPLAY,
     SUBTITLE_FADE,
+    GAME_OVER_RESTART,
     GAME_OVER_RESTART_DISPLAY
 };
 
@@ -173,12 +175,24 @@ static EventsSequence subtitleSequence = {
     .count = 2
 };
 
-static EventsSequence gameOverRestart = {
+static EventsSequence gameOverSequence = {
     .events = {
         { 
             .delay = 1000.0f,
+            .id =  GAME_OVER_RESTART
+        }
+    },
+    .count = 1,
+};
+
+static EventsSequence gameOverRestartSequence = {
+    .events = {
+        { 
             .duration = 1000.0f,
             .id =  GAME_OVER_RESTART_DISPLAY
+        },
+        { 
+            .duration = 1000.0f
         }
     },
     .count = 2,
@@ -669,12 +683,13 @@ static void mainGame(float dt) {
                 --player.lives;
 
                 if (player.lives == 0) {
-                    events_start(&gameOverRestart);
+                    events_start(&gameOverSequence);
                 }
             }
         }
     } else {
-        events_beforeFrame(&gameOverRestart, dt);
+        events_beforeFrame(&gameOverSequence, dt);
+        events_beforeFrame(&gameOverRestartSequence, dt);
 
         entities_fromText(&textEntities, "Game Over", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
@@ -682,7 +697,11 @@ static void mainGame(float dt) {
             .scale = 1.2f
         });
 
-        if (events_on(&gameOverRestart, GAME_OVER_RESTART_DISPLAY)) {
+        if (events_on(&gameOverSequence, GAME_OVER_RESTART)) {
+            events_start(&gameOverRestartSequence);
+        }
+
+        if (events_on(&gameOverRestartSequence, GAME_OVER_RESTART_DISPLAY)) {
             entities_fromText(&textEntities, "Press 'Shoot' to Restart", &(EntitiesFromTextOptions) {
                 .x = GAME_WIDTH / 2.0f - 107.0f,
                 .y = 104.0f,
@@ -690,10 +709,16 @@ static void mainGame(float dt) {
             }); 
         }
 
-        if (input.shoot) {
+        if (gameOverRestartSequence.running && input.shoot) {
             player.lives = SHIP_NUM_LIVES;
             player.score = 0;
             player.deadTimer = 0.0f;
+            smallEnemies.count = 0;
+            mediumEnemies.count = 0;
+            largeEnemies.count = 0;
+            enemyBullets.count = 0;
+            events_stop(&gameOverSequence);
+            events_stop(&gameOverRestartSequence);
         }
     }
 

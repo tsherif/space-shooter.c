@@ -46,6 +46,7 @@ typedef struct {
 } EventsSequence;
 
 void events_start(EventsSequence* sequence);
+void events_stop(EventsSequence* sequence);
 void events_beforeFrame(EventsSequence* sequence, float dt);
 bool events_on(EventsSequence* sequence, int32_t id);
 
