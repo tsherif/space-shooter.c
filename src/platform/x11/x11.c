@@ -72,6 +72,8 @@ int main(int argc, char const *argv[]) {
         GLX_BLUE_SIZE, 1,
         GLX_DEPTH_SIZE, 1,
         GLX_STENCIL_SIZE, 1,
+        GLX_SAMPLE_BUFFERS, 1,
+        GLX_SAMPLES, 4,
         None
     };
 
