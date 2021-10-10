@@ -26,6 +26,7 @@
 // Loader with X11 using SOGL_IMPLEMENTATION_X11
 //////////////////////////////////////////////////////
 
+#define _POSIX_C_SOURCE 199309L
 #define SOGL_IMPLEMENTATION_X11
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/data.h"
@@ -34,6 +35,7 @@
 #include <stdlib.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+#include <time.h>
 
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
@@ -113,7 +115,6 @@ int main(int argc, char const *argv[]) {
 
     if (glXSwapIntervalEXT) {
         glXSwapIntervalEXT(display, window, 1);
-    
     }
 
     if (!sogl_loadOpenGL()) {
@@ -130,6 +131,11 @@ int main(int argc, char const *argv[]) {
     game_init();
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
 
+    float lastTime, time;
+    struct timespec timeSpec;
+    clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+    lastTime = timeSpec.tv_sec * 1000.0f + timeSpec.tv_nsec / 1000000.0f;
+
     // Animation loop
     while (1) {
         if (XCheckTypedWindowEvent(display, window, Expose, &event) == True) {
@@ -143,10 +149,17 @@ int main(int argc, char const *argv[]) {
             }
         }
 
-        game_update(0.6667f);
+        clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+        time = timeSpec.tv_sec * 1000.0f + timeSpec.tv_nsec / 1000000.0f;
+
+        float elapsedTime = time - lastTime;
+
+        game_update(elapsedTime);
         game_draw();
 
         glXSwapBuffers(display, window);
+
+        lastTime = time;
     };
 
     // Teardown
