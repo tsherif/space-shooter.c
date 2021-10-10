@@ -363,6 +363,7 @@ bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
 
     buffer->data = data;
     buffer->size = fileSize.LowPart;
+    CloseHandle(file);
 
     return true;
 }

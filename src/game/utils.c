@@ -36,7 +36,7 @@ float utils_lerp(float min, float max, float t) {
 }
 
 float utils_randomRange(float min, float max) {
-    return utils_lerp(min, max, (float) rand() / (RAND_MAX + 1));
+    return utils_lerp(min, max, (float) rand() / ((uint64_t)RAND_MAX + 1));
 }
 
 bool utils_boxCollision(float min1[2], float max1[2], float min2[2], float max2[2], float scale) {

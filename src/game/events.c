@@ -30,14 +30,14 @@ void events_start(EventsSequence* sequence) {
 
     sequence->running = true;
     sequence->time = 0;
-    sequence->triggeredEvent = NULL;
+    sequence->triggeredEvent = 0;
     sequence->complete = false;
 }
 
 void events_stop(EventsSequence* sequence) {
     sequence->running = false;
     sequence->time = 0;
-    sequence->triggeredEvent = NULL;
+    sequence->triggeredEvent = 0;
     sequence->complete = false;
 }
 
@@ -46,7 +46,7 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
         return;
     }
 
-    sequence->triggeredEvent = NULL;
+    sequence->triggeredEvent = 0;
     float lastTime = sequence->time;
     sequence->time = lastTime + dt;
 
@@ -76,7 +76,7 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
             sequence->time = 0.0f;
             events_beforeFrame(sequence, loopDt);
         } else {
-            sequence->triggeredEvent = NULL;
+            sequence->triggeredEvent = 0;
             sequence->running = false;
             sequence->complete = true;
         }

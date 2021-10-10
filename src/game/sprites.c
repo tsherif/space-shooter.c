@@ -155,7 +155,7 @@ static Sprites_Animation fontAnimations[]  = {
 
 };
 
-extern Sprites_Sprite sprites_ship = {
+Sprites_Sprite sprites_ship = {
     .panelDims = { SPRITES_SHIP_PANEL_WIDTH, SPRITES_SHIP_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 2.0f },
     .collisionBox = {
@@ -166,7 +166,7 @@ extern Sprites_Sprite sprites_ship = {
     .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
 };
 
-extern Sprites_Sprite sprites_smallEnemy = {
+Sprites_Sprite sprites_smallEnemy = {
     .panelDims = { SPRITES_SMALL_ENEMY_PANEL_WIDTH, SPRITES_SMALL_ENEMY_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -177,7 +177,7 @@ extern Sprites_Sprite sprites_smallEnemy = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_mediumEnemy = {
+Sprites_Sprite sprites_mediumEnemy = {
     .panelDims = { SPRITES_MEDIUM_ENEMY_PANEL_WIDTH, SPRITES_MEDIUM_ENEMY_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -188,7 +188,7 @@ extern Sprites_Sprite sprites_mediumEnemy = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_largeEnemy = {
+Sprites_Sprite sprites_largeEnemy = {
     .panelDims = { SPRITES_LARGE_ENEMY_PANEL_WIDTH, SPRITES_LARGE_ENEMY_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 1.0f },
     .collisionBox = {
@@ -199,7 +199,7 @@ extern Sprites_Sprite sprites_largeEnemy = {
     .numAnimations = sizeof(enemyAnimations) / sizeof(enemyAnimations[0])
 };
 
-extern Sprites_Sprite sprites_playerBullet = {
+Sprites_Sprite sprites_playerBullet = {
     .panelDims = { SPRITES_BULLET_PANEL_WIDTH, SPRITES_BULLET_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
@@ -210,7 +210,7 @@ extern Sprites_Sprite sprites_playerBullet = {
     .numAnimations = sizeof(playerBulletAnimations) / sizeof(playerBulletAnimations[0])
 };
 
-extern Sprites_Sprite sprites_enemyBullet = {
+Sprites_Sprite sprites_enemyBullet = {
     .panelDims = { SPRITES_BULLET_PANEL_WIDTH, SPRITES_BULLET_PANEL_HEIGHT },
     .sheetDims = { 2.0f, 2.0f },
     .collisionBox = {
@@ -221,26 +221,26 @@ extern Sprites_Sprite sprites_enemyBullet = {
     .numAnimations = sizeof(enemyBulletAnimations) / sizeof(enemyBulletAnimations[0])
 };
 
-extern Sprites_Sprite sprites_explosion = {
+Sprites_Sprite sprites_explosion = {
     .panelDims = { SPRITES_EXPLOSION_PANEL_WIDTH, SPRITES_EXPLOSION_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 1.0f },
     .animations = explosionAnimations,
     .numAnimations = sizeof(explosionAnimations) / sizeof(explosionAnimations[0])
 };
 
-extern Sprites_Sprite sprites_text = {
+Sprites_Sprite sprites_text = {
     .panelDims = { SPRITES_TEXT_PANEL_WIDTH, SPRITES_TEXT_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 13.0f },
     .animations = fontAnimations,
     .numAnimations = sizeof(fontAnimations) / sizeof(fontAnimations[0])
 };
 
-extern Sprites_Sprite sprites_whitePixel = {
+Sprites_Sprite sprites_whitePixel = {
     .panelDims = { 1, 1 },
     .sheetDims = { 1.0f, 1.0f },
 };
 
-extern int32_t sprites_charToAnimationIndex(char c) {
+int32_t sprites_charToAnimationIndex(char c) {
     if (c >= 'A' && c <= 'Z') {
         return c - 'A';
     }

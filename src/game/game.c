@@ -217,8 +217,6 @@ static void firePlayerBullet(float x, float y) {
 }
 
 static void fireEnemyBullet(float x, float y) {
-    float shipCenterX = player.position[0] + player.sprite->panelDims[0] / 2.0f;
-    float shipCenterY = player.position[1] + player.sprite->panelDims[1] / 2.0f;
     float dx = player.position[0] - x;
     float dy = player.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
