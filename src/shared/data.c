@@ -35,8 +35,12 @@ void data_freeBuffer(DataBuffer* buffer) {
 }
 
 void data_freeImage(DataImage* image) {
-	data_freeBuffer(&image->buffer);
+	if (!image->data) {
+		return;
+	}
 
+	free(image->data);
+	image->data = NULL;
 	image->width = 0;
 	image->height = 0;
 }

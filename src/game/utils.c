@@ -143,7 +143,6 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     }
 
     image->data = imageData;
-    image->size = numPixels * 4;
     image->width = width;
     image->height = height;
 
