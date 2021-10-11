@@ -230,7 +230,7 @@ void renderer_beforeFrame(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void renderer_draw(Renderer_RenderList* list) {
+void renderer_draw(RendererList* list) {
     if (list->count == 0) {
         return;
     }

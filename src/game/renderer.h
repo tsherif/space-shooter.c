@@ -29,21 +29,25 @@
 
 #define RENDERER_DRAWLIST_MAX 255
 
-typedef struct {
-    float position[RENDERER_DRAWLIST_MAX * 2];
-    float currentSpritePanel[RENDERER_DRAWLIST_MAX * 2];
-    float scale[RENDERER_DRAWLIST_MAX];
-    float alpha[RENDERER_DRAWLIST_MAX];
-    uint8_t whiteOut[RENDERER_DRAWLIST_MAX];
-    Sprites_Sprite* sprite;
-    GLuint texture;
-    int32_t count;
-} Renderer_RenderList;
+#define RENDERER_LIST_BODY {\
+    float position[RENDERER_DRAWLIST_MAX * 2];\
+    float currentSpritePanel[RENDERER_DRAWLIST_MAX * 2];\
+    float scale[RENDERER_DRAWLIST_MAX];\
+    float alpha[RENDERER_DRAWLIST_MAX];\
+    uint8_t whiteOut[RENDERER_DRAWLIST_MAX];\
+    Sprites_Sprite* sprite;\
+    GLuint texture;\
+    int32_t count;\
+}
+
+typedef struct RENDERER_LIST_BODY RendererList;
+
+#define RENDERER_LIST_MIXIN(name) union { struct RENDERER_LIST_BODY; RendererList name; }
 
 void renderer_init(int width, int height);
 void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t height);
 void renderer_resize(int width, int height);
 void renderer_beforeFrame(void);
-void renderer_draw(Renderer_RenderList* list);
+void renderer_draw(RendererList* list);
 
 #endif
