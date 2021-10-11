@@ -33,6 +33,12 @@ Current State
 - [x] Title screen
 - [x] Keep score
 - [ ] Linux support
+    - [x] Rendering
+    - [ ] Audio
+    - [x] High-resolution timer
+    - [x] Keyboard input
+    - [ ] Gamepad input
+    - [ ] Full screen
 
 (A more detailed todo list lives [here](./TODO.md).)
 

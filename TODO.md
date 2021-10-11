@@ -38,4 +38,12 @@
 - [x] Collision boxes
 - [x] Clean up controls (e.g. rapid fire while moving)
 - [x] BMP for sprites, remove stb_image dep
-- [ ] Bug in fadeout: title display and title fade can be triggered at the same time
+- [x] Bug in fadeout: title display and title fade can be triggered at the same time
+- [ ] Linux support
+    - [x] Rendering
+    - [ ] Audio
+    - [x] High-resolution timer
+    - [x] Keyboard input
+    - [ ] Gamepad input
+    - [ ] Full screen
+- [ ] Replace MIXIN_STRUCT with something not MS-specific

@@ -40,6 +40,16 @@
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
 
+static struct {
+    bool left;
+    bool right;
+    bool up;
+    bool down;
+    bool space;
+    bool lastSpace;
+    bool ctrl;
+} keyboard;
+
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
 
@@ -60,8 +70,8 @@ int main(int argc, char const *argv[]) {
     window = XCreateSimpleWindow(display, DefaultRootWindow(display), 20, 20, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, 0, 0, 0);
     
 
-    XSelectInput(display, window, ExposureMask | KeyPressMask | ButtonPressMask);
-    XStoreName(display, window, "Simple OpenGL Loader X11 Example");
+    XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask);
+    XStoreName(display, window, "space-shooter.c (x11)");
     XMapWindow(display, window);
     
     int numFBC = 0;
@@ -120,7 +130,7 @@ int main(int argc, char const *argv[]) {
     if (!sogl_loadOpenGL()) {
         const char **failures = sogl_getFailures();
         while (*failures) {
-            fprintf(stderr, "SOGL X11 EXAMPLE: Failed to load function %s\n", *failures);
+            fprintf(stderr, "space-shooter.c x11: Failed to load function %s\n", *failures);
             failures++;
         }
     }
@@ -149,6 +159,22 @@ int main(int argc, char const *argv[]) {
             }
         }
 
+        if (XCheckWindowEvent(display, window, KeyPressMask | KeyReleaseMask, &event) == True) {
+            bool down = event.type == KeyPress;
+
+            KeySym key = XLookupKeysym(&event.xkey, 0);
+
+            switch (key) {
+                case XK_Up: keyboard.up = down; break;
+                case XK_Down: keyboard.down = down; break;
+                case XK_Left: keyboard.left = down; break;
+                case XK_Right: keyboard.right = down; break;
+                case XK_space: keyboard.space = down; break;
+                case XK_Control_L: keyboard.ctrl = down; break;
+                case XK_Control_R: keyboard.ctrl = down; break;
+            }
+        }
+
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
         time = timeSpec.tv_sec * 1000.0f + timeSpec.tv_nsec / 1000000.0f;
 
@@ -171,8 +197,24 @@ int main(int argc, char const *argv[]) {
 void platform_getInput(GameInput* input) {
     input->velocity[0] = 0.0f;
     input->velocity[1] = 0.0f;
-
     input->shoot = false;
+
+    if (keyboard.left) {
+        input->velocity[0] = -1.0f;
+    } else if (keyboard.right) {
+        input->velocity[0] = 1.0f;
+    }
+
+    if (keyboard.up) {
+        input->velocity[1] = 1.0f;
+    } else if (keyboard.down) {
+        input->velocity[1] = -1.0f;
+    }
+
+    if (keyboard.space && !keyboard.lastSpace) {
+        input->shoot = true;
+    }
+    keyboard.lastSpace = keyboard.space;
 }
 
 bool platform_initAudio(void) {
