@@ -1,11 +1,12 @@
 space-shooter.c [WIP]
 =====================
-A top-down space shooter written in C using only system libraries.
+A cross-platform, top-down space shooter written in C using only system libraries.
 
 Uses:
-- Windowing: Win32
+- Windowing: Win32 (Windows), X11 (Linux)
 - Rendering: OpenGL
-- Audio: XAudio2
+- Audio: XAudio2 (Windows)
+- Gamepad: Xinput (Windows)
 
 Current State
 -------------
