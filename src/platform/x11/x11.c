@@ -36,6 +36,8 @@
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 #include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
@@ -226,24 +228,47 @@ void platform_playSound(DataBuffer* sound, bool loop) {
 }
 
 void platform_debugLog(const char* message) {
-    fputs(message, stderr);
+    int32_t length = 0;
+    while(message[length]) {
+        ++length;
+    }
+
+    write(STDERR_FILENO, message, length);
+    write(STDERR_FILENO, "\n", 1);
 }
 
 bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
-    FILE* file = fopen(fileName, "rb");
+    int32_t fd = open(fileName, O_RDONLY);
 
-    if (!file) {
+    if (fd == -1) {
         platform_debugLog("platform_loadBinFile: Unable to open file.");
         return false;
     }
 
-    fseek(file, 0, SEEK_END);
-    int32_t size = ftell(file);
-    fseek(file, 0, SEEK_SET);
+    int32_t size = lseek(fd, 0, SEEK_END);
+
+    if (size == -1) {
+        platform_debugLog("platform_loadBinFile: Unable to get file size.");
+        return false;  
+    }
+
+    if (lseek(fd, 0, SEEK_SET) == -1) {
+        platform_debugLog("platform_loadBinFile: Unable to reset file cursor.");
+        return false;  
+    }
 
     uint8_t* data = (uint8_t*) malloc(size);
 
-    fread(data, 1, size, file);
+    if (!data) {
+        platform_debugLog("platform_loadBinFile: Unable to allocate data.");
+        return false;  
+    }
+
+    if (read(fd, data, size) == -1) {
+        platform_debugLog("platform_loadBinFile: Unable to read data.");
+        free(data);
+        return false; 
+    }
 
     buffer->data = data;
     buffer->size = size;
