@@ -24,15 +24,18 @@
 #ifndef _DATA_H_
 #define _DATA_H_
 #include <stdint.h>
-#include "macros.h"
+
+#define DATA_BUFFER_BODY {\
+    uint8_t* data;\
+    uint32_t size;\
+}
+
+typedef struct DATA_BUFFER_BODY DataBuffer;
+
+#define DATA_BUFFER_MIXIN(name) union { struct DATA_BUFFER_BODY; DataBuffer name; }
 
 typedef struct {
-    uint8_t* data;
-    uint32_t size;
-} DataBuffer;
-
-typedef struct {
-    MIXIN_STRUCT(DataBuffer, buffer);
+    DATA_BUFFER_MIXIN(buffer);
     int32_t width;
     int32_t height;
 } DataImage;

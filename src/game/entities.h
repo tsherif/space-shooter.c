@@ -25,13 +25,17 @@
 #define _GAME_ENTITIES_H_
 #include "renderer.h"
 
-typedef struct {
-    MIXIN_STRUCT(Renderer_RenderList, renderList);
-    float velocity[RENDERER_DRAWLIST_MAX * 2];
-    int32_t currentAnimation[RENDERER_DRAWLIST_MAX];
-    int32_t animationTick[RENDERER_DRAWLIST_MAX];
-    int32_t health[RENDERER_DRAWLIST_MAX];
-} EntitiesList;
+#define ENTITIES_LIST_BODY {\
+    RENDERER_LIST_MIXIN(renderList);\
+    float velocity[RENDERER_DRAWLIST_MAX * 2];\
+    int32_t currentAnimation[RENDERER_DRAWLIST_MAX];\
+    int32_t animationTick[RENDERER_DRAWLIST_MAX];\
+    int32_t health[RENDERER_DRAWLIST_MAX];\
+}
+
+typedef struct ENTITIES_LIST_BODY EntitiesList;
+
+#define ENTITIES_LIST_MIXIN(name) union { struct ENTITIES_LIST_BODY; EntitiesList name; }
 
 typedef struct {
     float x;

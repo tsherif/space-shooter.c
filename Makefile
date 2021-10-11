@@ -1,4 +1,4 @@
-CFLAGS=-g -std=c11 -Wall -fms-extensions -DSOGL_MAJOR_VERSION=4 -DSOGL_MINOR_VERSION=5
+CFLAGS=-g -std=c11 -Wall -DSOGL_MAJOR_VERSION=4 -DSOGL_MINOR_VERSION=5
 CC=gcc
 LDLIBS=-lX11 -ldl -lGL -lm
 

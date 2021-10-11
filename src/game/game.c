@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "../../lib/simple-opengl-loader.h"
-#include "../shared/macros.h"
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
 #include "utils.h"
@@ -79,7 +78,7 @@
 #define TIME_PER_ANIMATION 100.0f
 
 typedef struct {
-    MIXIN_STRUCT(EntitiesList, entity);
+    ENTITIES_LIST_MIXIN(entity);
     float bulletThrottle;
     float deadTimer;
     int32_t score;

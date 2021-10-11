@@ -46,4 +46,4 @@
     - [x] Keyboard input
     - [ ] Gamepad input
     - [ ] Full screen
-- [ ] Replace MIXIN_STRUCT with something not MS-specific
+- [x] Replace MIXIN_STRUCT with something that doesn't require MS extensions
