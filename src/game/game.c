@@ -334,36 +334,59 @@ static void livesToEntities(Player *player, EntitiesList* lives) {
     }
 }
 
-void game_init(void) {
-    utils_init();
-
+void loadSound(const char* fileName, DataBuffer* sound) {
     DataBuffer soundData = { 0 };
-    platform_loadBinFile("assets/audio/music.wav", &soundData);
-    utils_wavToSound(&soundData, &music);
+    platform_loadBinFile(fileName, &soundData);
+    utils_wavToSound(&soundData, sound);
     data_freeBuffer(&soundData);
+}
 
-    platform_loadBinFile("assets/audio/Laser_002.wav", &soundData);
-    utils_wavToSound(&soundData, &shipBulletSound);
-    data_freeBuffer(&soundData);
+void loadTexture(const char* fileName, GLuint *texture) {
+    DataBuffer imageData = { 0 };
+    DataImage image = { 0 };
 
-    platform_loadBinFile("assets/audio/Hit_Hurt2.wav", &soundData);
-    utils_wavToSound(&soundData, &enemyBulletSound);
-    data_freeBuffer(&soundData);
+    platform_loadBinFile(fileName, &imageData);
+    utils_bmpToImage(&imageData, &image);
+    renderer_initTexture(texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+}
 
-    platform_loadBinFile("assets/audio/Explode1.wav", &soundData);
-    utils_wavToSound(&soundData, &explosionSound);
-    data_freeBuffer(&soundData);
+void game_init(void) {
+    // Init subsystems
+    utils_init();
+    renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
-    platform_loadBinFile("assets/audio/Jump1.wav", &soundData);
-    utils_wavToSound(&soundData, &enemyHit);
-    data_freeBuffer(&soundData);
+    // Load assets
+    loadSound("assets/audio/music.wav", &music);
+    loadSound("assets/audio/Laser_002.wav", &shipBulletSound);
+    loadSound("assets/audio/Hit_Hurt2.wav", &enemyBulletSound);
+    loadSound("assets/audio/Explode1.wav", &explosionSound);
+    loadSound("assets/audio/Jump1.wav", &enemyHit);
 
+    loadTexture("assets/sprites/ship.bmp", &player.texture);
+    loadTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture);
+    loadTexture("assets/sprites/enemy-medium.bmp", &mediumEnemies.texture);
+    loadTexture("assets/sprites/enemy-big.bmp", &largeEnemies.texture);
+    loadTexture("assets/sprites/explosion.bmp", &explosions.texture);
+    loadTexture("assets/sprites/pixelspritefont32.bmp", &textEntities.texture);
+    loadTexture("assets/sprites/laser-bolts.bmp", &playerBullets.texture);
+
+    // Shared textures    
+    livesEntities.texture = player.texture;
+    enemyBullets.texture = playerBullets.texture;
+
+    renderer_initTexture(&stars.texture, whitePixelData, 1, 1);
+
+    // Init game
     platform_playSound(&music, true);
 
     entities_spawn(&player.entity, & (EntitiesInitOptions) {
         .x = (GAME_WIDTH - player.sprite->panelDims[0]) / 2,
         .y = GAME_HEIGHT - player.sprite->panelDims[1] * 2.0f
     });
+
+    entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
     for (int32_t i = 0; i < 40; ++i) {
         float t = utils_randomRange(0.0f, 1.0f);
@@ -375,65 +398,6 @@ void game_init(void) {
         });
     }
 
-    renderer_init(GAME_WIDTH, GAME_HEIGHT);
-
-
-    DataBuffer imageData = { 0 };
-    DataImage image = { 0 };
-
-    GLuint shipTexture; // Shared between player and enemy bullets.
-    platform_loadBinFile("assets/sprites/ship.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&shipTexture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    player.texture = shipTexture;
-    livesEntities.texture = shipTexture;
-
-    platform_loadBinFile("assets/sprites/enemy-small.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&smallEnemies.texture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    platform_loadBinFile("assets/sprites/enemy-medium.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&mediumEnemies.texture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    platform_loadBinFile("assets/sprites/enemy-big.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&largeEnemies.texture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    platform_loadBinFile("assets/sprites/explosion.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&explosions.texture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    platform_loadBinFile("assets/sprites/pixelspritefont32.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&textEntities.texture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    GLuint bulletTexture; // Shared between player and enemy bullets.
-    platform_loadBinFile("assets/sprites/laser-bolts.bmp", &imageData);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(&bulletTexture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-
-    playerBullets.texture = bulletTexture;
-    enemyBullets.texture = bulletTexture;
-
-    renderer_initTexture(&stars.texture, whitePixelData, 1, 1);
-
-    entities_setAnimation(&player.entity, 0, SPRITES_SHIP_CENTER);
 
     utils_uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
 
