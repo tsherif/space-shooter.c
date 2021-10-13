@@ -49,7 +49,7 @@ extern void entities_updateAnimations(EntitiesList* list) {
             Sprites_AnimationEndBehavior endBehavior = list->sprite->animations[list->currentAnimation[i]].endBehavior;
 
             if (endBehavior == SPRITES_ANIMATION_END_KILL) {
-                entities_kill(list, i);
+                list->dead[i] = true;
                 continue;
             } else {
                 list->animationTick[i] = 0; 
@@ -79,6 +79,7 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     list->alpha[i]            = 1.0f - opts->transparency;
     list->health[i]           = opts->health;
     list->whiteOut[i]         = opts->whiteOut;
+    list->dead[i]             = false;
 
     if (list->sprite->animations) {
         entities_updateAnimationPanel(list, i);
@@ -87,28 +88,31 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     ++list->count;
 }
 
-extern void entities_kill(EntitiesList* list, int32_t i) {
-    if (i >= list->count) {
-        return;
+extern void entities_filterDead(EntitiesList* list) {
+
+    for (int32_t i = list->count - 1; i >= 0; --i) {
+        if (list->dead[i]) {
+            int32_t last = list->count - 1;
+            float* position = list->position + i * 2;
+            float* velocity = list->velocity + i * 2;
+            float* lastPosition = list->position + last * 2;
+            float* lastVelocity = list->velocity + last * 2;
+
+            position[0] = lastPosition[0]; 
+            position[1] = lastPosition[1];
+            velocity[0] = lastVelocity[0];
+            velocity[1] = lastVelocity[1];
+            list->currentAnimation[i] = list->currentAnimation[last];
+            list->animationTick[i]    = list->animationTick[last];
+            list->scale[i]            = list->scale[last];
+            list->alpha[i]            = list->alpha[last];
+            list->health[i]           = list->health[last];
+            list->whiteOut[i]         = list->whiteOut[last];
+            list->dead[i]             = list->dead[last];
+
+            --list->count;
+        }
     }
-
-    int32_t last = list->count - 1;
-    float* position = list->position + i * 2;
-    float* velocity = list->velocity + i * 2;
-    float* lastPosition = list->position + last * 2;
-    float* lastVelocity = list->velocity + last * 2;
-
-    position[0] = lastPosition[0]; 
-    position[1] = lastPosition[1];
-    velocity[0] = lastVelocity[0];
-    velocity[1] = lastVelocity[1];
-    list->currentAnimation[i] = list->currentAnimation[last];
-    list->animationTick[i]    = list->animationTick[last];
-    list->scale[i]            = list->scale[last];
-    list->alpha[i]            = list->alpha[last];
-    list->health[i]           = list->health[last];
-
-    --list->count;
 }
 
 extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts) {

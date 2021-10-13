@@ -248,7 +248,7 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
             position[0] - killBuffer > GAME_WIDTH ||
             position[1] - killBuffer > GAME_HEIGHT
         ) {
-            entities_kill(list, i);
+            list->dead[i] = true;
         }
     }
 }
@@ -283,7 +283,7 @@ static bool checkPlayerBulletCollision(
                     .y = position[1] + explosionYOffset
                 });
                 platform_playSound(&explosionSound, false);
-                entities_kill(enemies, i);
+                enemies->dead[i] = true;
                 player.score += points;
             } else {
                 platform_playSound(&enemyHit, false);
@@ -316,7 +316,7 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
                     .y = position[1] + opts->yOffset 
                 });     
             }
-            entities_kill(list, i);
+            list->dead[i] = true;
         }   
     }
 
@@ -379,6 +379,16 @@ static void updateAnimations(void) {
 
         animationTime = 0.0f;
     }
+}
+
+static void filterDeadEntities(void) {
+    entities_filterDead(&playerBullets);  
+    entities_filterDead(&smallEnemies);
+    entities_filterDead(&mediumEnemies);
+    entities_filterDead(&largeEnemies);
+    entities_filterDead(&enemyBullets);  
+    entities_filterDead(&explosions);
+    entities_filterDead(&stars);
 }
 
 static void updateScoreDisplay() {
@@ -498,7 +508,7 @@ static void simEnemies(float dt) {
         if (checkPlayerBulletCollision(bulletMin, bulletMax, &smallEnemies, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET, SMALL_ENEMY_POINTS) ||
             checkPlayerBulletCollision(bulletMin, bulletMax, &mediumEnemies, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET, MEDIUM_ENEMY_POINTS) ||
             checkPlayerBulletCollision(bulletMin, bulletMax, &largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET, LARGE_ENEMY_POINTS)) {
-            entities_kill(&playerBullets, i);
+            playerBullets.dead[i] = true;
         }  
     }  
 }
@@ -630,6 +640,7 @@ static void mainGame(float dt) {
 
     updateScoreDisplay();
     updateAnimations();
+    filterDeadEntities();
 }
 
 static void gameOver(float dt) {
@@ -664,6 +675,7 @@ static void gameOver(float dt) {
 
     updateScoreDisplay();
     updateAnimations();
+    filterDeadEntities();
 
     if (gameOverRestartSequence.running && input.shoot) {
         gameState = MAIN_GAME;

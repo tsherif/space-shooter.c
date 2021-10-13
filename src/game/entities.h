@@ -31,6 +31,7 @@
     int32_t currentAnimation[RENDERER_DRAWLIST_MAX];\
     int32_t animationTick[RENDERER_DRAWLIST_MAX];\
     int32_t health[RENDERER_DRAWLIST_MAX];\
+    bool dead[RENDERER_DRAWLIST_MAX];\
 }
 
 typedef struct ENTITIES_LIST_BODY EntitiesList;
@@ -62,7 +63,7 @@ extern void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animati
 extern void entities_updateAnimations(EntitiesList* list);
 extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts);
 extern void entities_init(EntitiesList* list, int32_t i, EntitiesInitOptions* opts);
-extern void entities_kill(EntitiesList* list, int32_t i);
+void entities_filterDead(EntitiesList* list);
 extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts);
 
 #endif
