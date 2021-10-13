@@ -47,3 +47,4 @@
     - [ ] Gamepad input
     - [ ] Full screen
 - [x] Replace MIXIN_STRUCT with something that doesn't require MS extensions
+- [ ] Fix timing of whiteout
