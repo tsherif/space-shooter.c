@@ -34,7 +34,7 @@
     float currentSpritePanel[RENDERER_DRAWLIST_MAX * 2];\
     float scale[RENDERER_DRAWLIST_MAX];\
     float alpha[RENDERER_DRAWLIST_MAX];\
-    uint8_t whiteOut[RENDERER_DRAWLIST_MAX];\
+    float whiteOut[RENDERER_DRAWLIST_MAX];\
     Sprites_Sprite* sprite;\
     GLuint texture;\
     int32_t count;\

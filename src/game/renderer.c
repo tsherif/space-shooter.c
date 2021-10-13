@@ -85,7 +85,7 @@ void renderer_init(int width, int height) {
     "out vec4 fragColor;\n"
     "void main() {\n"
     "    fragColor = texture(spriteSheet, vUV);\n"
-    "    if (vWhiteOut != 0.0) fragColor.rgb = vec3(1.0);\n"
+    "    if (vWhiteOut > 0.0) fragColor.rgb = vec3(1.0);\n"
     "    fragColor.a *= vAlpha;\n"
     "    fragColor.rgb *= fragColor.a;\n"
     "}\n";
@@ -185,7 +185,7 @@ void renderer_init(int width, int height) {
     glGenBuffers(1, &whiteOutBuffer);
     glGenBuffers(1, &whiteOutBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, whiteOutBuffer);
-    glVertexAttribPointer(5, 1, GL_UNSIGNED_BYTE, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(5, 1);
     glEnableVertexAttribArray(5);
 }
@@ -252,7 +252,7 @@ void renderer_draw(RendererList* list) {
     glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->alpha, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, whiteOutBuffer);
-    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(uint8_t), list->whiteOut, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->whiteOut, GL_DYNAMIC_DRAW);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, list->count);
 }

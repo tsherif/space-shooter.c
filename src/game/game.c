@@ -64,6 +64,7 @@
 #define LARGE_ENEMY_POINTS 25
 
 #define ENEMY_BULLET_SPEED 0.05f
+#define ENEMY_WHITEOUT_TIME 25.0f
 
 #define COLLISION_SCALE 0.7f
 
@@ -238,8 +239,8 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
         position[0] += velocity[0] * dt;
         position[1] += velocity[1] * dt;
 
-        if (list->whiteOut[i]) {
-            list->whiteOut[i] = 0;
+        if (list->whiteOut[i] > 0.0f) {
+            list->whiteOut[i] -= dt;
         }
 
         if (
@@ -287,7 +288,7 @@ static bool checkPlayerBulletCollision(
                 player.score += points;
             } else {
                 platform_playSound(&enemyHit, false);
-                enemies->whiteOut[i] = 1;
+                enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
             }
         }    
     } 
@@ -330,7 +331,7 @@ static void livesToEntities(Player *player, EntitiesList* lives) {
             .x = 12.5f + i * (player->sprite->panelDims[0] * 0.55f + 0.5f),
             .y = GAME_HEIGHT - 32.0f, 
             .scale = 0.45f,
-            .whiteOut = 1
+            .whiteOut = 999999.0f
         });
     }
 }
