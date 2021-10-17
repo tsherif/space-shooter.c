@@ -46,19 +46,16 @@
 #define SHIP_NUM_LIVES 3
 
 #define SMALL_ENEMY_VELOCITY 0.03f
-#define SMALL_ENEMY_SPAWN_PROBABILITY 0.0003f
 #define SMALL_ENEMY_BULLET_PROBABILITY 0.0003f
 #define SMALL_ENEMY_HEALTH 1
 #define SMALL_ENEMY_POINTS 1
 
 #define MEDIUM_ENEMY_VELOCITY 0.015f
-#define MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0001f
 #define MEDIUM_ENEMY_BULLET_PROBABILITY 0.00075f
 #define MEDIUM_ENEMY_HEALTH 5
-#define MEDIUM_ENEMY_POINTS 5
+#define MEDIUM_ENEMY_POINTS 10
 
 #define LARGE_ENEMY_VELOCITY 0.006f
-#define LARGE_ENEMY_SPAWN_PROBABILITY 0.00003f
 #define LARGE_ENEMY_BULLET_PROBABILITY 0.003f
 #define LARGE_ENEMY_HEALTH 10
 #define LARGE_ENEMY_POINTS 25
@@ -121,6 +118,18 @@ static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 
 static float tickTime = 0.0f;
 static float animationTime = 0.0f;
+
+#define INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY 0.0003f
+#define INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0001f
+#define INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY 0.00003f
+#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.2f
+#define INITIAL_LEVEL_SCORE_THRESHOLD 50
+
+int32_t level = 1;
+int32_t levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
+float smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
+float mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
+float largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
 
 enum {
     NO_EVENT,
@@ -286,6 +295,16 @@ static bool checkPlayerBulletCollision(
                 platform_playSound(&explosionSound, false);
                 enemies->dead[i] = true;
                 player.score += points;
+                if (player.score > levelScoreThreshold) {
+                    ++level;
+                    levelScoreThreshold += level * 50;
+                    smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+                    mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+                    largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+                    char buffer[16];
+                    snprintf(buffer, 16, "Level: %d", level);
+                    platform_debugLog(buffer);
+                }
             } else {
                 platform_playSound(&enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
@@ -461,7 +480,7 @@ static void titleScreen(float dt) {
 }
 
 static void simEnemies(float dt) {
-    if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_SPAWN_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < smallEnemySpawnProbability * dt) {
         entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
@@ -470,7 +489,7 @@ static void simEnemies(float dt) {
         }); 
     }
 
-    if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_SPAWN_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < mediumEnemySpawnProbability * dt) {
         entities_spawn(&mediumEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
@@ -479,7 +498,7 @@ static void simEnemies(float dt) {
         });
     }
 
-    if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_SPAWN_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < largeEnemySpawnProbability * dt) {
         entities_spawn(&largeEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
@@ -687,6 +706,11 @@ static void gameOver(float dt) {
         mediumEnemies.count = 0;
         largeEnemies.count = 0;
         enemyBullets.count = 0;
+        level = 1;
+        levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
+        smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
+        mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
+        largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
         events_stop(&gameOverSequence);
         events_stop(&gameOverRestartSequence);
     }
