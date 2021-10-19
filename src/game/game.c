@@ -107,12 +107,16 @@ static EntitiesList livesEntities = { .sprite = &sprites_ship };
 
 static enum {
     TITLE,
+    LEVEL_TRANSITION,
     MAIN_GAME,
     GAME_OVER
 } gameState = TITLE;
 
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
+
+#define LEVEL_BUFFER_LENGTH 32 
+static char levelString[LEVEL_BUFFER_LENGTH];
 
 static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 
@@ -124,12 +128,17 @@ static float animationTime = 0.0f;
 #define INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY 0.00003f
 #define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.2f
 #define INITIAL_LEVEL_SCORE_THRESHOLD 50
+#define LEVEL_WARP 0.2f
+#define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
 
-int32_t level = 1;
-int32_t levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
-float smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
-float mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
-float largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
+static int32_t level = 1;
+static int32_t levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
+static float smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
+static float mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
+static float largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
+static float levelWarpVy = 0.0f;
+static float starProbabilityMultiplier = 1.0f;
+
 
 enum {
     NO_EVENT,
@@ -140,7 +149,8 @@ enum {
     SUBTITLE_DISPLAY,
     SUBTITLE_FADE,
     GAME_OVER_RESTART,
-    GAME_OVER_RESTART_DISPLAY
+    GAME_OVER_RESTART_DISPLAY,
+    LEVEL_TRANSITION_DISPLAY
 };
 
 static EventsSequence titleControls = {
@@ -209,6 +219,33 @@ static EventsSequence gameOverRestartSequence = {
     .loop = true
 };
 
+static EventsSequence levelTransitionSequence = {
+    .events = {
+        { 
+            .duration = 500.0f
+        },
+        { 
+            .duration = 3000.0f,
+            .id =  LEVEL_TRANSITION_DISPLAY
+        }
+    },
+    .count = 2
+};
+
+static void updateLevelText(void) {
+    snprintf(levelString, LEVEL_BUFFER_LENGTH, "Level %d", level);
+}
+
+static void transitionLevel(void) {
+    gameState = LEVEL_TRANSITION;
+    if (level > 1) {
+        levelWarpVy = LEVEL_WARP;
+        starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
+    }
+    updateLevelText();
+    events_start(&levelTransitionSequence);
+}
+
 static void firePlayerBullet(float x, float y) {
     if (
         player.bulletThrottle > 0.0f || 
@@ -246,7 +283,7 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
         float* position = list->position + i * 2;
         float* velocity = list->velocity + i * 2;
         position[0] += velocity[0] * dt;
-        position[1] += velocity[1] * dt;
+        position[1] += (velocity[1] + levelWarpVy) * dt;
 
         if (list->whiteOut[i] > 0.0f) {
             list->whiteOut[i] -= dt;
@@ -295,15 +332,14 @@ static bool checkPlayerBulletCollision(
                 platform_playSound(&explosionSound, false);
                 enemies->dead[i] = true;
                 player.score += points;
-                if (player.score > levelScoreThreshold) {
+                if (player.score >= levelScoreThreshold) {
                     ++level;
-                    levelScoreThreshold += level * 50;
+                    levelScoreThreshold *= 2;
                     smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
                     mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
                     largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-                    char buffer[16];
-                    snprintf(buffer, 16, "Level: %d", level);
-                    platform_debugLog(buffer);
+                    playerBullets.count = 0;
+                    transitionLevel();
                 }
             } else {
                 platform_playSound(&enemyHit, false);
@@ -374,7 +410,7 @@ static void loadTexture(const char* fileName, GLuint *texture) {
 }
 
 static void updateStars(float dt) {
-    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * starProbabilityMultiplier * dt) {
         float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&stars, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
@@ -418,65 +454,6 @@ static void updateScoreDisplay() {
         .y = GAME_HEIGHT - 20.0f, 
         .scale = 0.4f
     });
-}
-
-static void titleScreen(float dt) {
-    events_beforeFrame(&titleControls, dt);
-    events_beforeFrame(&titleSequence, dt);
-    events_beforeFrame(&subtitleSequence, dt);
-    
-    updateStars(dt);
-
-    textEntities.count = 0;
-
-    if (events_on(&titleControls, TITLE_START)) {
-        events_start(&titleSequence);
-    }
-
-    if (events_on(&titleControls, SUBTITLE_START)) {
-        events_start(&subtitleSequence);
-    }
-
-    if (events_on(&titleSequence, TITLE_DISPLAY)) {
-        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 62.0f, 
-            .scale = 0.75f
-        });
-    }
-
-    if (events_on(&titleSequence, TITLE_FADE)) {
-        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 62.0f, 
-            .scale = 0.75f,
-            .transparency = titleSequence.triggeredEvent->alpha
-        });
-    }
-
-    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY)) {
-        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 64.0f,
-            .y = 85.0f, 
-            .scale = 0.4f
-        });
-    }
-
-    if (events_on(&subtitleSequence, SUBTITLE_FADE)) {
-        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 64.0f,
-            .y = 85.0f, 
-            .scale = 0.4f,
-            .transparency = subtitleSequence.triggeredEvent->alpha
-        });
-    }
-
-    if (titleSequence.complete && subtitleSequence.complete) {
-        textEntities.count = 0;
-        gameState = MAIN_GAME;
-    }
-
-    updateAnimations();
 }
 
 static void simEnemies(float dt) {
@@ -635,6 +612,96 @@ static void simPlayer(float dt) {
     }   
 }
 
+static void titleScreen(float dt) {
+    events_beforeFrame(&titleControls, dt);
+    events_beforeFrame(&titleSequence, dt);
+    events_beforeFrame(&subtitleSequence, dt);
+    
+    updateStars(dt);
+
+    textEntities.count = 0;
+
+    if (events_on(&titleControls, TITLE_START)) {
+        events_start(&titleSequence);
+    }
+
+    if (events_on(&titleControls, SUBTITLE_START)) {
+        events_start(&subtitleSequence);
+    }
+
+    if (events_on(&titleSequence, TITLE_DISPLAY)) {
+        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 62.0f, 
+            .scale = 0.75f
+        });
+    }
+
+    if (events_on(&titleSequence, TITLE_FADE)) {
+        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 127.0f,
+            .y = 62.0f, 
+            .scale = 0.75f,
+            .transparency = titleSequence.triggeredEvent->alpha
+        });
+    }
+
+    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY)) {
+        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 64.0f,
+            .y = 85.0f, 
+            .scale = 0.4f
+        });
+    }
+
+    if (events_on(&subtitleSequence, SUBTITLE_FADE)) {
+        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 64.0f,
+            .y = 85.0f, 
+            .scale = 0.4f,
+            .transparency = subtitleSequence.triggeredEvent->alpha
+        });
+    }
+
+    if (titleSequence.complete && subtitleSequence.complete) {
+        textEntities.count = 0;
+        transitionLevel();
+    }
+
+    updateAnimations();
+}
+
+static void levelTransition(float dt) {
+    events_beforeFrame(&levelTransitionSequence, dt);
+    textEntities.count = 0;
+
+    updateStars(dt);
+
+    if (events_on(&levelTransitionSequence, LEVEL_TRANSITION_DISPLAY)) {
+        entities_fromText(&textEntities, levelString, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 62.0f,
+            .y = 72.0f, 
+            .scale = 0.75f
+        });
+    }
+
+    updateEntities(&smallEnemies, dt, 0.0f);
+    updateEntities(&mediumEnemies, dt, 0.0f);
+    updateEntities(&largeEnemies, dt, 0.0f);
+    updateEntities(&playerBullets, dt, 32.0f);
+    updateEntities(&enemyBullets, dt, 32.0f);
+    updateEntities(&explosions, dt, 32.0f);
+
+    if (levelTransitionSequence.complete) {
+        textEntities.count = 0;
+        levelWarpVy = 0.0f;
+        starProbabilityMultiplier = 1.0f;
+        gameState = MAIN_GAME;
+    }
+
+    updateAnimations();
+}
+
 static void mainGame(float dt) {
     textEntities.count = 0;
     
@@ -698,7 +765,6 @@ static void gameOver(float dt) {
     filterDeadEntities();
 
     if (gameOverRestartSequence.running && input.shoot) {
-        gameState = MAIN_GAME;
         player.lives = SHIP_NUM_LIVES;
         player.score = 0;
         player.deadTimer = 0.0f;
@@ -713,6 +779,7 @@ static void gameOver(float dt) {
         largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
         events_stop(&gameOverSequence);
         events_stop(&gameOverRestartSequence);
+        transitionLevel();
     }
 
 }
@@ -722,6 +789,7 @@ static void updateState(float dt) {
 
     switch(gameState) {
         case TITLE: titleScreen(dt); break;
+        case LEVEL_TRANSITION: levelTransition(dt); break;
         case MAIN_GAME: mainGame(dt); break;
         case GAME_OVER: gameOver(dt); break;
     }
@@ -779,6 +847,7 @@ void game_init(void) {
 
 
     utils_uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
+    updateLevelText();
 
     events_start(&titleControls);
 }

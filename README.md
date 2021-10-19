@@ -28,7 +28,7 @@ Current State
 - [x] Explosions
 - [x] Crashes kill enemy and player
 - [x] Text Rendering
-- [ ] Multiple levels
+- [x] Multiple levels
 - [x] Lives
 - [x] Game over screen
 - [x] Title screen

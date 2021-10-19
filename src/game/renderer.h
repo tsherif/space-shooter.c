@@ -27,7 +27,7 @@
 #include "../../lib/simple-opengl-loader.h"
 #include "sprites.h"
 
-#define RENDERER_DRAWLIST_MAX 255
+#define RENDERER_DRAWLIST_MAX 512
 
 #define RENDERER_LIST_BODY {\
     float position[RENDERER_DRAWLIST_MAX * 2];\
