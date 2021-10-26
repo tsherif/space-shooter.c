@@ -126,7 +126,7 @@ static float animationTime = 0.0f;
 #define INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY 0.0003f
 #define INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0001f
 #define INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY 0.00003f
-#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.2f
+#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.5f
 #define INITIAL_LEVEL_SCORE_THRESHOLD 50
 #define LEVEL_WARP 0.2f
 #define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
@@ -242,6 +242,7 @@ static void transitionLevel(void) {
         levelWarpVy = LEVEL_WARP;
         starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
     }
+    playerBullets.count = 0;
     updateLevelText();
     events_start(&levelTransitionSequence);
 }
@@ -699,6 +700,7 @@ static void levelTransition(float dt) {
         gameState = MAIN_GAME;
     }
 
+    updateScoreDisplay();
     updateAnimations();
 }
 
