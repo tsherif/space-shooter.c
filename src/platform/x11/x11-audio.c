@@ -148,7 +148,7 @@ bool platform_initAudio(void) {
         return false;   
     }
 
-    if (snd_pcm_hw_params_set_buffer_size(audioDevice, deviceParams, MIX_BUFFER_FRAMES * 2) < 0) {
+    if (snd_pcm_hw_params_set_buffer_size(audioDevice, deviceParams, MIX_BUFFER_FRAMES) < 0) {
         fprintf(stderr, "Failed to init buffer size!\n");
         return false;   
     }
