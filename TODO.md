@@ -41,7 +41,7 @@
 - [x] Bug in fadeout: title display and title fade can be triggered at the same time
 - [ ] Linux support
     - [x] Rendering
-    - [ ] Audio
+    - [x] Audio
     - [x] High-resolution timer
     - [x] Keyboard input
     - [ ] Gamepad input

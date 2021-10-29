@@ -1,6 +1,6 @@
 CFLAGS=-g -std=c11 -Wall -DSOGL_MAJOR_VERSION=4 -DSOGL_MINOR_VERSION=5
 CC=gcc
-LDLIBS=-lX11 -ldl -lGL -lm
+LDLIBS=-lX11 -ldl -lGL -lm -lpthread -lasound
 
 all:
 	rm -rf build
