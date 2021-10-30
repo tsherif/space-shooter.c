@@ -150,18 +150,16 @@ int main(int argc, char const *argv[]) {
 
     // Animation loop
     while (1) {
-        if (XCheckTypedWindowEvent(display, window, Expose, &event) == True) {
+        if (XCheckTypedWindowEvent(display, window, ClientMessage, &event) == True && event.xclient.data.l[0] == wmDeleteMessage) {
+            break;
+        }
+
+        while (XCheckTypedWindowEvent(display, window, Expose, &event) == True) {
             XGetWindowAttributes(display, window, &xWinAtt);
             game_resize(xWinAtt.width, xWinAtt.height);
         }
 
-        if (XCheckTypedWindowEvent(display, window, ClientMessage, &event) == True) {
-            if (event.xclient.data.l[0] == wmDeleteMessage) {
-                break;
-            }
-        }
-
-        if (XCheckWindowEvent(display, window, KeyPressMask | KeyReleaseMask, &event) == True) {
+        while (XCheckWindowEvent(display, window, KeyPressMask | KeyReleaseMask, &event) == True) {
             bool down = event.type == KeyPress;
 
             KeySym key = XLookupKeysym(&event.xkey, 0);
