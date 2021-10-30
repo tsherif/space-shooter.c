@@ -26,8 +26,7 @@
 #include <pthread.h>
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
-
-#include <stdio.h>
+#include "linux-audio.h"
 
 #define SAMPLE_MAX 32767
 #define SAMPLE_MIN (-32768)
@@ -42,16 +41,16 @@ typedef struct {
     bool loop;
 } AudioStream;
 
-struct {
+static struct {
     AudioStream channels[32];
     int32_t count;
 } mixer;
 
-snd_pcm_t* audioDevice;
-pthread_t audioThreadHandle;
-pthread_mutex_t mixerLock;
+static snd_pcm_t* audioDevice;
+static pthread_t audioThreadHandle;
+static pthread_mutex_t mixerLock;
 
-void *audioThread(void* args) {
+static void *audioThread(void* args) {
     int16_t mixBuffer[MIX_BUFFER_FRAMES * 2];
 
     while (true) {
@@ -111,17 +110,17 @@ void *audioThread(void* args) {
         pthread_mutex_unlock(&mixerLock); 
         
         if (snd_pcm_writei(audioDevice, mixBuffer, MIX_BUFFER_FRAMES) < 0) {
-            fprintf(stderr, "Failed to play!\n");
             snd_pcm_prepare(audioDevice);
         }
     }
+
+    return 0;
 }
 
-bool platform_initAudio(void) {
+bool linux_initAudio(void) {
     snd_pcm_hw_params_t *deviceParams = 0;
 
     if (snd_pcm_open(&audioDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        fprintf(stderr, "Failed to init!\n");
         return false;
     }
 
@@ -129,42 +128,34 @@ bool platform_initAudio(void) {
     snd_pcm_hw_params_any(audioDevice, deviceParams);
 
     if (snd_pcm_hw_params_set_access(audioDevice, deviceParams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
-        fprintf(stderr, "Failed to init!\n");
         return false;   
     }
 
     if (snd_pcm_hw_params_set_format(audioDevice, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
-        fprintf(stderr, "Failed to init!\n");
         return false;   
     }
 
     if (snd_pcm_hw_params_set_rate(audioDevice, deviceParams, 44100, 0) < 0) {
-        fprintf(stderr, "Failed to init!\n");
         return false;   
     }
 
     if (snd_pcm_hw_params_set_channels(audioDevice, deviceParams, 2) < 0) {
-        fprintf(stderr, "Failed to init!\n");
         return false;   
     }
 
     if (snd_pcm_hw_params_set_buffer_size(audioDevice, deviceParams, MIX_BUFFER_FRAMES) < 0) {
-        fprintf(stderr, "Failed to init buffer size!\n");
         return false;   
     }
 
     if (snd_pcm_hw_params(audioDevice, deviceParams) < 0) {
-        fprintf(stderr, "Failed to init!\n");
         return false;   
     }
 
     if (pthread_mutex_init(&mixerLock, NULL)) {
-        fprintf(stderr, "Failed to init!\n");
         return false;
     }
     
     if (pthread_create(&audioThreadHandle, NULL, audioThread, NULL)) {
-        fprintf(stderr, "Failed to init!\n");
         return false;
     }
 

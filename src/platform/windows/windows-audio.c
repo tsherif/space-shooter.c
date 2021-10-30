@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
+#include "windows-audio.h"
 
 #define AUDIO_SAMPLE_RATE 44100
 #define AUDIO_CHANNELS 2
@@ -83,7 +84,7 @@ static struct {
     }
 };
 
-bool platform_initAudio(void) {
+bool windows_initAudio(void) {
     HRESULT comResult;
     comResult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(comResult)) {

@@ -6,4 +6,4 @@ all:
 	rm -rf build
 	mkdir build
 	cp -r assets build/assets   
-	$(CC) $(CFLAGS) -o build/space-shooter src/shared/*.c src/game/*.c src/platform/x11/*.c $(LDLIBS)
+	$(CC) $(CFLAGS) -o build/space-shooter src/shared/*.c src/game/*.c src/platform/linux/*.c $(LDLIBS)

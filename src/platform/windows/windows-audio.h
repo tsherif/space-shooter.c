@@ -21,27 +21,9 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _PLATFORM_INTERFACE_H_
-#define _PLATFORM_INTERFACE_H_
-#include <stdbool.h>
-#include <stdint.h>
-#include "data.h"
+#ifndef _WINDOWS_AUDIO_H_
+#define _WINDOWS_AUDIO_H_
 
-// Must be implemented by game, to be used by platform layer.
-typedef struct {
-	float velocity[2];
-	bool shoot;
-} GameInput;
-
-void game_init(void);
-void game_update(float elapsedTime); // In milliseconds
-void game_draw(void);
-void game_resize(int width, int height);
-
-// Must be implemented by platform layer, to be used by game.
-void platform_getInput(GameInput* input);
-void platform_playSound(DataBuffer* sound, bool loop);
-void platform_debugLog(const char* message);
-bool platform_loadBinFile(const char* fileName, DataBuffer* buffer);
+bool windows_initAudio(void);
 
 #endif

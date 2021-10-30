@@ -36,6 +36,7 @@
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
+#include "windows-audio.h"
 
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
@@ -193,7 +194,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         }
     }
 
-    if (!platform_initAudio()) {
+    if (!windows_initAudio()) {
         return 1;
     }
 

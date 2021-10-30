@@ -33,6 +33,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "linux-audio.h"
 
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
@@ -135,7 +136,8 @@ int main(int argc, char const *argv[]) {
     Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(display, window, &wmDeleteMessage, 1);
 
-    if (!platform_initAudio()) {
+#include "linux-audio.h"
+    if (!linux_initAudio()) {
         return 1;
     }
 
