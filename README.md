@@ -5,7 +5,7 @@ A cross-platform, top-down space shooter written in C using only system librarie
 Uses:
 - Windowing: Win32 (Windows), X11 (Linux)
 - Rendering: OpenGL
-- Audio: XAudio2 (Windows), ALSA (Linux)
+- Audio: XAudio2 (Windows), ALSA/pthread (Linux)
 - Gamepad: Xinput (Windows)
 
 Current State
