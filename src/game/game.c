@@ -676,7 +676,6 @@ static void levelTransition(float dt) {
     events_beforeFrame(&levelTransitionSequence, dt);
     textEntities.count = 0;
 
-    updateStars(dt);
 
     if (events_on(&levelTransitionSequence, LEVEL_TRANSITION_DISPLAY)) {
         entities_fromText(&textEntities, levelString, &(EntitiesFromTextOptions) {
@@ -686,6 +685,8 @@ static void levelTransition(float dt) {
         });
     }
 
+    livesToEntities(&player, &livesEntities);
+    updateStars(dt);
     updateEntities(&smallEnemies, dt, 0.0f);
     updateEntities(&mediumEnemies, dt, 0.0f);
     updateEntities(&largeEnemies, dt, 0.0f);

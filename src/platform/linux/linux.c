@@ -136,7 +136,6 @@ int main(int argc, char const *argv[]) {
     Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(display, window, &wmDeleteMessage, 1);
 
-#include "linux-audio.h"
     if (!linux_initAudio()) {
         return 1;
     }
