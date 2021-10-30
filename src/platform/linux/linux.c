@@ -143,10 +143,10 @@ int main(int argc, char const *argv[]) {
     game_init();
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
 
-    float lastTime, time;
+    uint64_t lastTime;
     struct timespec timeSpec;
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-    lastTime = timeSpec.tv_sec * 1000.0f + timeSpec.tv_nsec / 1000000.0f;
+    lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
 
     bool running = true;
 
@@ -180,11 +180,11 @@ int main(int argc, char const *argv[]) {
         }
 
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-        time = timeSpec.tv_sec * 1000.0f + timeSpec.tv_nsec / 1000000.0f;
+        uint64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
 
-        float elapsedTime = time - lastTime;
+        uint64_t elapsedTime = time - lastTime;
 
-        game_update(elapsedTime);
+        game_update(elapsedTime / 1000000.0f);
         game_draw();
 
         glXSwapBuffers(display, window);
@@ -196,6 +196,8 @@ int main(int argc, char const *argv[]) {
     XDestroyWindow(display, window);
     XCloseDisplay(display);
 }
+
+
 
 
 void platform_getInput(GameInput* input) {
