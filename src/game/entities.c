@@ -23,7 +23,7 @@
 
 #include "entities.h"
 
-extern void entities_updateAnimationPanel(EntitiesList* list, int32_t i) {
+void entities_updateAnimationPanel(EntitiesList* list, int32_t i) {
     float* panel = list->sprite->animations[list->currentAnimation[i]].frames[list->animationTick[i]];
     float* currentSpritePanel = list->currentSpritePanel + i * 2;
 
@@ -31,7 +31,7 @@ extern void entities_updateAnimationPanel(EntitiesList* list, int32_t i) {
     currentSpritePanel[1] = panel[1];
 }
 
-extern void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation) {
+void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation) {
     if (list->currentAnimation[i] == animation) {
         return;
     }
@@ -41,7 +41,7 @@ extern void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animati
     entities_updateAnimationPanel(list, i);
 }
 
-extern void entities_updateAnimations(EntitiesList* list) {
+void entities_updateAnimations(EntitiesList* list) {
     for (int32_t i = 0; i < list->count; ++i) {
         int32_t numFrames = list->sprite->animations[list->currentAnimation[i]].numFrames;
         ++list->animationTick[i];
@@ -60,7 +60,7 @@ extern void entities_updateAnimations(EntitiesList* list) {
     }
 }
 
-extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
+void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     if (list->count == RENDERER_DRAWLIST_MAX) {
         return;
     }
@@ -88,7 +88,7 @@ extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     ++list->count;
 }
 
-extern void entities_filterDead(EntitiesList* list) {
+void entities_filterDead(EntitiesList* list) {
 
     for (int32_t i = list->count - 1; i >= 0; --i) {
         if (list->dead[i]) {
@@ -115,7 +115,7 @@ extern void entities_filterDead(EntitiesList* list) {
     }
 }
 
-extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts) {
+void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts) {
     int32_t i = 0;
 
     if (opts->reset) {

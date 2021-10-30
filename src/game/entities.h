@@ -58,12 +58,12 @@ typedef struct {
     bool reset;
 } EntitiesFromTextOptions;
 
-extern void entities_updateAnimationPanel(EntitiesList* list, int32_t i);
-extern void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation);
-extern void entities_updateAnimations(EntitiesList* list);
-extern void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts);
-extern void entities_init(EntitiesList* list, int32_t i, EntitiesInitOptions* opts);
+void entities_updateAnimationPanel(EntitiesList* list, int32_t i);
+void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation);
+void entities_updateAnimations(EntitiesList* list);
+void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts);
+void entities_init(EntitiesList* list, int32_t i, EntitiesInitOptions* opts);
 void entities_filterDead(EntitiesList* list);
-extern void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts);
+void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts);
 
 #endif

@@ -96,25 +96,25 @@ typedef struct {
     int32_t numAnimations;
 } Sprites_Sprite;
 
-extern Sprites_Sprite sprites_ship;
-extern Sprites_Sprite sprites_smallEnemy;
-extern Sprites_Sprite sprites_mediumEnemy;
-extern Sprites_Sprite sprites_largeEnemy;
-extern Sprites_Sprite sprites_playerBullet;
-extern Sprites_Sprite sprites_enemyBullet;
-extern Sprites_Sprite sprites_explosion;
-extern Sprites_Sprite sprites_text;
-extern Sprites_Sprite sprites_whitePixel;
+Sprites_Sprite sprites_ship;
+Sprites_Sprite sprites_smallEnemy;
+Sprites_Sprite sprites_mediumEnemy;
+Sprites_Sprite sprites_largeEnemy;
+Sprites_Sprite sprites_playerBullet;
+Sprites_Sprite sprites_enemyBullet;
+Sprites_Sprite sprites_explosion;
+Sprites_Sprite sprites_text;
+Sprites_Sprite sprites_whitePixel;
 
-extern float sprites_shipBulletOffset[2];
-extern float sprites_shipExplosionOffset[2];
-extern float sprites_smallEnemyBulletOffset[2];
-extern float sprites_smallEnemyExplosionOffset[2];
-extern float sprites_mediumEnemyBulletOffset[2];
-extern float sprites_mediumEnemyExplosionOffset[2];
-extern float sprites_largeEnemyBulletOffset[2];
-extern float sprites_largeEnemyExplosionOffset[2];
+float sprites_shipBulletOffset[2];
+float sprites_shipExplosionOffset[2];
+float sprites_smallEnemyBulletOffset[2];
+float sprites_smallEnemyExplosionOffset[2];
+float sprites_mediumEnemyBulletOffset[2];
+float sprites_mediumEnemyExplosionOffset[2];
+float sprites_largeEnemyBulletOffset[2];
+float sprites_largeEnemyExplosionOffset[2];
 
-extern int32_t sprites_charToAnimationIndex(char c);
+int32_t sprites_charToAnimationIndex(char c);
 
 #endif
