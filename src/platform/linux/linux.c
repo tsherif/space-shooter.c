@@ -148,10 +148,14 @@ int main(int argc, char const *argv[]) {
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
     lastTime = timeSpec.tv_sec * 1000.0f + timeSpec.tv_nsec / 1000000.0f;
 
+    bool running = true;
+
     // Animation loop
-    while (1) {
-        if (XCheckTypedWindowEvent(display, window, ClientMessage, &event) == True && event.xclient.data.l[0] == wmDeleteMessage) {
-            break;
+    while (running) {
+        while (XCheckTypedWindowEvent(display, window, ClientMessage, &event) == True) {
+            if (event.xclient.data.l[0] == wmDeleteMessage) {
+                running = false;
+            }
         }
 
         while (XCheckTypedWindowEvent(display, window, Expose, &event) == True) {
