@@ -333,15 +333,6 @@ static bool checkPlayerBulletCollision(
                 platform_playSound(&explosionSound, false);
                 enemies->dead[i] = true;
                 player.score += points;
-                if (player.score >= levelScoreThreshold) {
-                    ++level;
-                    levelScoreThreshold *= 2;
-                    smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-                    mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-                    largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-                    playerBullets.count = 0;
-                    transitionLevel();
-                }
             } else {
                 platform_playSound(&enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
@@ -508,7 +499,16 @@ static void simEnemies(float dt) {
             checkPlayerBulletCollision(bulletMin, bulletMax, &largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET, LARGE_ENEMY_POINTS)) {
             playerBullets.dead[i] = true;
         }  
-    }  
+    }
+
+    if (player.score >= levelScoreThreshold) {
+        ++level;
+        levelScoreThreshold *= 2;
+        smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+        mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+        largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+        transitionLevel();
+    }
 }
 
 static void simPlayer(float dt) {
