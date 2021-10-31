@@ -500,15 +500,6 @@ static void simEnemies(float dt) {
             playerBullets.dead[i] = true;
         }  
     }
-
-    if (player.score >= levelScoreThreshold) {
-        ++level;
-        levelScoreThreshold *= 2;
-        smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-        mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-        largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-        transitionLevel();
-    }
 }
 
 static void simPlayer(float dt) {
@@ -722,6 +713,15 @@ static void mainGame(float dt) {
             player.deadTimer -= dt;
         } else {
             simPlayer(dt);           
+        }
+
+        if (player.score >= levelScoreThreshold) {
+            ++level;
+            levelScoreThreshold *= 2;
+            smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+            mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+            largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+            transitionLevel();
         }
     } else {
         events_start(&gameOverSequence);

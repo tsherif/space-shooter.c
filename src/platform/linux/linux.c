@@ -68,7 +68,7 @@ int main(int argc, char const *argv[]) {
     
 
     XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask);
-    XStoreName(display, window, "space-shooter.c (x11)");
+    XStoreName(display, window, "space-shooter.c (Linux)");
     XMapWindow(display, window);
     
     int numFBC = 0;
@@ -127,7 +127,7 @@ int main(int argc, char const *argv[]) {
     if (!sogl_loadOpenGL()) {
         const char **failures = sogl_getFailures();
         while (*failures) {
-            fprintf(stderr, "space-shooter.c x11: Failed to load function %s\n", *failures);
+            fprintf(stderr, "space-shooter.c Linux: Failed to load function %s\n", *failures);
             failures++;
         }
     }

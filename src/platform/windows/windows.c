@@ -166,7 +166,7 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int showWindow) {
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
-        .title = "space-shooter.c (win32)", 
+        .title = "space-shooter.c (Windows)", 
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = winProc,
