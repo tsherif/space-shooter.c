@@ -25,7 +25,7 @@
 - [x] Get rid of copying into render list
 - [x] Instanced draws
 - [ ] Clean up globals 
-- [ ] Errors checks in BMP/WAV file parsing
+- [x] Errors checks in BMP/WAV file parsing
 - [x] Get rid of win32 error messages in the renderer
 - [x] Fullscreen
 - [x] Loop music
@@ -48,3 +48,4 @@
     - [ ] Full screen
 - [x] Replace MIXIN_STRUCT with something that doesn't require MS extensions
 - [x] Fix timing of whiteout
+- [ ] BUG: Player bullet sometimes appears when transitioning levels.

@@ -149,7 +149,7 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     return true;
 }
 
-// TODO(Tarek): Check format. Should be 2-channel 44.1kHz
+// NOTE(Tarek): Hardcoded to load 2-channel 44.1kHz 16-bit data, with RIFF, fmt and data chunks sequential.
 bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     int32_t offset = 0;
     uint32_t chunkType = 0;
@@ -157,9 +157,19 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     uint32_t fileFormat = 0;
 
     chunkType = *(uint32_t *) soundData->data;
-    offset +=  2 * sizeof(uint32_t);
+    offset +=  sizeof(uint32_t);
+
+    chunkSize = *(uint32_t *) (soundData->data + offset);
+    offset +=  sizeof(uint32_t);
 
     if (chunkType != 0x46464952) { // "RIFF" little-endian
+        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
+        return false;
+    }
+
+    // chunkSize == size of file - 4 bytes each for this and the previous field.
+    if (chunkSize != soundData->size - 8) {
+        platform_debugLog("utils_wavToSound: Invalid WAVE file. File size incorrect.");
         return false;
     }
 
@@ -167,29 +177,47 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     offset += sizeof(uint32_t);
 
     if (fileFormat != 0x45564157) { // "WAVE" little-endian
+        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing WAVE chunk.");
         return false;
     }
 
-    while (offset + 2 * sizeof(uint32_t) < soundData->size) {
-        chunkType = *(uint32_t *) (soundData->data + offset);
-        offset +=  sizeof(uint32_t);
+    chunkType = *(uint32_t *) (soundData->data + offset);
+    offset +=  sizeof(uint32_t);
 
-        chunkSize = *(uint32_t *) (soundData->data + offset);
-        offset +=  sizeof(uint32_t);
+    chunkSize = *(uint32_t *) (soundData->data + offset);
+    offset +=  sizeof(uint32_t);
 
-        if (offset + chunkSize > soundData->size) {
+    if (chunkType == 0x20746d66) { // "fmt " little-endian
+        uint16_t formatCode = *(uint16_t *) (soundData->data + offset);            
+        uint16_t channels   = *(uint16_t *) (soundData->data + offset + 2);            
+        uint32_t rate       = *(uint32_t *) (soundData->data + offset + 4);            
+        uint16_t bps        = *(uint16_t *) (soundData->data + offset + 14);
+
+        if (formatCode != 1 || channels != 2 || rate != 44100 || bps != 16) {
+            platform_debugLog("utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
             return false;
         }
-
-        if (chunkType == 0x61746164) { // "data" little-endian
-            sound->size = chunkSize;
-            sound->data = (uint8_t *) malloc(chunkSize);
-            memcpy(sound->data, soundData->data + offset, chunkSize);
-            break;
-        }
-
-        offset += chunkSize;
+    } else {
+        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
+        return false;
     }
 
-    return true;
+    offset += chunkSize;
+
+    chunkType = *(uint32_t *) (soundData->data + offset);
+    offset +=  sizeof(uint32_t);
+
+    chunkSize = *(uint32_t *) (soundData->data + offset);
+    offset +=  sizeof(uint32_t);
+
+    if (chunkType == 0x61746164) { // "data" little-endian
+        sound->size = chunkSize;
+        sound->data = (uint8_t *) malloc(chunkSize);
+        memcpy(sound->data, soundData->data + offset, chunkSize);
+    } else {
+        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing data chunk.");
+        return false;
+    }
+
+    return false;
 }

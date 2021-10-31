@@ -21,7 +21,6 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#define _POSIX_C_SOURCE 199309L
 #define SOGL_IMPLEMENTATION_X11
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/data.h"
