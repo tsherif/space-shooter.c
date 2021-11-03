@@ -56,16 +56,6 @@ static bool fullScreen = false;
 static int controllerIndex = -1;
 static bool lastAButton = false;
 
-static bool gamepadEquals(XINPUT_GAMEPAD* gp1, XINPUT_GAMEPAD* gp2) {
-    return gp1->wButtons == gp2->wButtons &&
-        gp1->bLeftTrigger == gp2->bLeftTrigger &&
-        gp1->bRightTrigger == gp2->bRightTrigger &&
-        gp1->sThumbLX == gp2->sThumbLX &&
-        gp1->sThumbLY == gp2->sThumbLY &&
-        gp1->sThumbRX == gp2->sThumbRX &&
-        gp1->sThumbRY == gp2->sThumbRY;
-}
-
 LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
         case WM_SIZE: {

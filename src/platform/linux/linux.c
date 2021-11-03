@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "linux-audio.h"
+#include "linux-gamepad.h"
 
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
@@ -141,6 +142,7 @@ int main(int argc, char const *argv[]) {
 
     game_init();
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
+    linux_initGamepad();
 
     uint64_t lastTime;
     struct timespec timeSpec;
@@ -203,6 +205,8 @@ void platform_getInput(GameInput* input) {
     input->velocity[0] = 0.0f;
     input->velocity[1] = 0.0f;
     input->shoot = false;
+
+    linux_gamepadInput(input);
 
     if (keyboard.left) {
         input->velocity[0] = -1.0f;
