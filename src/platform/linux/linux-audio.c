@@ -27,9 +27,6 @@
 #include "../../shared/platform-interface.h"
 #include "linux-audio.h"
 
-#define SAMPLE_MAX 32767
-#define SAMPLE_MIN (-32768)
-
 #define MIX_CHANNELS 32
 #define MIX_BUFFER_FRAMES 2048
 
@@ -74,12 +71,12 @@ static void *audioThread(void* args) {
                 for (int32_t i = 0; i < samplesToMix; ++i) {
                     int32_t sample = mixBuffer[i] + channel->data[channel->cursor];
                     
-                    if (sample < SAMPLE_MIN) {
-                        sample = SAMPLE_MIN;
+                    if (sample < INT16_MIN) {
+                        sample = INT16_MIN;
                     }
 
-                    if (sample > SAMPLE_MAX) {
-                        sample = SAMPLE_MAX;
+                    if (sample > INT16_MAX) {
+                        sample = INT16_MAX;
                     }
 
                     mixBuffer[i] = sample;
