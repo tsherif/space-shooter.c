@@ -44,7 +44,7 @@
     - [x] Audio
     - [x] High-resolution timer
     - [x] Keyboard input
-    - [ ] Gamepad input
+    - [x] Gamepad input
     - [ ] Full screen
 - [x] Replace MIXIN_STRUCT with something that doesn't require MS extensions
 - [x] Fix timing of whiteout

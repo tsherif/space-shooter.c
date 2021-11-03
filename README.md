@@ -38,7 +38,7 @@ Current State
     - [x] Audio
     - [x] High-resolution timer
     - [x] Keyboard input
-    - [ ] Gamepad input
+    - [x] Gamepad input
     - [ ] Full screen
 
 (A more detailed todo list lives [here](./TODO.md).)
