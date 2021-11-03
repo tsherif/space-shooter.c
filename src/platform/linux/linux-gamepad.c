@@ -102,7 +102,7 @@ static char* concatStrings(char* dst, int32_t dstLen, const char* s1, const char
     return dst;
 }
 
-void linux_initGamepad(void) {
+void linux_detectGamepad(void) {
     DIR* inputDir = opendir(INPUT_DIR);
 
     if (!inputDir) {
@@ -137,7 +137,11 @@ void linux_initGamepad(void) {
     closedir(inputDir);
 }
 
-#include <stdio.h>
+void linux_pingGamepad(void) {
+    if (gamepad.fd == -1) {
+        linux_detectGamepad();
+    }
+}
 
 void linux_gamepadInput(GameInput* input) {
     if (gamepad.fd == -1) {
@@ -196,6 +200,4 @@ void linux_gamepadInput(GameInput* input) {
     }
 
     input->shoot = aButtonPressed;
-
-    // fprintf(stderr, "%f, %f, %d\n", input->velocity[0], input->velocity[1], input->shoot);
 }

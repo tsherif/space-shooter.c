@@ -142,16 +142,16 @@ int main(int argc, char const *argv[]) {
 
     game_init();
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
-    linux_initGamepad();
+    linux_detectGamepad();
 
+
+    uint64_t ticks = 0;
     uint64_t lastTime;
     struct timespec timeSpec;
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
     lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
-
     bool running = true;
 
-    // Animation loop
     while (running) {
         while (XCheckTypedWindowEvent(display, window, ClientMessage, &event) == True) {
             if (event.xclient.data.l[0] == wmDeleteMessage) {
@@ -178,6 +178,10 @@ int main(int argc, char const *argv[]) {
                 case XK_Control_L: keyboard.ctrl = down; break;
                 case XK_Control_R: keyboard.ctrl = down; break;
             }
+        }
+
+        if (ticks % 200 == 0) {
+            linux_pingGamepad();
         }
 
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);

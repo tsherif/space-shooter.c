@@ -208,7 +208,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     MSG message;
     LARGE_INTEGER lastPerfCount, tickFrequency;
-    uint32_t ticks = 0;
+    uint64_t ticks = 0;
     QueryPerformanceFrequency(&tickFrequency);
     QueryPerformanceCounter(&lastPerfCount);
     running = true;
