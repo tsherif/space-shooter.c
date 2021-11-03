@@ -38,6 +38,10 @@
 #define INITIAL_WINDOW_WIDTH 1200
 #define INITIAL_WINDOW_HEIGHT 600
 
+#define _NET_WM_STATE_REMOVE 0
+#define _NET_WM_STATE_ADD    1
+#define _NET_WM_STATE_TOGGLE 2
+
 static struct {
     bool left;
     bool right;
@@ -46,26 +50,24 @@ static struct {
     bool space;
     bool lastSpace;
     bool ctrl;
+    bool shift;
 } keyboard;
 
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
 
 int main(int argc, char const *argv[]) {
-    Display* display;
-    Window window;
-    XEvent event;
-    XWindowAttributes xWinAtt;
 
-    // X Windows stuff
-    display = XOpenDisplay(NULL);
+    Display* display = XOpenDisplay(NULL);
 
     if (display == NULL) {
-        printf("Unable to connect to X Server\n");
+        platform_debugLog("Unable to connect to X Server");
         return 1;
     }
 
-    window = XCreateSimpleWindow(display, DefaultRootWindow(display), 20, 20, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, 0, 0, 0);
+    int screen = XDefaultScreen(display);
+    Window rootWindow = XRootWindow(display, screen);
+    Window window = XCreateSimpleWindow(display, rootWindow, 20, 20, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, 0, 0, 0);
     
 
     XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask);
@@ -115,7 +117,7 @@ int main(int argc, char const *argv[]) {
     XFree(fbc);
 
     if (!ctx) {
-        fprintf(stderr, "Unable to create OpenGL context\n");
+        platform_debugLog("Unable to create OpenGL context");
         return -1;
     }
 
@@ -133,8 +135,47 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display, window, &wmDeleteMessage, 1);
+    Atom NET_WM_STATE = XInternAtom(display, "_NET_WM_STATE", False);
+    Atom NET_WM_STATE_FULLSCREEN = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
+    Atom WM_DELETE_WINDOW = XInternAtom(display, "WM_DELETE_WINDOW", False);
+
+    XSetWMProtocols(display, window, &WM_DELETE_WINDOW, 1);
+
+    XEvent fullScreenEvent = {
+        .xclient = {
+            .type = ClientMessage,
+            .window = window,
+            .message_type = NET_WM_STATE,
+            .format = 32,
+            .data = {
+                .l = {
+                    _NET_WM_STATE_ADD,
+                    NET_WM_STATE_FULLSCREEN,
+                    0,
+                    1,
+                    0
+                }
+            }
+        }
+    };
+
+    XEvent windowedEvent = {
+        .xclient = {
+            .type = ClientMessage,
+            .window = window,
+            .message_type = NET_WM_STATE,
+            .format = 32,
+            .data = {
+                .l = {
+                    _NET_WM_STATE_REMOVE,
+                    NET_WM_STATE_FULLSCREEN,
+                    0,
+                    1,
+                    0
+                }
+            }
+        }
+    };
 
     if (!linux_initAudio()) {
         return 1;
@@ -144,17 +185,19 @@ int main(int argc, char const *argv[]) {
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
     linux_detectGamepad();
 
-
+    XEvent event;
+    XWindowAttributes xWinAtt;
     uint64_t ticks = 0;
     uint64_t lastTime;
     struct timespec timeSpec;
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
     lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    bool fullScreen = false;
     bool running = true;
 
     while (running) {
         while (XCheckTypedWindowEvent(display, window, ClientMessage, &event) == True) {
-            if (event.xclient.data.l[0] == wmDeleteMessage) {
+            if (event.xclient.data.l[0] == WM_DELETE_WINDOW) {
                 running = false;
             }
         }
@@ -177,6 +220,18 @@ int main(int argc, char const *argv[]) {
                 case XK_space: keyboard.space = down; break;
                 case XK_Control_L: keyboard.ctrl = down; break;
                 case XK_Control_R: keyboard.ctrl = down; break;
+                case XK_Shift_L: keyboard.shift = down; break;
+                case XK_Shift_R: keyboard.shift = down; break;
+                case XK_f: {
+                    if (down && keyboard.ctrl && keyboard.shift) {
+                        if (fullScreen) {
+                            XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
+                        } else {
+                            XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
+                        }
+                        fullScreen = !fullScreen;
+                    }
+                } break;
             }
         }
 

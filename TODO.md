@@ -39,13 +39,13 @@
 - [x] Clean up controls (e.g. rapid fire while moving)
 - [x] BMP for sprites, remove stb_image dep
 - [x] Bug in fadeout: title display and title fade can be triggered at the same time
-- [ ] Linux support
+- [x] Linux support
     - [x] Rendering
     - [x] Audio
     - [x] High-resolution timer
     - [x] Keyboard input
     - [x] Gamepad input
-    - [ ] Full screen
+    - [x] Full screen
 - [x] Replace MIXIN_STRUCT with something that doesn't require MS extensions
 - [x] Fix timing of whiteout
 - [x] BUG: Player bullet sometimes appears when transitioning levels.
