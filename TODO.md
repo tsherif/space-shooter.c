@@ -1,3 +1,9 @@
+- [ ] Invincibility period after dying
+- [ ] Display fullscreen toggle controls
+- [ ] Clean up globals 
+- [ ] Shaders as external files
+- [ ] More error checks, asserts, fault tolerance
+- [ ] See if game loop can be tightened up
 - [x] Sprite rendering
 - [x] Audio engine
 - [x] Controller support
@@ -24,12 +30,10 @@
 - [x] Scale using ~~a framebuffer~~ the viewport
 - [x] Get rid of copying into render list
 - [x] Instanced draws
-- [ ] Clean up globals 
 - [x] Errors checks in BMP/WAV file parsing
 - [x] Get rid of win32 error messages in the renderer
 - [x] Fullscreen
 - [x] Loop music
-- [ ] Shaders as external files
 - [x] Area outside game area in different color
 - [x] Large enemies take more hits
 - [x] Hit sound
