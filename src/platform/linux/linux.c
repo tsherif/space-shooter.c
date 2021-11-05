@@ -225,6 +225,8 @@ int main(int argc, char const *argv[]) {
                 case XK_f: {
                     if (down && keyboard.ctrl && keyboard.shift) {
                         if (fullScreen) {
+                            // NOTE(Tarek): Not sure what SubstructureNotifyMask/SubstructureRedirectMask mean. Took them from GLFW
+                            // Documentation here: https://tronche.com/gui/x/xlib/events/mask.html
                             XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
                         } else {
                             XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
@@ -238,6 +240,8 @@ int main(int argc, char const *argv[]) {
         if (ticks % 200 == 0) {
             linux_pingGamepad();
         }
+
+        linux_updateGamepad();
 
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
         uint64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;

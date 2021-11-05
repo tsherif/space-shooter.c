@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <linux/input.h>
 #include <errno.h>
@@ -31,7 +32,8 @@
 #include <math.h>
 #include "../../shared/platform-interface.h"
 
-#define INPUT_DIR "/dev/input/by-id/"
+#define PATH_MAX 512
+#define INPUT_DIR "/dev/input/by-id"
 #define GAMEPAD_LEFT_THUMB_DEADZONE  7849
 
 static struct {
@@ -39,6 +41,7 @@ static struct {
     int16_t stickX;
     int16_t stickY;
     bool aButton;
+    bool lastAButton;
 } gamepad = {
     .fd = -1
 };
@@ -83,25 +86,6 @@ static bool endsWith(const char* s, const char* suffix) {
     return true;
 }
 
-static char* concatStrings(char* dst, int32_t dstLen, const char* s1, const char* s2) {
-    int32_t charsWritten = 0;
-    while (*s1 && charsWritten < dstLen - 1) {
-        dst[charsWritten] = *s1;
-        ++s1;
-        ++charsWritten;
-    }
-
-    while (*s2 && charsWritten < dstLen - 1) {
-        dst[charsWritten] = *s2;
-        ++s2;
-        ++charsWritten;
-    }
-
-    dst[charsWritten] = '\0';
-
-    return dst;
-}
-
 void linux_detectGamepad(void) {
     DIR* inputDir = opendir(INPUT_DIR);
 
@@ -114,8 +98,8 @@ void linux_detectGamepad(void) {
 
     while (entry) {
         if (endsWith(entry->d_name, "-event-joystick")) {
-            char path[512];
-            concatStrings(path, sizeof(path), INPUT_DIR,  entry->d_name);
+            char path[PATH_MAX];
+            snprintf(path, PATH_MAX, "%s/%s", INPUT_DIR, entry->d_name);
             gamepad.fd = open(path, O_RDONLY | O_NONBLOCK);
 
             uint8_t absBits[(ABS_CNT + 7) / 8];
@@ -143,14 +127,13 @@ void linux_pingGamepad(void) {
     }
 }
 
-void linux_gamepadInput(GameInput* input) {
+void linux_updateGamepad(GameInput* input) {
     if (gamepad.fd == -1) {
         return;
     }
 
-    struct input_event events[16];
+    struct input_event events[32];
     int32_t bytesRead = read(gamepad.fd, events, sizeof(events));
-    bool aButtonPressed = false;
 
     if (bytesRead >= 0) {
         int32_t numEvents = bytesRead / sizeof(struct input_event);
@@ -160,20 +143,13 @@ void linux_gamepadInput(GameInput* input) {
             switch (event->type) {
                 case EV_ABS: {
                     switch (event->code) {
-                        case ABS_X: {
-                            gamepad.stickX = event->value;
-                        } break;
-                        case ABS_Y: {
-                            gamepad.stickY = event->value;
-                        } break;
+                        case ABS_X: gamepad.stickX = event->value; break;
+                        case ABS_Y: gamepad.stickY = event->value; break;
                     }
                 } break;
                 case EV_KEY: {
                     switch (event->code) {
-                        case BTN_A: {
-                            aButtonPressed = event->value && event->value != gamepad.aButton;
-                            gamepad.aButton = event->value;
-                        } break;
+                        case BTN_A: gamepad.aButton = event->value; break;
                     }
                 } break;
             }
@@ -181,7 +157,9 @@ void linux_gamepadInput(GameInput* input) {
     } else if (errno != EWOULDBLOCK && errno != EAGAIN) {
         gamepad.fd = -1;
     }
+}
 
+void linux_gamepadInput(GameInput* input) {
     float x = gamepad.stickX;
     float y = gamepad.stickY;
 
@@ -199,5 +177,6 @@ void linux_gamepadInput(GameInput* input) {
         input->velocity[1] = 0.0f;
     }
 
-    input->shoot = aButtonPressed;
+    input->shoot = gamepad.aButton && gamepad.aButton != gamepad.lastAButton;
+    gamepad.lastAButton = gamepad.aButton;
 }

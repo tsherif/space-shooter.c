@@ -6,7 +6,7 @@ Uses:
 - Windowing: Win32 (Windows), X11 (Linux)
 - Rendering: OpenGL
 - Audio: XAudio2 (Windows), ALSA/pthread (Linux)
-- Gamepad: Xinput (Windows)
+- Gamepad: Xinput (Windows), evdev (Linux)
 
 Current State
 -------------
