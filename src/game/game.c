@@ -855,6 +855,15 @@ void game_init(void) {
     events_start(&titleControls);
 }
 
+////////////////////////////////////////////////////////////
+// Fixed time step + sim any time left at
+// end of frame. 
+// References:
+// - https://www.gafferongames.com/post/fix_your_timestep/
+// - https://www.youtube.com/watch?v=jTzIDmjkLQo
+// - https://www.youtube.com/watch?v=fdAOPHgW7qM
+////////////////////////////////////////////////////////////
+
 void game_update(float elapsedTime) {
     if (elapsedTime > 33.3f) {
         elapsedTime = 33.3f;
