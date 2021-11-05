@@ -28,6 +28,12 @@
 #include "../../shared/platform-interface.h"
 #include "linux-audio.h"
 
+//////////////////////////////////////////////////////////////
+// Uses ALSA and pthread:
+// - https://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html
+// - https://en.wikipedia.org/wiki/Pthreads
+//////////////////////////////////////////////////////////////
+
 #define MIX_CHANNELS 32
 #define MIX_BUFFER_FRAMES 2048
 
@@ -37,6 +43,10 @@ typedef struct {
     int32_t cursor;
     bool loop;
 } AudioStream;
+
+///////////////////////////////////////////////////
+// Mixer is shared between main and audio threads.
+///////////////////////////////////////////////////
 
 static struct {
     AudioStream channels[32];
@@ -60,6 +70,11 @@ static void *audioThread(void* args) {
         pthread_mutex_lock(&mixerLock);
 
         if (mixer.count > 0) {
+
+            //////////////////////////////////////
+            // Simple additive mix with clipping.
+            //////////////////////////////////////
+
             for (int32_t i = 0; i < mixer.count; ++i) {
                 AudioStream* channel = mixer.channels + i;
                 int32_t samplesToMix = numSamples;
@@ -86,6 +101,10 @@ static void *audioThread(void* args) {
             }
 
 
+            //////////////////////////////////////
+            // Handle streams that have finished.
+            //////////////////////////////////////
+
             int32_t last = mixer.count - 1;
             for (int32_t i = mixer.count - 1; i >= 0; --i) {
                 AudioStream* channel = mixer.channels + i;
@@ -93,6 +112,11 @@ static void *audioThread(void* args) {
                     if (channel->loop) {
                         channel->cursor = 0;
                     } else {
+
+                        //////////////////////////////////////////////////////////////
+                        // "Delete" stream by swapping to past the end of the array.
+                        //////////////////////////////////////////////////////////////
+
                         mixer.channels[i].data = mixer.channels[last].data;
                         mixer.channels[i].count = mixer.channels[last].count;
                         mixer.channels[i].cursor = mixer.channels[last].cursor;
@@ -115,12 +139,20 @@ static void *audioThread(void* args) {
 }
 
 bool linux_initAudio(void) {
-    snd_pcm_hw_params_t *deviceParams = 0;
+
+    /////////////////////////////////////
+    // Open audio device and set to:
+    // - 16-bit
+    // - 44.1k
+    // - stereo
+    // - 2k sample (~50ms) buffer size
+    /////////////////////////////////////
 
     if (snd_pcm_open(&audioDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
         return false;
     }
 
+    snd_pcm_hw_params_t *deviceParams = 0;
     snd_pcm_hw_params_alloca(&deviceParams);
     snd_pcm_hw_params_any(audioDevice, deviceParams);
 
@@ -151,6 +183,10 @@ bool linux_initAudio(void) {
     if (pthread_mutex_init(&mixerLock, NULL)) {
         return false;
     }
+
+    ////////////////////////
+    // Create audio thread
+    ////////////////////////
     
     if (pthread_create(&audioThreadHandle, NULL, audioThread, NULL)) {
         return false;

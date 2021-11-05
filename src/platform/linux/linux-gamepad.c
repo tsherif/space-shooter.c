@@ -21,6 +21,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////
+// Uses the evdev gamepad spec: 
+// - https://www.kernel.org/doc/html/v4.13/input/gamepad.html
+// - https://www.linuxjournal.com/article/6429
+////////////////////////////////////////////////////////////////
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -102,11 +108,19 @@ void linux_detectGamepad(void) {
             snprintf(path, PATH_MAX, "%s/%s", INPUT_DIR, entry->d_name);
             gamepad.fd = open(path, O_RDONLY | O_NONBLOCK);
 
-            uint8_t absBits[(ABS_CNT + 7) / 8];
-            ioctl(gamepad.fd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits);
+            uint8_t absBits[(ABS_CNT + 7) / 8] = { 0 };
+            if (ioctl(gamepad.fd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits) < 0) {
+                close(gamepad.fd);
+                gamepad.fd = -1;
+                continue;
+            }
 
-            uint8_t keyBits[(KEY_CNT + 7) / 8];
-            ioctl(gamepad.fd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits);
+            uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
+            if (ioctl(gamepad.fd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits) < 0) {
+                close(gamepad.fd);
+                gamepad.fd = -1;
+                continue;   
+            }
 
             if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A)) {
                 break;
