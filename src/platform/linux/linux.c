@@ -305,41 +305,50 @@ void platform_debugLog(const char* message) {
     write(STDERR_FILENO, "\n", 1);
 }
 
-bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
+bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
 
     if (fd == -1) {
-        platform_debugLog("platform_loadBinFile: Unable to open file.");
+        platform_debugLog("platform_loadFile: Unable to open file.");
         return false;
     }
 
     int32_t size = lseek(fd, 0, SEEK_END);
+    int32_t allocation = size;
+
+    if (nullTerminate) {
+        allocation += 1;
+    }
 
     if (size == -1) {
-        platform_debugLog("platform_loadBinFile: Unable to get file size.");
+        platform_debugLog("platform_loadFile: Unable to get file size.");
         return false;  
     }
 
     if (lseek(fd, 0, SEEK_SET) == -1) {
-        platform_debugLog("platform_loadBinFile: Unable to reset file cursor.");
+        platform_debugLog("platform_loadFile: Unable to reset file cursor.");
         return false;  
     }
 
-    uint8_t* data = (uint8_t*) malloc(size);
+    uint8_t* data = (uint8_t*) malloc(allocation);
 
     if (!data) {
-        platform_debugLog("platform_loadBinFile: Unable to allocate data.");
+        platform_debugLog("platform_loadFile: Unable to allocate data.");
         return false;  
     }
 
     if (read(fd, data, size) == -1) {
-        platform_debugLog("platform_loadBinFile: Unable to read data.");
+        platform_debugLog("platform_loadFile: Unable to read data.");
         free(data);
         return false; 
     }
 
+    if (nullTerminate) {
+        data[allocation - 1] = 0;
+    }
+
     buffer->data = data;
-    buffer->size = size;
+    buffer->size = allocation;
 
     return true;
 }

@@ -314,7 +314,7 @@ void platform_debugLog(const char* message) {
     OutputDebugStringA("\n");  
 }
 
-bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
+bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
     HANDLE file = CreateFileA(
       fileName,
       GENERIC_READ,
@@ -327,7 +327,7 @@ bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
 
     char errorMessage[1024];
     if (file == INVALID_HANDLE_VALUE) {        
-        snprintf(errorMessage, 1024, "Failed to load file: %s!", fileName);
+        snprintf(errorMessage, 1024, "platform_loadFile: Failed to load file: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
         return false;
@@ -335,32 +335,50 @@ bool platform_loadBinFile(const char* fileName, DataBuffer* buffer) {
 
     LARGE_INTEGER fileSize = { 0 }; 
     if (!GetFileSizeEx(file, &fileSize)) {
-        snprintf(errorMessage, 1024, "Failed to set file size: %s!", fileName);
+        snprintf(errorMessage, 1024, "platform_loadFile: Failed to set file size: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
         return false;
     }
 
     if (fileSize.HighPart > 0) {
-        snprintf(errorMessage, 1024, "File too large: %s!", fileName);
+        snprintf(errorMessage, 1024, "platform_loadFile: File too large: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
         return false;
+    }
+
+    DWORD allocation = fileSize.LowPart;
+
+    if (nullTerminate) {
+        allocation += 1;
     }
 
     DWORD bytesRead = 0;
-    BYTE* data = (BYTE*) malloc(fileSize.LowPart);
+    BYTE* data = (BYTE*) malloc(allocation);
 
-    if (!ReadFile(file, data, fileSize.LowPart, &bytesRead, NULL)) {
-        snprintf(errorMessage, 1024, "Failed to read file: %s!", fileName);
+    if (!data) {
+        snprintf(errorMessage, 1024, "platform_loadFile: Failed to allocate memory for file: %s!", fileName);
         platform_debugLog(errorMessage);
         CloseHandle(file);
         return false;
     }
 
+    if (!ReadFile(file, data, fileSize.LowPart, &bytesRead, NULL)) {
+        snprintf(errorMessage, 1024, "platform_loadFile: Failed to read file: %s!", fileName);
+        platform_debugLog(errorMessage);
+        CloseHandle(file);
+        return false;
+    }
+
+    if (nullTerminate) {
+        data[allocation - 1] = 0;
+    }
+
     buffer->data = data;
-    buffer->size = fileSize.LowPart;
+    buffer->size = allocation;
     CloseHandle(file);
 
     return true;
 }
+

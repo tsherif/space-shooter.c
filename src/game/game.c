@@ -385,7 +385,7 @@ static void livesToEntities(Player *player, EntitiesList* lives) {
 
 static void loadSound(const char* fileName, DataBuffer* sound) {
     DataBuffer soundData = { 0 };
-    platform_loadBinFile(fileName, &soundData);
+    platform_loadFile(fileName, &soundData, false);
     utils_wavToSound(&soundData, sound);
     data_freeBuffer(&soundData);
 }
@@ -394,7 +394,7 @@ static void loadTexture(const char* fileName, GLuint *texture) {
     DataBuffer imageData = { 0 };
     DataImage image = { 0 };
 
-    platform_loadBinFile(fileName, &imageData);
+    platform_loadFile(fileName, &imageData, false);
     utils_bmpToImage(&imageData, &image);
     renderer_initTexture(texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);

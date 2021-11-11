@@ -55,47 +55,18 @@ void renderer_init(int width, int height) {
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glActiveTexture(GL_TEXTURE0);
 
-    const char* vsSource = "#version 450\n"
-    "layout (location=0) in vec2 position;\n"
-    "layout (location=1) in vec2 pixelOffset;\n"
-    "layout (location=2) in vec2 panelIndex;\n"
-    "layout (location=3) in float scale;\n"
-    "layout (location=4) in float alpha;\n"
-    "layout (location=5) in float whiteOut;\n"
-    "uniform vec2 panelPixelSize;\n"
-    "uniform vec2 spriteSheetDimensions;\n"
-    "uniform vec2 pixelSize;\n"
-    "out vec2 vUV;\n"
-    "out float vAlpha;\n"
-    "out float vWhiteOut;"
-    "void main() {\n"
-    "    vec2 uv = position;\n"
-    "    vUV = (uv + panelIndex) / spriteSheetDimensions;\n"
-    "    vWhiteOut = whiteOut;\n"
-    "    vAlpha = alpha;\n"
-    "    vec2 clipOffset = pixelOffset * pixelSize - 1.0;\n"
-    "    gl_Position = vec4((position * panelPixelSize * pixelSize * scale + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);\n"
-    "}\n";
+    DataBuffer vsSource = { 0 };
+    platform_loadFile("assets/shaders/vs.glsl", &vsSource, true);
 
-    const char* fsSource = "#version 450\n"
-    "in vec2 vUV;\n"
-    "in float vAlpha;"
-    "in float vWhiteOut;"
-    "uniform sampler2D spriteSheet;\n"
-    "out vec4 fragColor;\n"
-    "void main() {\n"
-    "    fragColor = texture(spriteSheet, vUV);\n"
-    "    if (vWhiteOut > 0.0) fragColor.rgb = vec3(1.0);\n"
-    "    fragColor.a *= vAlpha;\n"
-    "    fragColor.rgb *= fragColor.a;\n"
-    "}\n";
+    DataBuffer fsSource = { 0 };
+    platform_loadFile("assets/shaders/fs.glsl", &fsSource, true);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vsSource, NULL);
+    glShaderSource(vertexShader, 1, &vsSource.data, NULL);
     glCompileShader(vertexShader);
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fsSource, NULL);
+    glShaderSource(fragmentShader, 1, &fsSource.data, NULL);
     glCompileShader(fragmentShader);
 
     GLuint program = glCreateProgram();
@@ -123,6 +94,8 @@ void renderer_init(int width, int height) {
         }
     }
 
+    data_freeBuffer(&vsSource);
+    data_freeBuffer(&fsSource);
 
     glUseProgram(program);
 

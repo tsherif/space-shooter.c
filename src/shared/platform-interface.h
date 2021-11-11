@@ -42,6 +42,6 @@ void game_resize(int width, int height);
 void platform_getInput(GameInput* input);
 void platform_playSound(DataBuffer* sound, bool loop);
 void platform_debugLog(const char* message);
-bool platform_loadBinFile(const char* fileName, DataBuffer* buffer);
+bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate);
 
 #endif

@@ -1,9 +1,9 @@
 - [ ] Invincibility period after dying
 - [ ] Display fullscreen toggle controls
 - [ ] Clean up globals 
-- [ ] Shaders as external files
 - [ ] More error checks, asserts, fault tolerance
 - [ ] See if game loop can be tightened up
+- [x] Shaders as external files
 - [x] Sprite rendering
 - [x] Audio engine
 - [x] Controller support
