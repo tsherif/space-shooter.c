@@ -1,8 +1,8 @@
-- [ ] Invincibility period after dying
 - [ ] Display fullscreen toggle controls
 - [ ] Clean up globals 
 - [ ] More error checks, asserts, fault tolerance
 - [ ] See if game loop can be tightened up
+- [x] Invincibility period after dying
 - [x] Shaders as external files
 - [x] Sprite rendering
 - [x] Audio engine

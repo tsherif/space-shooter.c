@@ -43,6 +43,8 @@
 #define SHIP_BULLET_VELOCITY (-0.2f)
 #define SHIP_BULLET_THROTTLE 100.0f
 #define SHIP_DEAD_TIME 2000.0f
+#define SHIP_INVINCIBLE_TIME 2000.0f
+#define SHIP_INVINCIBLE_ALPHA 0.5f
 #define SHIP_NUM_LIVES 3
 
 #define SMALL_ENEMY_VELOCITY 0.03f
@@ -79,6 +81,7 @@ typedef struct {
     ENTITIES_LIST_MIXIN(entity);
     float bulletThrottle;
     float deadTimer;
+    float invincibleTimer;
     int32_t score;
     int32_t lives;
 } Player;
@@ -126,7 +129,7 @@ static float animationTime = 0.0f;
 #define INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY 0.0003f
 #define INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0001f
 #define INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY 0.00003f
-#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.5f
+#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.3f
 #define INITIAL_LEVEL_SCORE_THRESHOLD 50
 #define LEVEL_WARP 0.2f
 #define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
@@ -565,43 +568,51 @@ static void simPlayer(float dt) {
         }
     }
 
-    Sprites_CollisionBox* shipCollisionBox = &sprites_ship.collisionBox;
-    float shipMin[] = {
-        player.position[0] + shipCollisionBox->min[0],
-        player.position[1] + shipCollisionBox->min[1]
-    };
-    float shipMax[] = {
-        player.position[0] + shipCollisionBox->max[0],
-        player.position[1] + shipCollisionBox->max[1]
-    };
+    if (player.invincibleTimer > 0.0f) {
+        player.invincibleTimer -= dt;
+        player.alpha[0] = SHIP_INVINCIBLE_ALPHA;
+    } else {
+        player.alpha[0] = 1.0f;
+        Sprites_CollisionBox* shipCollisionBox = &sprites_ship.collisionBox;
+        float shipMin[] = {
+            player.position[0] + shipCollisionBox->min[0],
+            player.position[1] + shipCollisionBox->min[1]
+        };
+        float shipMax[] = {
+            player.position[0] + shipCollisionBox->max[0],
+            player.position[1] + shipCollisionBox->max[1]
+        };
 
 
-    bool bulletHit = checkPlayerCollision(shipMin, shipMax, &enemyBullets, NULL);
-    bool smallEnemyHit = checkPlayerCollision(shipMin, shipMax, &smallEnemies, &(PlayerCollisionExplosionOptions) {
-        .xOffset = SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
-        .yOffset = SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET
-    });
-    bool mediumEnemyHit = checkPlayerCollision(shipMin, shipMax, &mediumEnemies, &(PlayerCollisionExplosionOptions) {
-        .xOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
-        .yOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET
-    });
-    bool largeEnemyHit = checkPlayerCollision(shipMin, shipMax, &largeEnemies, &(PlayerCollisionExplosionOptions) {
-        .xOffset = SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
-        .yOffset = SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET
-    });
-
-    if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
-        entities_spawn(&explosions, &(EntitiesInitOptions) {
-            .x = player.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
-            .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
+        bool bulletHit = checkPlayerCollision(shipMin, shipMax, &enemyBullets, NULL);
+        bool smallEnemyHit = checkPlayerCollision(shipMin, shipMax, &smallEnemies, &(PlayerCollisionExplosionOptions) {
+            .xOffset = SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
+            .yOffset = SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET
+        });
+        bool mediumEnemyHit = checkPlayerCollision(shipMin, shipMax, &mediumEnemies, &(PlayerCollisionExplosionOptions) {
+            .xOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
+            .yOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET
+        });
+        bool largeEnemyHit = checkPlayerCollision(shipMin, shipMax, &largeEnemies, &(PlayerCollisionExplosionOptions) {
+            .xOffset = SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
+            .yOffset = SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET
         });
 
-        platform_playSound(&explosionSound, false);
-        player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
-        player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
-        player.deadTimer = SHIP_DEAD_TIME;
-        --player.lives;
-    }   
+        if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
+            entities_spawn(&explosions, &(EntitiesInitOptions) {
+                .x = player.position[0] + SPRITES_SHIP_EXPLOSION_X_OFFSET,
+                .y = player.position[1] + SPRITES_SHIP_EXPLOSION_Y_OFFSET 
+            });
+
+            platform_playSound(&explosionSound, false);
+            player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
+            player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
+            player.deadTimer = SHIP_DEAD_TIME;
+            --player.lives;
+        } 
+    }
+
+       
 }
 
 static void titleScreen(float dt) {
@@ -711,6 +722,10 @@ static void mainGame(float dt) {
     if (player.lives > 0) {
         if (player.deadTimer > 0.0f) {
             player.deadTimer -= dt;
+            if (player.deadTimer < 0.0f) {
+                player.invincibleTimer = SHIP_INVINCIBLE_TIME;
+                player.alpha[0] = SHIP_INVINCIBLE_ALPHA;
+            }
         } else {
             simPlayer(dt);           
         }
