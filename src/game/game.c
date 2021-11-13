@@ -90,8 +90,6 @@
 #define STARS_MAX_VELOCITY 0.015f
 #define STARS_MIN_TRANSPARENCY 0.0f
 #define STARS_MAX_TRANSPARENCY 0.9f
-#define STARS_MIN_SCALE 1.0f
-#define STARS_MAX_SCALE 4.0f
 
 //////////////////////////////////
 //  Level transition constants
@@ -391,8 +389,7 @@ static void livesToEntities(Player *player, EntitiesList* lives) {
         entities_spawn(lives, &(EntitiesInitOptions) { 
             .x = 12.5f + i * (player->sprite->panelDims[0] * 0.55f + 0.5f),
             .y = GAME_HEIGHT - 32.0f, 
-            .scale = 0.45f,
-            .whiteOut = 999999.0f
+            .scale = 0.45f
         });
     }
 }
