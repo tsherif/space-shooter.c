@@ -56,10 +56,13 @@ void renderer_init(int width, int height) {
     glActiveTexture(GL_TEXTURE0);
 
     DataBuffer vsSource = { 0 };
-    platform_loadFile("assets/shaders/vs.glsl", &vsSource, true);
-
     DataBuffer fsSource = { 0 };
-    platform_loadFile("assets/shaders/fs.glsl", &fsSource, true);
+
+    if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true) ||
+        !platform_loadFile("assets/shaders/fs.glsl", &fsSource, true)) {
+        platform_debugLog("renderer_init: Unable to load shaders.");
+        return;
+    }
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vsSource.data, NULL);
