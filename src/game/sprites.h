@@ -96,6 +96,8 @@ typedef struct {
     int32_t numAnimations;
 } Sprites_Sprite;
 
+int32_t sprites_charToAnimationIndex(char c);
+
 Sprites_Sprite sprites_ship;
 Sprites_Sprite sprites_smallEnemy;
 Sprites_Sprite sprites_mediumEnemy;
@@ -114,7 +116,5 @@ float sprites_mediumEnemyBulletOffset[2];
 float sprites_mediumEnemyExplosionOffset[2];
 float sprites_largeEnemyBulletOffset[2];
 float sprites_largeEnemyExplosionOffset[2];
-
-int32_t sprites_charToAnimationIndex(char c);
 
 #endif

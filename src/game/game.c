@@ -142,99 +142,6 @@ static float largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
 static float levelWarpVy = 0.0f;
 static float starProbabilityMultiplier = 1.0f;
 
-
-enum {
-    NO_EVENT,
-    TITLE_START,
-    TITLE_DISPLAY,
-    TITLE_FADE,
-    SUBTITLE_START,
-    SUBTITLE_DISPLAY,
-    SUBTITLE_FADE,
-    GAME_OVER_RESTART,
-    GAME_OVER_RESTART_DISPLAY,
-    LEVEL_TRANSITION_DISPLAY
-};
-
-static EventsSequence titleControls = {
-    .events = {
-        { 
-            .delay = 1600.0f,
-            .id =  TITLE_START
-        },
-        { 
-            .delay = 1600.0f,
-            .id =  SUBTITLE_START
-        }
-    },
-    .count = 2
-};
-
-static EventsSequence titleSequence = {
-    .events = {
-        { 
-            .duration = 2000.0f,
-            .id =  TITLE_DISPLAY
-        },
-        {
-            .duration = 2500.0f,
-            .id = TITLE_FADE
-        }
-    },
-    .count = 2
-};
-
-static EventsSequence subtitleSequence = {
-    .events = {
-        { 
-            .duration = 2000.0f,
-            .id =  SUBTITLE_DISPLAY
-        },
-        {
-            .duration = 2500.0f,
-            .id = SUBTITLE_FADE
-        }
-    },
-    .count = 2
-};
-
-static EventsSequence gameOverSequence = {
-    .events = {
-        { 
-            .delay = 1000.0f,
-            .id =  GAME_OVER_RESTART
-        }
-    },
-    .count = 1,
-};
-
-static EventsSequence gameOverRestartSequence = {
-    .events = {
-        { 
-            .duration = 1000.0f,
-            .id =  GAME_OVER_RESTART_DISPLAY
-        },
-        { 
-            .duration = 1000.0f
-        }
-    },
-    .count = 2,
-    .loop = true
-};
-
-static EventsSequence levelTransitionSequence = {
-    .events = {
-        { 
-            .duration = 500.0f
-        },
-        { 
-            .duration = 3000.0f,
-            .id =  LEVEL_TRANSITION_DISPLAY
-        }
-    },
-    .count = 2
-};
-
 static void updateLevelText(void) {
     snprintf(levelString, LEVEL_BUFFER_LENGTH, "Level %d", level);
 }
@@ -247,7 +154,7 @@ static void transitionLevel(void) {
     }
     playerBullets.count = 0;
     updateLevelText();
-    events_start(&levelTransitionSequence);
+    events_start(&events_levelTransitionSequence);
 }
 
 static void firePlayerBullet(float x, float y) {
@@ -616,23 +523,23 @@ static void simPlayer(float dt) {
 }
 
 static void titleScreen(float dt) {
-    events_beforeFrame(&titleControls, dt);
-    events_beforeFrame(&titleSequence, dt);
-    events_beforeFrame(&subtitleSequence, dt);
+    events_beforeFrame(&events_titleControlSequence, dt);
+    events_beforeFrame(&events_titleSequence, dt);
+    events_beforeFrame(&events_subtitleSequence, dt);
     
     updateStars(dt);
 
     textEntities.count = 0;
 
-    if (events_on(&titleControls, TITLE_START)) {
-        events_start(&titleSequence);
+    if (events_on(&events_titleControlSequence, EVENTS_TITLE)) {
+        events_start(&events_titleSequence);
     }
 
-    if (events_on(&titleControls, SUBTITLE_START)) {
-        events_start(&subtitleSequence);
+    if (events_on(&events_titleControlSequence, EVENTS_SUBTITLE)) {
+        events_start(&events_subtitleSequence);
     }
 
-    if (events_on(&titleSequence, TITLE_DISPLAY)) {
+    if (events_on(&events_titleSequence, EVENTS_DISPLAY)) {
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
@@ -640,16 +547,16 @@ static void titleScreen(float dt) {
         });
     }
 
-    if (events_on(&titleSequence, TITLE_FADE)) {
+    if (events_on(&events_titleSequence, EVENTS_FADE)) {
         entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
             .scale = 0.75f,
-            .transparency = titleSequence.triggeredEvent->alpha
+            .transparency = events_titleSequence.alpha
         });
     }
 
-    if (events_on(&subtitleSequence, SUBTITLE_DISPLAY)) {
+    if (events_on(&events_subtitleSequence, EVENTS_DISPLAY)) {
         entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
@@ -657,16 +564,16 @@ static void titleScreen(float dt) {
         });
     }
 
-    if (events_on(&subtitleSequence, SUBTITLE_FADE)) {
+    if (events_on(&events_subtitleSequence, EVENTS_FADE)) {
         entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
             .scale = 0.4f,
-            .transparency = subtitleSequence.triggeredEvent->alpha
+            .transparency = events_subtitleSequence.alpha
         });
     }
 
-    if (titleSequence.complete && subtitleSequence.complete) {
+    if (events_titleSequence.complete && events_subtitleSequence.complete) {
         textEntities.count = 0;
         transitionLevel();
     }
@@ -675,11 +582,11 @@ static void titleScreen(float dt) {
 }
 
 static void levelTransition(float dt) {
-    events_beforeFrame(&levelTransitionSequence, dt);
+    events_beforeFrame(&events_levelTransitionSequence, dt);
     textEntities.count = 0;
 
 
-    if (events_on(&levelTransitionSequence, LEVEL_TRANSITION_DISPLAY)) {
+    if (events_on(&events_levelTransitionSequence, EVENTS_DISPLAY)) {
         entities_fromText(&textEntities, levelString, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 62.0f,
             .y = 72.0f, 
@@ -696,7 +603,7 @@ static void levelTransition(float dt) {
     updateEntities(&enemyBullets, dt, 32.0f);
     updateEntities(&explosions, dt, 32.0f);
 
-    if (levelTransitionSequence.complete) {
+    if (events_levelTransitionSequence.complete) {
         textEntities.count = 0;
         levelWarpVy = 0.0f;
         starProbabilityMultiplier = 1.0f;
@@ -739,7 +646,7 @@ static void mainGame(float dt) {
             transitionLevel();
         }
     } else {
-        events_start(&gameOverSequence);
+        events_start(&events_gameOverSequence);
         gameState = GAME_OVER;
     }
 
@@ -749,8 +656,8 @@ static void mainGame(float dt) {
 }
 
 static void gameOver(float dt) {
-    events_beforeFrame(&gameOverSequence, dt);
-    events_beforeFrame(&gameOverRestartSequence, dt);
+    events_beforeFrame(&events_gameOverSequence, dt);
+    events_beforeFrame(&events_gameOverRestartSequence, dt);
     textEntities.count = 0;
 
     GameInput input = { 0 };
@@ -766,11 +673,11 @@ static void gameOver(float dt) {
         .scale = 1.2f
     });
 
-    if (events_on(&gameOverSequence, GAME_OVER_RESTART)) {
-        events_start(&gameOverRestartSequence);
+    if (events_on(&events_gameOverSequence, EVENTS_RESTART)) {
+        events_start(&events_gameOverRestartSequence);
     }
 
-    if (events_on(&gameOverRestartSequence, GAME_OVER_RESTART_DISPLAY)) {
+    if (events_on(&events_gameOverRestartSequence, EVENTS_DISPLAY)) {
         entities_fromText(&textEntities, "Press 'Shoot' to Restart", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 107.0f,
             .y = 104.0f,
@@ -782,7 +689,7 @@ static void gameOver(float dt) {
     updateAnimations();
     filterDeadEntities();
 
-    if (gameOverRestartSequence.running && input.shoot) {
+    if (events_gameOverRestartSequence.running && input.shoot) {
         player.lives = SHIP_NUM_LIVES;
         player.score = 0;
         player.deadTimer = 0.0f;
@@ -795,8 +702,8 @@ static void gameOver(float dt) {
         smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
         mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
         largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
-        events_stop(&gameOverSequence);
-        events_stop(&gameOverRestartSequence);
+        events_stop(&events_gameOverSequence);
+        events_stop(&events_gameOverRestartSequence);
         transitionLevel();
     }
 
@@ -867,7 +774,7 @@ void game_init(void) {
     utils_uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
     updateLevelText();
 
-    events_start(&titleControls);
+    events_start(&events_titleControlSequence);
 }
 
 ////////////////////////////////////////////////////////////

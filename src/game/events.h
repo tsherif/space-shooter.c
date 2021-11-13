@@ -26,20 +26,27 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define EVENTS_MAX_SEQUENCE 32
+typedef enum {
+    EVENTS_NONE,
+    EVENTS_TITLE,
+    EVENTS_SUBTITLE,
+    EVENTS_DISPLAY,
+    EVENTS_FADE,
+    EVENTS_RESTART
+} EventsId;
 
 typedef struct {
     float delay;
     float duration;
     int32_t id;
-    float alpha;
 } EventsEvent;
 
 typedef struct {
-    EventsEvent events[EVENTS_MAX_SEQUENCE];
-    float time;
+    EventsEvent* events;
     int32_t count;
-    EventsEvent* triggeredEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
+    float time;
+    EventsId triggeredEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
+    float alpha; // "Factor" between 0-1 of how far into the the current triggered event we are. Can be used for blending.
     bool running;
     bool complete;
     bool loop;
@@ -49,5 +56,12 @@ void events_start(EventsSequence* sequence);
 void events_stop(EventsSequence* sequence);
 void events_beforeFrame(EventsSequence* sequence, float dt);
 bool events_on(EventsSequence* sequence, int32_t id);
+
+EventsSequence events_titleControlSequence;
+EventsSequence events_titleSequence;
+EventsSequence events_subtitleSequence;
+EventsSequence events_gameOverSequence;
+EventsSequence events_gameOverRestartSequence;
+EventsSequence events_levelTransitionSequence;
 
 #endif

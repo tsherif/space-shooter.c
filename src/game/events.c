@@ -30,15 +30,17 @@ void events_start(EventsSequence* sequence) {
 
     sequence->running = true;
     sequence->time = 0;
-    sequence->triggeredEvent = 0;
+    sequence->triggeredEvent = EVENTS_NONE;
     sequence->complete = false;
+    sequence->alpha = 0.0f;
 }
 
 void events_stop(EventsSequence* sequence) {
     sequence->running = false;
     sequence->time = 0;
-    sequence->triggeredEvent = 0;
+    sequence->triggeredEvent = EVENTS_NONE;
     sequence->complete = false;
+    sequence->alpha = 0.0f;
 }
 
 void events_beforeFrame(EventsSequence* sequence, float dt) {
@@ -46,7 +48,8 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
         return;
     }
 
-    sequence->triggeredEvent = 0;
+    sequence->triggeredEvent = EVENTS_NONE;
+    sequence->alpha = 0.0f;
     float lastTime = sequence->time;
     sequence->time = lastTime + dt;
 
@@ -58,25 +61,22 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
         end = start + event->duration;
         if (start <= sequence->time && end >= lastTime) {
             if (event->duration > 0.0f) {
-                event->alpha =(sequence->time - start) / event->duration;
-                if (event->alpha > 1.0f) {
-                    event->alpha = 1.0f;
+                sequence->alpha = (sequence->time - start) / event->duration;
+                if (sequence->alpha > 1.0f) {
+                    sequence->alpha = 1.0f;
                 } 
-            } else {
-                event->alpha = 0.0f;
             }
-            sequence->triggeredEvent = event;
+            sequence->triggeredEvent = event->id;
             break;
         }
     }
 
-    if (!sequence->triggeredEvent && lastTime > end) {
+    if (sequence->triggeredEvent == EVENTS_NONE && lastTime > end) {
         if (sequence->loop) {
             float loopDt = lastTime - end + dt;
             sequence->time = 0.0f;
             events_beforeFrame(sequence, loopDt);
         } else {
-            sequence->triggeredEvent = 0;
             sequence->running = false;
             sequence->complete = true;
         }
@@ -85,9 +85,89 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
 }
 
 bool events_on(EventsSequence* sequence, int32_t id) {
-    if (!sequence->running || !sequence->triggeredEvent) {
+    if (!sequence->running || sequence->triggeredEvent == EVENTS_NONE) {
         return false;
     }
 
-    return sequence->triggeredEvent->id == id;
+    return sequence->triggeredEvent == id;
 }
+
+static EventsEvent titleControlEvents[] = {
+    { 
+        .delay = 1600.0f,
+        .id =  EVENTS_TITLE
+    },
+    { 
+        .delay = 1600.0f,
+        .id =  EVENTS_SUBTITLE
+    }
+};
+
+EventsSequence events_titleControlSequence = {
+    .events = titleControlEvents,
+    .count = sizeof(titleControlEvents) / sizeof(titleControlEvents[0])
+};
+
+static EventsEvent titleEvents[] = {
+    { 
+        .duration = 2000.0f,
+        .id =  EVENTS_DISPLAY
+    },
+    {
+        .duration = 2500.0f,
+        .id = EVENTS_FADE
+    }
+};
+
+EventsSequence events_titleSequence = {
+    .events = titleEvents,
+    .count = sizeof(titleEvents) / sizeof(titleEvents[0])
+};
+
+EventsSequence events_subtitleSequence = {
+    .events = titleEvents,
+    .count = sizeof(titleEvents) / sizeof(titleEvents[0])
+};
+
+static EventsEvent gameOverEvents[] = {
+    { 
+        .delay = 1000.0f,
+        .id =  EVENTS_RESTART
+    }
+};
+
+EventsSequence events_gameOverSequence = {
+    .events = gameOverEvents,
+    .count = sizeof(gameOverEvents) / sizeof(gameOverEvents[0])
+};
+
+static EventsEvent gameOverRestartEvents[] = {
+    { 
+        .duration = 1000.0f,
+        .id =  EVENTS_DISPLAY
+    },
+    { 
+        .duration = 1000.0f
+    }
+};
+
+EventsSequence events_gameOverRestartSequence = {
+    .events = gameOverRestartEvents,
+    .count = sizeof(gameOverRestartEvents) / sizeof(gameOverRestartEvents[0]),
+    .loop = true
+};
+
+static EventsEvent levelTransitionEvents[] = {
+    { 
+        .duration = 500.0f
+    },
+    { 
+        .duration = 3000.0f,
+        .id =  EVENTS_DISPLAY
+    }
+};
+
+EventsSequence events_levelTransitionSequence = {
+    .events = levelTransitionEvents,
+    .count = sizeof(levelTransitionEvents) / sizeof(levelTransitionEvents[0])
+};

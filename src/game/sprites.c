@@ -24,6 +24,34 @@
 
 #define PUNCTUATION ".,/<>(){}[]?;:'\"/!|=+_-*^%#@$"
 
+int32_t sprites_charToAnimationIndex(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A';
+    }
+
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a';
+    }
+
+    if (c >= '1' && c <= '9') {
+        return c - '1' + 26;
+    }
+
+    if (c == '0') {
+        return 35;
+    }
+
+    int32_t i = 0; 
+    while (PUNCTUATION[i]) {
+        if (c == PUNCTUATION[i]) {
+            return i + 36;
+        }
+        ++i;
+    }
+
+    return -1;
+}
+
 static Sprites_Animation shipAnimations[]  = {
     // Center
     {
@@ -239,31 +267,3 @@ Sprites_Sprite sprites_whitePixel = {
     .panelDims = { 1, 1 },
     .sheetDims = { 1.0f, 1.0f },
 };
-
-int32_t sprites_charToAnimationIndex(char c) {
-    if (c >= 'A' && c <= 'Z') {
-        return c - 'A';
-    }
-
-    if (c >= 'a' && c <= 'z') {
-        return c - 'a';
-    }
-
-    if (c >= '1' && c <= '9') {
-        return c - '1' + 26;
-    }
-
-    if (c == '0') {
-        return 35;
-    }
-
-    int32_t i = 0; 
-    while (PUNCTUATION[i]) {
-        if (c == PUNCTUATION[i]) {
-            return i + 36;
-        }
-        ++i;
-    }
-
-    return -1;
-}
