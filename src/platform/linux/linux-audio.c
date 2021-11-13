@@ -196,6 +196,10 @@ bool linux_initAudio(void) {
 }
 
 void platform_playSound(DataBuffer* sound, bool loop) {
+    if (!audioDevice) {
+        return;
+    }
+
     pthread_mutex_lock(&mixerLock);
 
     if (mixer.count < MIX_CHANNELS) {

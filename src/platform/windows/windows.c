@@ -191,7 +191,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     }
 
     if (!windows_initAudio()) {
-        return 1;
+        platform_debugLog("Windows: Unable to initialize audio.");
     }
 
 

@@ -140,7 +140,11 @@ bool windows_initAudio(void) {
     return true;
 }
 
-void platform_playSound(DataBuffer* sound, bool loop) {;
+void platform_playSound(DataBuffer* sound, bool loop) {
+    if (!audioEngine.xaudio) {
+        return;
+    }
+
     for (int i = 0; i < MAX_CHANNELS; ++i) {
         if (!audioEngine.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audioEngine.channels[i].buffer;

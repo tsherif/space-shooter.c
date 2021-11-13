@@ -184,7 +184,7 @@ int main(int argc, char const *argv[]) {
     };
 
     if (!linux_initAudio()) {
-        return 1;
+        platform_debugLog("Linux: Unable to initialize audio.");
     }
 
     game_init();
