@@ -52,7 +52,7 @@ int32_t sprites_charToAnimationIndex(char c) {
     return -1;
 }
 
-static Sprites_Animation shipAnimations[]  = {
+static Sprites_Animation playerAnimations[]  = {
     // Center
     {
         .frames = {{2.0f, 0.0f}, {2.0f, 1.0f}},
@@ -183,15 +183,15 @@ static Sprites_Animation fontAnimations[]  = {
 
 };
 
-Sprites_Sprite sprites_ship = {
-    .panelDims = { SPRITES_SHIP_PANEL_WIDTH, SPRITES_SHIP_PANEL_HEIGHT },
+Sprites_Sprite sprites_player = {
+    .panelDims = { SPRITES_PLAYER_PANEL_WIDTH, SPRITES_PLAYER_PANEL_HEIGHT },
     .sheetDims = { 5.0f, 2.0f },
     .collisionBox = {
         .min = {0.0f, 0.0f},
         .max = {16.0f, 15.0f}
     },
-    .animations = shipAnimations,
-    .numAnimations = sizeof(shipAnimations) / sizeof(shipAnimations[0])
+    .animations = playerAnimations,
+    .numAnimations = sizeof(playerAnimations) / sizeof(playerAnimations[0])
 };
 
 Sprites_Sprite sprites_smallEnemy = {

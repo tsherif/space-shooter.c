@@ -28,14 +28,14 @@
 #include <stdint.h>
 
 // Animations
-#define SPRITES_SHIP_CENTER       0
-#define SPRITES_SHIP_CENTER_LEFT  1
-#define SPRITES_SHIP_LEFT         2
-#define SPRITES_SHIP_CENTER_RIGHT 3
-#define SPRITES_SHIP_RIGHT        4
+#define SPRITES_PLAYER_CENTER       0
+#define SPRITES_PLAYER_CENTER_LEFT  1
+#define SPRITES_PLAYER_LEFT         2
+#define SPRITES_PLAYER_CENTER_RIGHT 3
+#define SPRITES_PLAYER_RIGHT        4
 
-#define SPRITES_SHIP_PANEL_WIDTH            16.0f
-#define SPRITES_SHIP_PANEL_HEIGHT           24.0f
+#define SPRITES_PLAYER_PANEL_WIDTH          16.0f
+#define SPRITES_PLAYER_PANEL_HEIGHT         24.0f
 #define SPRITES_SMALL_ENEMY_PANEL_WIDTH     16.0f
 #define SPRITES_SMALL_ENEMY_PANEL_HEIGHT    16.0f
 #define SPRITES_MEDIUM_ENEMY_PANEL_WIDTH    32.0f
@@ -49,10 +49,10 @@
 #define SPRITES_TEXT_PANEL_WIDTH            32.0f
 #define SPRITES_TEXT_PANEL_HEIGHT           32.0f
 
-#define SPRITES_SHIP_BULLET_X_OFFSET ((SPRITES_SHIP_PANEL_WIDTH - SPRITES_BULLET_PANEL_WIDTH) / 2)
-#define SPRITES_SHIP_BULLET_Y_OFFSET (-SPRITES_BULLET_PANEL_HEIGHT)
-#define SPRITES_SHIP_EXPLOSION_X_OFFSET ((SPRITES_SHIP_PANEL_WIDTH - SPRITES_EXPLOSION_PANEL_WIDTH) / 2)
-#define SPRITES_SHIP_EXPLOSION_Y_OFFSET ((SPRITES_SHIP_PANEL_HEIGHT - SPRITES_EXPLOSION_PANEL_HEIGHT) / 2)
+#define SPRITES_PLAYER_BULLET_X_OFFSET ((SPRITES_PLAYER_PANEL_WIDTH - SPRITES_BULLET_PANEL_WIDTH) / 2)
+#define SPRITES_PLAYER_BULLET_Y_OFFSET (-SPRITES_BULLET_PANEL_HEIGHT)
+#define SPRITES_PLAYER_EXPLOSION_X_OFFSET ((SPRITES_PLAYER_PANEL_WIDTH - SPRITES_EXPLOSION_PANEL_WIDTH) / 2)
+#define SPRITES_PLAYER_EXPLOSION_Y_OFFSET ((SPRITES_PLAYER_PANEL_HEIGHT - SPRITES_EXPLOSION_PANEL_HEIGHT) / 2)
 
 #define SPRITES_SMALL_ENEMY_BULLET_X_OFFSET ((SPRITES_SMALL_ENEMY_PANEL_WIDTH - SPRITES_BULLET_PANEL_WIDTH) / 2)
 #define SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET ((SPRITES_SMALL_ENEMY_PANEL_HEIGHT - SPRITES_BULLET_PANEL_HEIGHT) / 2)
@@ -98,7 +98,7 @@ typedef struct {
 
 int32_t sprites_charToAnimationIndex(char c);
 
-Sprites_Sprite sprites_ship;
+Sprites_Sprite sprites_player;
 Sprites_Sprite sprites_smallEnemy;
 Sprites_Sprite sprites_mediumEnemy;
 Sprites_Sprite sprites_largeEnemy;
@@ -108,8 +108,8 @@ Sprites_Sprite sprites_explosion;
 Sprites_Sprite sprites_text;
 Sprites_Sprite sprites_whitePixel;
 
-float sprites_shipBulletOffset[2];
-float sprites_shipExplosionOffset[2];
+float sprites_playerBulletOffset[2];
+float sprites_playerExplosionOffset[2];
 float sprites_smallEnemyBulletOffset[2];
 float sprites_smallEnemyExplosionOffset[2];
 float sprites_mediumEnemyBulletOffset[2];
