@@ -2,6 +2,7 @@
 - [ ] Clean up globals 
 - [ ] More error checks, asserts, fault tolerance
 - [ ] See if game loop can be tightened up
+- [ ] Can the pixels be kept blocky at smaller scales?
 - [x] Invincibility period after dying
 - [x] Shaders as external files
 - [x] Sprite rendering

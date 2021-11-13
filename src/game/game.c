@@ -34,10 +34,19 @@
 #include "entities.h"
 #include "events.h"
 
+//////////////////////////////////
+//  Game constants
+//////////////////////////////////
+
 #define GAME_WIDTH 320
 #define GAME_HEIGHT 180
-
 #define TICK_DURATION 16.6667f
+#define COLLISION_SCALE 0.7f   // Scale factor on collision boxes when detecting collisions
+#define TIME_PER_ANIMATION 100.0f // Time per frame of a sprite animation
+
+//////////////////////////////////
+//  Player constants
+//////////////////////////////////
 
 #define PLAYER_VELOCITY 0.075f
 #define PLAYER_BULLET_VELOCITY (-0.2f)
@@ -47,25 +56,34 @@
 #define PLAYER_INVINCIBLE_ALPHA 0.5f
 #define PLAYER_NUM_LIVES 3
 
+//////////////////////////////////
+//  Enemy constants
+//////////////////////////////////
+
 #define SMALL_ENEMY_VELOCITY 0.03f
 #define SMALL_ENEMY_BULLET_PROBABILITY 0.0003f
 #define SMALL_ENEMY_HEALTH 1
 #define SMALL_ENEMY_POINTS 1
+#define SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY 0.0003f
 
 #define MEDIUM_ENEMY_VELOCITY 0.015f
 #define MEDIUM_ENEMY_BULLET_PROBABILITY 0.00075f
 #define MEDIUM_ENEMY_HEALTH 5
 #define MEDIUM_ENEMY_POINTS 10
+#define MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY 0.0001f
 
 #define LARGE_ENEMY_VELOCITY 0.006f
 #define LARGE_ENEMY_BULLET_PROBABILITY 0.003f
 #define LARGE_ENEMY_HEALTH 10
 #define LARGE_ENEMY_POINTS 25
+#define LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY 0.00003f
 
 #define ENEMY_BULLET_SPEED 0.05f
-#define ENEMY_WHITEOUT_TIME 25.0f
+#define ENEMY_WHITEOUT_TIME 25.0f // Flash when hit by a bullet
 
-#define COLLISION_SCALE 0.7f
+//////////////////////////////////
+//  Starfield constants
+//////////////////////////////////
 
 #define STAR_PROBABILITY 0.005f
 #define STARS_MIN_VELOCITY 0.0015f
@@ -75,7 +93,25 @@
 #define STARS_MIN_SCALE 1.0f
 #define STARS_MAX_SCALE 4.0f
 
-#define TIME_PER_ANIMATION 100.0f
+//////////////////////////////////
+//  Level transition constants
+//////////////////////////////////
+
+#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.3f
+#define INITIAL_LEVEL_SCORE_THRESHOLD 50
+#define LEVEL_WARP 0.2f
+#define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
+
+//////////////////////////////////
+//  Game state
+//////////////////////////////////
+
+static enum {
+    TITLE,
+    LEVEL_TRANSITION,
+    MAIN_GAME,
+    GAME_OVER
+} gameState = TITLE;
 
 typedef struct {
     ENTITIES_LIST_MIXIN(entity);
@@ -91,11 +127,13 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-static DataBuffer music;
-static DataBuffer playerBulletSound;
-static DataBuffer enemyBulletSound;
-static DataBuffer explosionSound;
-static DataBuffer enemyHit;
+static struct {
+    DataBuffer music;
+    DataBuffer playerBullet;
+    DataBuffer enemyBullet;
+    DataBuffer explosion;
+    DataBuffer enemyHit;
+} sounds;
 
 static Player player = { .sprite = &sprites_player, .lives = PLAYER_NUM_LIVES };
 static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
@@ -108,13 +146,6 @@ static EntitiesList stars = { .sprite = &sprites_whitePixel };
 static EntitiesList textEntities = { .sprite = &sprites_text };
 static EntitiesList livesEntities = { .sprite = &sprites_player };
 
-static enum {
-    TITLE,
-    LEVEL_TRANSITION,
-    MAIN_GAME,
-    GAME_OVER
-} gameState = TITLE;
-
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
 
@@ -126,21 +157,44 @@ static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 static float tickTime = 0.0f;
 static float animationTime = 0.0f;
 
-#define INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY 0.0003f
-#define INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY 0.0001f
-#define INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY 0.00003f
-#define LEVEL_SPAWN_PROBABILITY_MULTIPLIER 1.3f
-#define INITIAL_LEVEL_SCORE_THRESHOLD 50
-#define LEVEL_WARP 0.2f
-#define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
+//////////////////////////////////
+//  Per-level state
+//////////////////////////////////
 
 static int32_t level = 1;
 static int32_t levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
-static float smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
-static float mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
-static float largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
+static float smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY;
+static float mediumEnemySpawnProbability = MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY;
+static float largeEnemySpawnProbability = LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY;
 static float levelWarpVy = 0.0f;
 static float starProbabilityMultiplier = 1.0f;
+
+
+//////////////////////////////////
+//  Data load helpers
+//////////////////////////////////
+
+static void loadSound(const char* fileName, DataBuffer* sound) {
+    DataBuffer soundData = { 0 };
+    platform_loadFile(fileName, &soundData, false);
+    utils_wavToSound(&soundData, sound);
+    data_freeBuffer(&soundData);
+}
+
+static void loadTexture(const char* fileName, GLuint *texture) {
+    DataBuffer imageData = { 0 };
+    DataImage image = { 0 };
+
+    platform_loadFile(fileName, &imageData, false);
+    utils_bmpToImage(&imageData, &image);
+    renderer_initTexture(texture, image.data, image.width, image.height);
+    data_freeBuffer(&imageData);
+    data_freeImage(&image);
+}
+
+//////////////////////////////////
+//  Level transition helpers
+//////////////////////////////////
 
 static void updateLevelText(void) {
     snprintf(levelString, LEVEL_BUFFER_LENGTH, "Level %d", level);
@@ -157,6 +211,10 @@ static void transitionLevel(void) {
     events_start(&events_levelTransitionSequence);
 }
 
+//////////////////////////////////
+//  Player helpers
+//////////////////////////////////
+
 static void firePlayerBullet(float x, float y) {
     if (
         player.bulletThrottle > 0.0f || 
@@ -170,45 +228,8 @@ static void firePlayerBullet(float x, float y) {
         .y = y, 
         .vy = PLAYER_BULLET_VELOCITY
     });
-    platform_playSound(&playerBulletSound, false);
+    platform_playSound(&sounds.playerBullet, false);
     player.bulletThrottle = PLAYER_BULLET_THROTTLE;
-}
-
-static void fireEnemyBullet(float x, float y) {
-    float dx = player.position[0] - x;
-    float dy = player.position[1] - y;
-    float d = sqrtf(dx * dx + dy * dy);
-
-    entities_spawn(&enemyBullets, &(EntitiesInitOptions) {
-        .x = x,
-        .y = y,
-        .vx = (dx / d) * ENEMY_BULLET_SPEED,
-        .vy = (dy / d) * ENEMY_BULLET_SPEED
-    });
-
-    platform_playSound(&enemyBulletSound, false);
-}
-
-static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
-    for (int32_t i = 0; i < list->count; ++i) {
-        float* position = list->position + i * 2;
-        float* velocity = list->velocity + i * 2;
-        position[0] += velocity[0] * dt;
-        position[1] += (velocity[1] + levelWarpVy) * dt;
-
-        if (list->whiteOut[i] > 0.0f) {
-            list->whiteOut[i] -= dt;
-        }
-
-        if (
-            position[0] + list->sprite->panelDims[0] + killBuffer < 0 ||
-            position[1] + list->sprite->panelDims[1] + killBuffer < 0 ||
-            position[0] - killBuffer > GAME_WIDTH ||
-            position[1] - killBuffer > GAME_HEIGHT
-        ) {
-            list->dead[i] = true;
-        }
-    }
 }
 
 static bool checkPlayerBulletCollision(
@@ -240,11 +261,11 @@ static bool checkPlayerBulletCollision(
                     .x = position[0] + explosionXOffset, 
                     .y = position[1] + explosionYOffset
                 });
-                platform_playSound(&explosionSound, false);
+                platform_playSound(&sounds.explosion, false);
                 enemies->dead[i] = true;
                 player.score += points;
             } else {
-                platform_playSound(&enemyHit, false);
+                platform_playSound(&sounds.enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
             }
         }    
@@ -281,48 +302,45 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
     return playerHit;
 }
 
-static void livesToEntities(Player *player, EntitiesList* lives) {
-    lives->count = 0;
-    for (int32_t i = 0; i < player->lives; ++i) {
-        entities_spawn(lives, &(EntitiesInitOptions) { 
-            .x = 12.5f + i * (player->sprite->panelDims[0] * 0.55f + 0.5f),
-            .y = GAME_HEIGHT - 32.0f, 
-            .scale = 0.45f,
-            .whiteOut = 999999.0f
-        });
+static void fireEnemyBullet(float x, float y) {
+    float dx = player.position[0] - x;
+    float dy = player.position[1] - y;
+    float d = sqrtf(dx * dx + dy * dy);
+
+    entities_spawn(&enemyBullets, &(EntitiesInitOptions) {
+        .x = x,
+        .y = y,
+        .vx = (dx / d) * ENEMY_BULLET_SPEED,
+        .vy = (dy / d) * ENEMY_BULLET_SPEED
+    });
+
+    platform_playSound(&sounds.enemyBullet, false);
+}
+
+//////////////////////////////////
+//  General entity helpers
+//////////////////////////////////
+
+static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
+    for (int32_t i = 0; i < list->count; ++i) {
+        float* position = list->position + i * 2;
+        float* velocity = list->velocity + i * 2;
+        position[0] += velocity[0] * dt;
+        position[1] += (velocity[1] + levelWarpVy) * dt;
+
+        if (list->whiteOut[i] > 0.0f) {
+            list->whiteOut[i] -= dt;
+        }
+
+        if (
+            position[0] + list->sprite->panelDims[0] + killBuffer < 0 ||
+            position[1] + list->sprite->panelDims[1] + killBuffer < 0 ||
+            position[0] - killBuffer > GAME_WIDTH ||
+            position[1] - killBuffer > GAME_HEIGHT
+        ) {
+            list->dead[i] = true;
+        }
     }
-}
-
-static void loadSound(const char* fileName, DataBuffer* sound) {
-    DataBuffer soundData = { 0 };
-    platform_loadFile(fileName, &soundData, false);
-    utils_wavToSound(&soundData, sound);
-    data_freeBuffer(&soundData);
-}
-
-static void loadTexture(const char* fileName, GLuint *texture) {
-    DataBuffer imageData = { 0 };
-    DataImage image = { 0 };
-
-    platform_loadFile(fileName, &imageData, false);
-    utils_bmpToImage(&imageData, &image);
-    renderer_initTexture(texture, image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
-    data_freeImage(&image);
-}
-
-static void updateStars(float dt) {
-    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * starProbabilityMultiplier * dt) {
-        float t = utils_randomRange(0.0f, 1.0f);
-        entities_spawn(&stars, &(EntitiesInitOptions) {
-            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
-            .y = -sprites_whitePixel.panelDims[1], 
-            .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
-            .transparency = utils_lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
-        }); 
-    }
-
-    updateEntities(&stars, dt, 0.0f);
 }
 
 static void updateAnimations(void) {
@@ -349,6 +367,36 @@ static void filterDeadEntities(void) {
     entities_filterDead(&stars);
 }
 
+static void updateStars(float dt) {
+    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * starProbabilityMultiplier * dt) {
+        float t = utils_randomRange(0.0f, 1.0f);
+        entities_spawn(&stars, &(EntitiesInitOptions) {
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
+            .y = -sprites_whitePixel.panelDims[1], 
+            .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
+            .transparency = utils_lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
+        }); 
+    }
+
+    updateEntities(&stars, dt, 0.0f);
+}
+
+//////////////////////////////////
+//  HUD helpers
+//////////////////////////////////
+
+static void livesToEntities(Player *player, EntitiesList* lives) {
+    lives->count = 0;
+    for (int32_t i = 0; i < player->lives; ++i) {
+        entities_spawn(lives, &(EntitiesInitOptions) { 
+            .x = 12.5f + i * (player->sprite->panelDims[0] * 0.55f + 0.5f),
+            .y = GAME_HEIGHT - 32.0f, 
+            .scale = 0.45f,
+            .whiteOut = 999999.0f
+        });
+    }
+}
+
 static void updateScoreDisplay() {
     utils_uintToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
     entities_fromText(&textEntities, scoreString, &(EntitiesFromTextOptions) {
@@ -357,6 +405,10 @@ static void updateScoreDisplay() {
         .scale = 0.4f
     });
 }
+
+//////////////////////////////////
+//  Entitity simulation functions
+//////////////////////////////////
 
 static void simEnemies(float dt) {
     if (utils_randomRange(0.0f, 1.0f) < smallEnemySpawnProbability * dt) {
@@ -511,7 +563,7 @@ static void simPlayer(float dt) {
                 .y = player.position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
             });
 
-            platform_playSound(&explosionSound, false);
+            platform_playSound(&sounds.explosion, false);
             player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
             player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
             player.deadTimer = PLAYER_DEAD_TIME;
@@ -521,6 +573,10 @@ static void simPlayer(float dt) {
 
        
 }
+
+//////////////////////////////////
+//  Game state functions
+//////////////////////////////////
 
 static void titleScreen(float dt) {
     events_beforeFrame(&events_titleControlSequence, dt);
@@ -699,9 +755,9 @@ static void gameOver(float dt) {
         enemyBullets.count = 0;
         level = 1;
         levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
-        smallEnemySpawnProbability = INITIAL_SMALL_ENEMY_SPAWN_PROBABILITY;
-        mediumEnemySpawnProbability = INITIAL_MEDIUM_ENEMY_SPAWN_PROBABILITY;
-        largeEnemySpawnProbability = INITIAL_LARGE_ENEMY_SPAWN_PROBABILITY;
+        smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY;
+        mediumEnemySpawnProbability = MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY;
+        largeEnemySpawnProbability = LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY;
         events_stop(&events_gameOverSequence);
         events_stop(&events_gameOverRestartSequence);
         transitionLevel();
@@ -709,7 +765,11 @@ static void gameOver(float dt) {
 
 }
 
-static void updateState(float dt) {
+//////////////////////////////////
+//  Main state update function
+//////////////////////////////////
+
+static void simulate(float dt) {
     animationTime += dt;
 
     switch(gameState) {
@@ -724,17 +784,21 @@ static void updateState(float dt) {
     }
 }
 
+//////////////////////////////////
+//  Platform interface functions
+//////////////////////////////////
+
 void game_init(void) {
     // Init subsystems
     utils_init();
     renderer_init(GAME_WIDTH, GAME_HEIGHT);
 
     // Load assets
-    loadSound("assets/audio/music.wav", &music);
-    loadSound("assets/audio/Laser_002.wav", &playerBulletSound);
-    loadSound("assets/audio/Hit_Hurt2.wav", &enemyBulletSound);
-    loadSound("assets/audio/Explode1.wav", &explosionSound);
-    loadSound("assets/audio/Jump1.wav", &enemyHit);
+    loadSound("assets/audio/music.wav", &sounds.music);
+    loadSound("assets/audio/Laser_002.wav", &sounds.playerBullet);
+    loadSound("assets/audio/Hit_Hurt2.wav", &sounds.enemyBullet);
+    loadSound("assets/audio/Explode1.wav", &sounds.explosion);
+    loadSound("assets/audio/Jump1.wav", &sounds.enemyHit);
 
     loadTexture("assets/sprites/ship.bmp", &player.texture);
     loadTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture);
@@ -751,7 +815,7 @@ void game_init(void) {
     renderer_initTexture(&stars.texture, whitePixelData, 1, 1);
 
     // Init game
-    platform_playSound(&music, true);
+    platform_playSound(&sounds.music, true);
 
     entities_spawn(&player.entity, & (EntitiesInitOptions) {
         .x = (GAME_WIDTH - player.sprite->panelDims[0]) / 2,
@@ -795,11 +859,11 @@ void game_update(float elapsedTime) {
 
     if (tickTime > TICK_DURATION) {
         while (tickTime > TICK_DURATION) {
-            updateState(TICK_DURATION);    
+            simulate(TICK_DURATION);    
             tickTime -= TICK_DURATION;
         }
 
-        updateState(tickTime);
+        simulate(tickTime);
         tickTime = 0.0f;
     }
 }
