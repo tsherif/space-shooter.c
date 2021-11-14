@@ -46,7 +46,7 @@ static int32_t gameScreenOffsetY;
 static int32_t gameScreenWidth;
 static int32_t gameScreenHeight;
 
-void renderer_init(int width, int height) {
+bool renderer_init(int width, int height) {
     gameWidth = width;
     gameHeight = height;
 
@@ -61,7 +61,7 @@ void renderer_init(int width, int height) {
     if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true) ||
         !platform_loadFile("assets/shaders/fs.glsl", &fsSource, true)) {
         platform_debugLog("renderer_init: Unable to load shaders.");
-        return;
+        return false;
     }
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -76,6 +76,9 @@ void renderer_init(int width, int height) {
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
     glLinkProgram(program);
+
+    data_freeBuffer(&vsSource);
+    data_freeBuffer(&fsSource);
 
     GLint result;
     glGetProgramiv(program, GL_LINK_STATUS, &result);
@@ -95,10 +98,9 @@ void renderer_init(int width, int height) {
             glGetShaderInfoLog(fragmentShader, 1024, NULL, buffer);
             platform_debugLog(buffer);
         }
-    }
 
-    data_freeBuffer(&vsSource);
-    data_freeBuffer(&fsSource);
+        return false;
+    }
 
     glUseProgram(program);
 
@@ -164,6 +166,8 @@ void renderer_init(int width, int height) {
     glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(5, 1);
     glEnableVertexAttribArray(5);
+
+    return true;
 }
 
 void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t height) {

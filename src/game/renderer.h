@@ -44,7 +44,7 @@ typedef struct RENDERER_LIST_BODY RendererList;
 
 #define RENDERER_LIST_MIXIN(name) union { struct RENDERER_LIST_BODY; RendererList name; }
 
-void renderer_init(int width, int height);
+bool renderer_init(int width, int height);
 void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t height);
 void renderer_resize(int width, int height);
 void renderer_beforeFrame(void);

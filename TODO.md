@@ -1,8 +1,9 @@
 - [ ] Display fullscreen toggle controls
 - [ ] Clean up globals 
-- [ ] More error checks, asserts, fault tolerance
 - [ ] See if game loop can be tightened up
-- [ ] Can the pixels be kept blocky at smaller scales?
+- [ ] Debug versus release builds (e.g. disable debug logging, turn on optimizations)
+- [x] More error checks, asserts, fault tolerance
+- [x] Can the pixels be kept blocky at smaller scales?
 - [x] Invincibility period after dying
 - [x] Shaders as external files
 - [x] Sprite rendering

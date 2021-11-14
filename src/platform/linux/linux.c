@@ -67,7 +67,7 @@ int main(int argc, char const *argv[]) {
     Display* display = XOpenDisplay(NULL);
 
     if (display == NULL) {
-        platform_debugLog("Unable to connect to X Server");
+        platform_userMessage("Unable to create window.");
         return 1;
     }
 
@@ -98,17 +98,17 @@ int main(int argc, char const *argv[]) {
     GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
 
     if (!fbc) {
-        fprintf(stderr, "Unable to get framebuffer\n");
-        return -1;        
+        platform_userMessage("Unable to load OpenGL.");
+        return 1;        
     }
 
     glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const GLubyte *) "glXCreateContextAttribsARB");
     glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const GLubyte *) "glXSwapIntervalEXT");
 
     if (!glXCreateContextAttribsARB) {
-        fprintf(stderr, "Unable to get proc glXCreateContextAttribsARB\n");
+        platform_userMessage("Unable to load OpenGL.");
         XFree(fbc);
-        return -1; 
+        return 1; 
     }
 
     static int contextAttribs[] = {
@@ -123,8 +123,8 @@ int main(int argc, char const *argv[]) {
     XFree(fbc);
 
     if (!ctx) {
-        platform_debugLog("Unable to create OpenGL context");
-        return -1;
+        platform_userMessage("Unable to load OpenGL.");
+        return 1;
     }
 
     glXMakeCurrent(display, window, ctx);
@@ -184,10 +184,13 @@ int main(int argc, char const *argv[]) {
     };
 
     if (!linux_initAudio()) {
-        platform_debugLog("Linux: Unable to initialize audio.");
+        platform_userMessage("Unable to initialize audio.");
     }
 
-    game_init();
+    if (!game_init()) {
+        return 1;
+    }
+
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
     linux_detectGamepad();
 
@@ -305,12 +308,19 @@ void platform_debugLog(const char* message) {
     write(STDERR_FILENO, "\n", 1);
 }
 
+void platform_userMessage(const char* message) {
+    platform_debugLog(message);
+}
+
+
 bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
+    uint8_t* data = 0;
+    const char* errorMessage = 0;
 
     if (fd == -1) {
-        platform_debugLog("platform_loadFile: Unable to open file.");
-        return false;
+        errorMessage = "platform_loadFile: Unable to open file.";
+        goto ERROR_NO_RESOURCES;
     }
 
     int32_t size = lseek(fd, 0, SEEK_END);
@@ -321,26 +331,25 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
     }
 
     if (size == -1) {
-        platform_debugLog("platform_loadFile: Unable to get file size.");
-        return false;  
+        errorMessage = "platform_loadFile: Unable to get file size.";
+        goto ERROR_FILE_OPENED;
     }
 
     if (lseek(fd, 0, SEEK_SET) == -1) {
-        platform_debugLog("platform_loadFile: Unable to reset file cursor.");
-        return false;  
+        errorMessage = "platform_loadFile: Unable to reset file cursor.";
+        goto ERROR_FILE_OPENED;
     }
 
     uint8_t* data = (uint8_t*) malloc(allocation);
 
     if (!data) {
-        platform_debugLog("platform_loadFile: Unable to allocate data.");
-        return false;  
+        errorMessage = "platform_loadFile: Unable to allocate data.";
+        goto ERROR_FILE_OPENED;
     }
 
     if (read(fd, data, size) == -1) {
-        platform_debugLog("platform_loadFile: Unable to read data.");
-        free(data);
-        return false; 
+        errorMessage = "platform_loadFile: Unable to read data.";
+        goto ERROR_DATA_ALLOCATED;
     }
 
     if (nullTerminate) {
@@ -349,6 +358,15 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
 
     buffer->data = data;
     buffer->size = allocation;
+    close(fd);
 
     return true;
+
+ERROR_DATA_ALLOCATED:
+    free(data);
+ERROR_FILE_OPENED:
+    close(fd);
+ERROR_NO_RESOURCES:
+    platform_debugLog(errorMessage);
+    return false;
 }

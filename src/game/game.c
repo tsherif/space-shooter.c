@@ -172,22 +172,24 @@ static float starProbabilityMultiplier = 1.0f;
 //  Data load helpers
 //////////////////////////////////
 
-static void loadSound(const char* fileName, DataBuffer* sound) {
+static bool loadSound(const char* fileName, DataBuffer* sound) {
     DataBuffer soundData = { 0 };
-    platform_loadFile(fileName, &soundData, false);
-    utils_wavToSound(&soundData, sound);
+    bool result = platform_loadFile(fileName, &soundData, false) && utils_wavToSound(&soundData, sound);
     data_freeBuffer(&soundData);
+    return result;
 }
 
-static void loadTexture(const char* fileName, GLuint *texture) {
+static bool loadTexture(const char* fileName, GLuint *texture) {
     DataBuffer imageData = { 0 };
     DataImage image = { 0 };
 
-    platform_loadFile(fileName, &imageData, false);
-    utils_bmpToImage(&imageData, &image);
+    bool result = platform_loadFile(fileName, &imageData, false) && utils_bmpToImage(&imageData, &image);
+    
     renderer_initTexture(texture, image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
+
+    return result;
 }
 
 //////////////////////////////////
@@ -785,25 +787,38 @@ static void simulate(float dt) {
 //  Platform interface functions
 //////////////////////////////////
 
-void game_init(void) {
+bool game_init(void) {
     // Init subsystems
     utils_init();
-    renderer_init(GAME_WIDTH, GAME_HEIGHT);
+    
+    if (!renderer_init(GAME_WIDTH, GAME_HEIGHT)) {
+        platform_userMessage("FATAL ERROR: Unable to initialize renderer.");
+        return false;
+    }
 
     // Load assets
-    loadSound("assets/audio/music.wav", &sounds.music);
-    loadSound("assets/audio/Laser_002.wav", &sounds.playerBullet);
-    loadSound("assets/audio/Hit_Hurt2.wav", &sounds.enemyBullet);
-    loadSound("assets/audio/Explode1.wav", &sounds.explosion);
-    loadSound("assets/audio/Jump1.wav", &sounds.enemyHit);
+    if (
+        !loadTexture("assets/sprites/ship.bmp", &player.texture) ||
+        !loadTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture) ||
+        !loadTexture("assets/sprites/enemy-medium.bmp", &mediumEnemies.texture) ||
+        !loadTexture("assets/sprites/enemy-big.bmp", &largeEnemies.texture) ||
+        !loadTexture("assets/sprites/explosion.bmp", &explosions.texture) ||
+        !loadTexture("assets/sprites/pixelspritefont32.bmp", &textEntities.texture) ||
+        !loadTexture("assets/sprites/laser-bolts.bmp", &playerBullets.texture)
+    ) {
+        platform_userMessage("FATAL ERROR: Unable to load textures.");
+        return false;
+    }
 
-    loadTexture("assets/sprites/ship.bmp", &player.texture);
-    loadTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture);
-    loadTexture("assets/sprites/enemy-medium.bmp", &mediumEnemies.texture);
-    loadTexture("assets/sprites/enemy-big.bmp", &largeEnemies.texture);
-    loadTexture("assets/sprites/explosion.bmp", &explosions.texture);
-    loadTexture("assets/sprites/pixelspritefont32.bmp", &textEntities.texture);
-    loadTexture("assets/sprites/laser-bolts.bmp", &playerBullets.texture);
+    if (
+        !loadSound("assets/audio/music.wav", &sounds.music) ||
+        !loadSound("assets/audio/Laser_002.wav", &sounds.playerBullet) ||
+        !loadSound("assets/audio/Hit_Hurt2.wav", &sounds.enemyBullet) ||
+        !loadSound("assets/audio/Explode1.wav", &sounds.explosion) ||
+        !loadSound("assets/audio/Jump1.wav", &sounds.enemyHit)
+    ) {
+        platform_userMessage("Unable to load all audio.");
+    }
 
     // Shared textures    
     livesEntities.texture = player.texture;
@@ -836,6 +851,8 @@ void game_init(void) {
     updateLevelText();
 
     events_start(&events_titleControlSequence);
+
+    return true;
 }
 
 ////////////////////////////////////////////////////////////

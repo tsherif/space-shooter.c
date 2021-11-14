@@ -123,6 +123,11 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     int32_t numPixels = width * height;
     uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
 
+    if (!imageData) {
+        platform_debugLog("utils_bmpToRgba: Unable to allocate image data.");
+        return false; 
+    }
+
     for (int32_t i = 0; i < numPixels;  ++i) {
         int32_t row = i / width;
         int32_t col = i % width;
@@ -187,18 +192,18 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     chunkSize = *(uint32_t *) (soundData->data + offset);
     offset +=  sizeof(uint32_t);
 
-    if (chunkType == 0x20746d66) { // "fmt " little-endian
-        uint16_t formatCode = *(uint16_t *) (soundData->data + offset);            
-        uint16_t channels   = *(uint16_t *) (soundData->data + offset + 2);            
-        uint32_t rate       = *(uint32_t *) (soundData->data + offset + 4);            
-        uint16_t bps        = *(uint16_t *) (soundData->data + offset + 14);
-
-        if (formatCode != 1 || channels != 2 || rate != 44100 || bps != 16) {
-            platform_debugLog("utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
-            return false;
-        }
-    } else {
+    if (chunkType != 0x20746d66) { // "fmt " little-endian
         platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
+        return false;
+    }
+
+    uint16_t formatCode = *(uint16_t *) (soundData->data + offset);            
+    uint16_t channels   = *(uint16_t *) (soundData->data + offset + 2);            
+    uint32_t rate       = *(uint32_t *) (soundData->data + offset + 4);            
+    uint16_t bps        = *(uint16_t *) (soundData->data + offset + 14);
+
+    if (formatCode != 1 || channels != 2 || rate != 44100 || bps != 16) {
+        platform_debugLog("utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
         return false;
     }
 
@@ -210,14 +215,20 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     chunkSize = *(uint32_t *) (soundData->data + offset);
     offset +=  sizeof(uint32_t);
 
-    if (chunkType == 0x61746164) { // "data" little-endian
-        sound->size = chunkSize;
-        sound->data = (uint8_t *) malloc(chunkSize);
-        memcpy(sound->data, soundData->data + offset, chunkSize);
-    } else {
+    if (chunkType != 0x61746164) { // "data" little-endian
         platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing data chunk.");
         return false;
     }
 
-    return false;
+    sound->size = chunkSize;
+    sound->data = (uint8_t *) malloc(chunkSize);
+
+    if (!sound->data) {
+        platform_debugLog("utils_wavToSound: Unable to allocate sound data.");
+        return false; 
+    }
+
+    memcpy(sound->data, soundData->data + offset, chunkSize);
+
+    return true;
 }

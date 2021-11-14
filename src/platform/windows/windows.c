@@ -171,12 +171,17 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         .vsync = true
     });
 
+    if (!window) {
+        platform_userMessage("Unable to create window.");
+        return 1;
+    }
+
     if (!sogl_loadOpenGL()) {
         const char **failures = sogl_getFailures();
         while (*failures) {
             char debugMessage[256];
             snprintf(debugMessage, 256, "SOGL: Failed to load function %s\n", *failures);
-            OutputDebugStringA(debugMessage);
+            platform_debugLog(debugMessage);
             failures++;
         }
     }
@@ -191,11 +196,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     }
 
     if (!windows_initAudio()) {
-        platform_debugLog("Windows: Unable to initialize audio.");
+        platform_userMessage("Unable to initialize audio.");
     }
 
 
-    game_init();
+    if (!game_init()) {
+        return 1;
+    }
 
     RECT clientRect;
     GetClientRect(window, &clientRect); 
@@ -306,12 +313,17 @@ void platform_getInput(GameInput* input) {
     if (keyboard.space && !keyboard.lastSpace) {
         input->shoot = true;
     }
+
     keyboard.lastSpace = keyboard.space;
 }
 
 void platform_debugLog(const char* message) {
     OutputDebugStringA(message);  
     OutputDebugStringA("\n");  
+}
+
+void platform_userMessage(const char* message) {
+    MessageBoxA(NULL, message, "space-shooter.c (Windows)", MB_OK);
 }
 
 bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
@@ -325,27 +337,23 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
       NULL
     );
 
+    BYTE* data = 0;
     char errorMessage[1024];
+    
     if (file == INVALID_HANDLE_VALUE) {        
         snprintf(errorMessage, 1024, "platform_loadFile: Failed to load file: %s!", fileName);
-        platform_debugLog(errorMessage);
-        CloseHandle(file);
-        return false;
+        goto ERROR_NO_RESOURCES;
     }
 
     LARGE_INTEGER fileSize = { 0 }; 
     if (!GetFileSizeEx(file, &fileSize)) {
         snprintf(errorMessage, 1024, "platform_loadFile: Failed to set file size: %s!", fileName);
-        platform_debugLog(errorMessage);
-        CloseHandle(file);
-        return false;
+        goto ERROR_FILE_OPENED;
     }
 
     if (fileSize.HighPart > 0) {
         snprintf(errorMessage, 1024, "platform_loadFile: File too large: %s!", fileName);
-        platform_debugLog(errorMessage);
-        CloseHandle(file);
-        return false;
+        goto ERROR_FILE_OPENED;
     }
 
     DWORD allocation = fileSize.LowPart;
@@ -355,20 +363,16 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
     }
 
     DWORD bytesRead = 0;
-    BYTE* data = (BYTE*) malloc(allocation);
+    data = (BYTE*) malloc(allocation);
 
     if (!data) {
         snprintf(errorMessage, 1024, "platform_loadFile: Failed to allocate memory for file: %s!", fileName);
-        platform_debugLog(errorMessage);
-        CloseHandle(file);
-        return false;
+        goto ERROR_FILE_OPENED;
     }
 
     if (!ReadFile(file, data, fileSize.LowPart, &bytesRead, NULL)) {
         snprintf(errorMessage, 1024, "platform_loadFile: Failed to read file: %s!", fileName);
-        platform_debugLog(errorMessage);
-        CloseHandle(file);
-        return false;
+        goto ERROR_DATA_ALLOCATED;
     }
 
     if (nullTerminate) {
@@ -380,5 +384,13 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
     CloseHandle(file);
 
     return true;
+
+ERROR_DATA_ALLOCATED:
+    free(data);
+ERROR_FILE_OPENED:
+    CloseHandle(file);
+ERROR_NO_RESOURCES:
+    platform_debugLog(errorMessage);
+    return false;
 }
 

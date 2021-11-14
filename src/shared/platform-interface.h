@@ -33,7 +33,7 @@ typedef struct {
 	bool shoot;
 } GameInput;
 
-void game_init(void);
+bool game_init(void);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
@@ -42,6 +42,7 @@ void game_resize(int width, int height);
 void platform_getInput(GameInput* input);
 void platform_playSound(DataBuffer* sound, bool loop);
 void platform_debugLog(const char* message);
+void platform_userMessage(const char* message);
 bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate);
 
 #endif
