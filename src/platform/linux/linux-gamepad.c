@@ -37,6 +37,7 @@
 #include <dirent.h>
 #include <math.h>
 #include "../../shared/platform-interface.h"
+#include "../../shared/debug.h"
 
 #define PATH_MAX 512
 #define INPUT_DIR "/dev/input/by-id"
@@ -96,7 +97,7 @@ void linux_detectGamepad(void) {
     DIR* inputDir = opendir(INPUT_DIR);
 
     if (!inputDir) {
-        platform_debugLog("Failed to open input dir\n");
+        DEBUG_LOG("Failed to open input dir\n");
         return;
     }
 

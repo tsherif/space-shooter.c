@@ -31,6 +31,7 @@
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
+#include "../../shared/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
@@ -367,6 +368,6 @@ ERROR_DATA_ALLOCATED:
 ERROR_FILE_OPENED:
     close(fd);
 ERROR_NO_RESOURCES:
-    platform_debugLog(errorMessage);
+    DEBUG_LOG(errorMessage);
     return false;
 }

@@ -25,6 +25,7 @@
 #include "renderer.h"
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
+#include "../shared/debug.h"
 
 static GLuint pixelSizeUniform;
 static GLuint spriteSheetUniform;
@@ -60,7 +61,7 @@ bool renderer_init(int width, int height) {
 
     if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true) ||
         !platform_loadFile("assets/shaders/fs.glsl", &fsSource, true)) {
-        platform_debugLog("renderer_init: Unable to load shaders.");
+        DEBUG_LOG("renderer_init: Unable to load shaders.");
         return false;
     }
 
@@ -84,19 +85,19 @@ bool renderer_init(int width, int height) {
     glGetProgramiv(program, GL_LINK_STATUS, &result);
 
     if (result != GL_TRUE) {
-        platform_debugLog("Program failed to link!");
+        DEBUG_LOG("Program failed to link!");
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
         char buffer[1024];
         if (result != GL_TRUE) {
-            platform_debugLog("Vertex shader failed to compile!");
+            DEBUG_LOG("Vertex shader failed to compile!");
             glGetShaderInfoLog(vertexShader, 1024, NULL, buffer);
-            platform_debugLog(buffer);
+            DEBUG_LOG(buffer);
         }
         glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
         if (result != GL_TRUE) {
-            platform_debugLog("Fragment shader failed to compile!");
+            DEBUG_LOG("Fragment shader failed to compile!");
             glGetShaderInfoLog(fragmentShader, 1024, NULL, buffer);
-            platform_debugLog(buffer);
+            DEBUG_LOG(buffer);
         }
 
         return false;
