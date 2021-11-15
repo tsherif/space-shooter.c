@@ -134,6 +134,9 @@ static EventsEvent instructionEvents[] = {
         .delay = 500.0f,
         .duration = 2000.0f,
         .id =  EVENTS_DISPLAY
+    },
+    { 
+        .duration = 500.0f
     }
 };
 
@@ -171,9 +174,6 @@ EventsSequence events_gameOverRestartSequence = {
 };
 
 static EventsEvent levelTransitionEvents[] = {
-    { 
-        .duration = 500.0f
-    },
     { 
         .duration = 3000.0f,
         .id =  EVENTS_DISPLAY
