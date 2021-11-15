@@ -582,6 +582,9 @@ static void titleScreen(float dt) {
     events_beforeFrame(&events_titleSequence, dt);
     events_beforeFrame(&events_subtitleSequence, dt);
     events_beforeFrame(&events_instructionSequence, dt);
+
+    GameInput input = { 0 };
+    platform_getInput(&input);
     
     updateStars(dt);
 
@@ -649,7 +652,7 @@ static void titleScreen(float dt) {
         events_stop(&events_subtitleSequence);
     }
 
-    if (events_instructionSequence.complete) {
+    if (input.shoot || events_instructionSequence.complete) {
         textEntities.count = 0;
         transitionLevel();
     }

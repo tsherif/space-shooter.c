@@ -2,7 +2,7 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
 - [ ] Debug versus release builds (e.g. disable debug logging, turn on optimizations)
-- [ ] Shoot to skip title sequence
+- [x] Shoot to skip title sequence
 - [x] In intro sequence, get rid of delay between showing HUD and showing "level 1"
 - [x] Check the minimum version of OpenGL required
 - [x] Display fullscreen toggle controls
