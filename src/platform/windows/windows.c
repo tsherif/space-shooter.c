@@ -58,6 +58,10 @@ static struct {
     bool ctrl;
 } keyboard;
 
+static int32_t windowWidth = INITIAL_WINDOW_WIDTH;
+static int32_t windowHeight = INITIAL_WINDOW_HEIGHT;
+static int32_t preFullscreenWindowWidth = INITIAL_WINDOW_WIDTH;
+static int32_t preFullscreenWindowHeight = INITIAL_WINDOW_HEIGHT;
 static bool running = false;
 static bool fullScreen = false;
 static int controllerIndex = -1;
@@ -68,8 +72,10 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_SIZE: {
             if (running) {
                 RECT clientRect;
-                GetClientRect(window, &clientRect); 
-                game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+                GetClientRect(window, &clientRect);
+                windowWidth = clientRect.right - clientRect.left;
+                windowHeight = clientRect.bottom - clientRect.top;
+                game_resize(windowWidth, windowHeight);
             }
             return 0;
         };
@@ -77,7 +83,9 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             if (running) {
                 RECT clientRect;
                 GetClientRect(window, &clientRect); 
-                game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+                windowWidth = clientRect.right - clientRect.left;
+                windowHeight = clientRect.bottom - clientRect.top;
+                game_resize(windowWidth, windowHeight);
             }
             return 0;
         } break;
@@ -110,19 +118,21 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                 case VK_SPACE:   {
                     keyboard.space = isDown;
                 } break;
-                case VK_CONTROL: {
-                    keyboard.ctrl  = isDown;
+                case VK_ESCAPE: {
+                    running = false;
                 } break;
                 case 'F': {
-                    if (isDown && keyboard.ctrl) {
+                    if (isDown) {
                         fullScreen = !fullScreen;
                         int  x = 100;
                         int  y = 100;
-                        int  width = INITIAL_WINDOW_WIDTH;
-                        int  height = INITIAL_WINDOW_HEIGHT;
+                        int  width = preFullscreenWindowWidth;
+                        int  height = preFullscreenWindowHeight;
                         UINT flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
                         DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
                         if (fullScreen) {
+                            preFullscreenWindowWidth = windowWidth;
+                            preFullscreenWindowHeight = windowHeight;
                             HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
                             MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
                             GetMonitorInfo(monitor, &monitorInfo);
@@ -146,7 +156,9 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
                         RECT clientRect;
                         GetClientRect(window, &clientRect); 
-                        game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+                        windowWidth = clientRect.right - clientRect.left;
+                        windowHeight = clientRect.bottom - clientRect.top;
+                        game_resize(windowWidth, windowHeight);
                     }
                 } break;
             }
@@ -207,7 +219,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     RECT clientRect;
     GetClientRect(window, &clientRect); 
-    game_resize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+    windowWidth = clientRect.right - clientRect.left;
+    windowHeight = clientRect.bottom - clientRect.top;
+    game_resize(windowWidth, windowHeight);
 
     ///////////////////
     // Display window

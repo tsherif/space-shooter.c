@@ -581,6 +581,7 @@ static void titleScreen(float dt) {
     events_beforeFrame(&events_titleControlSequence, dt);
     events_beforeFrame(&events_titleSequence, dt);
     events_beforeFrame(&events_subtitleSequence, dt);
+    events_beforeFrame(&events_instructionSequence, dt);
     
     updateStars(dt);
 
@@ -628,7 +629,27 @@ static void titleScreen(float dt) {
         });
     }
 
+    if (events_on(&events_instructionSequence, EVENTS_DISPLAY)) {
+        entities_fromText(&textEntities, "'F' to toggle fullScreen", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 82.0f,
+            .y = 78.0f, 
+            .scale = 0.3f
+        });
+
+        entities_fromText(&textEntities, "'ESC' to quit", &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - 42.0f,
+            .y = 91.0f, 
+            .scale = 0.3f
+        });
+    }
+
     if (events_titleSequence.complete && events_subtitleSequence.complete) {
+        events_start(&events_instructionSequence);
+        events_stop(&events_titleSequence);
+        events_stop(&events_subtitleSequence);
+    }
+
+    if (events_instructionSequence.complete) {
         textEntities.count = 0;
         transitionLevel();
     }

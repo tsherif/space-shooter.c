@@ -60,6 +60,7 @@ bool events_on(EventsSequence* sequence, int32_t id);
 EventsSequence events_titleControlSequence;
 EventsSequence events_titleSequence;
 EventsSequence events_subtitleSequence;
+EventsSequence events_instructionSequence;
 EventsSequence events_gameOverSequence;
 EventsSequence events_gameOverRestartSequence;
 EventsSequence events_levelTransitionSequence;

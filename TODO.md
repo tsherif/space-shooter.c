@@ -1,9 +1,10 @@
-- [ ] Display fullscreen toggle controls
 - [ ] Linux: Use XCreateWindow instead of XCreateSimpleWindow?
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
 - [ ] Debug versus release builds (e.g. disable debug logging, turn on optimizations)
 - [ ] Check the minimum version of OpenGL required
+- [ ] Shoot to skip title sequence
+- [x] Display fullscreen toggle controls
 - [x] More error checks, asserts, fault tolerance
 - [x] Can the pixels be kept blocky at smaller scales?
 - [x] Invincibility period after dying

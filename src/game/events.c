@@ -129,6 +129,19 @@ EventsSequence events_subtitleSequence = {
     .count = sizeof(titleEvents) / sizeof(titleEvents[0])
 };
 
+static EventsEvent instructionEvents[] = {
+    { 
+        .delay = 500.0f,
+        .duration = 2000.0f,
+        .id =  EVENTS_DISPLAY
+    }
+};
+
+EventsSequence events_instructionSequence = {
+    .events = instructionEvents,
+    .count = sizeof(instructionEvents) / sizeof(instructionEvents[0])
+};
+
 static EventsEvent gameOverEvents[] = {
     { 
         .delay = 1000.0f,
