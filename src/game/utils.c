@@ -25,6 +25,7 @@
 #include <string.h>
 #include <time.h>
 #include "../shared/platform-interface.h"
+#include "../shared/debug.h"
 #include "utils.h"
 
 void utils_init(void) {
@@ -79,44 +80,25 @@ void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
 bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     uint16_t type = *(uint16_t *) imageBuffer->data;
+    DEBUG_ASSERT(type == 0x4d42, "utils_bmpToRgba: Invalid BMP data.");
 
-    if (type != 0x4d42) {
-        platform_debugLog("utils_bmpToRgba: Invalid BMP data.");
-        return false;
-    }
     uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
-    
     uint32_t dibHeaderSize = *(uint32_t *) (imageBuffer->data + 14);
-    if (dibHeaderSize < 70) {
-        platform_debugLog("utils_bmpToRgba: Unsupported DIB header.");
-        return false;
-    }
+    DEBUG_ASSERT(dibHeaderSize >= 70, "utils_bmpToRgba: Unsupported DIB header.");
 
     int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
     int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
-
     uint16_t bpp           = *(uint16_t *) (imageBuffer->data + 28);
-    if (bpp != 32) {
-        platform_debugLog("utils_bmpToRgba: Unsupported bpp, must be 32.");
-        return false;
-    }
+    DEBUG_ASSERT(bpp == 32, "utils_bmpToRgba: Unsupported bpp, must be 32.");
 
     uint32_t compression   = *(uint32_t *) (imageBuffer->data + 30);
-    if (compression != 3) {
-        platform_debugLog("utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
-        return false;
-    }
+    DEBUG_ASSERT(compression == 3, "utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
 
     uint32_t redMask       = *(uint32_t *) (imageBuffer->data + 54);
     uint32_t greenMask     = *(uint32_t *) (imageBuffer->data + 58);
     uint32_t blueMask      = *(uint32_t *) (imageBuffer->data + 62);
     uint32_t alphaMask     = *(uint32_t *) (imageBuffer->data + 66);
-
-    if (redMask != 0x00ff0000 || greenMask != 0x0000ff00 || blueMask != 0x000000ff || alphaMask != 0xff000000) {
-        platform_debugLog("utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
-        return false;
-    }
-
+    DEBUG_ASSERT(redMask == 0x00ff0000 && greenMask == 0x0000ff00 && blueMask == 0x000000ff && alphaMask == 0xff000000, "utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
 
     uint8_t* bmpImage = imageBuffer->data + imageOffset;
     
@@ -124,7 +106,7 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
 
     if (!imageData) {
-        platform_debugLog("utils_bmpToRgba: Unable to allocate image data.");
+        DEBUG_LOG("utils_bmpToRgba: Unable to allocate image data.");
         return false; 
     }
 
@@ -167,24 +149,18 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     chunkSize = *(uint32_t *) (soundData->data + offset);
     offset +=  sizeof(uint32_t);
 
-    if (chunkType != 0x46464952) { // "RIFF" little-endian
-        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
-        return false;
-    }
+    // "RIFF" little-endian
+    DEBUG_ASSERT(chunkType == 0x46464952, "utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
+
 
     // chunkSize == size of file - 4 bytes each for this and the previous field.
-    if (chunkSize != soundData->size - 8) {
-        platform_debugLog("utils_wavToSound: Invalid WAVE file. File size incorrect.");
-        return false;
-    }
+    DEBUG_ASSERT(chunkSize == soundData->size - 8, "utils_wavToSound: Invalid WAVE file. File size incorrect.");
 
     fileFormat = *(uint32_t *) (soundData->data + offset);
     offset += sizeof(uint32_t);
 
-    if (fileFormat != 0x45564157) { // "WAVE" little-endian
-        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing WAVE chunk.");
-        return false;
-    }
+    // "WAVE" little-endian
+    DEBUG_ASSERT(fileFormat == 0x45564157, "utils_wavToSound: Invalid WAVE file. Missing WAVE chunk.");
 
     chunkType = *(uint32_t *) (soundData->data + offset);
     offset +=  sizeof(uint32_t);
@@ -192,20 +168,14 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     chunkSize = *(uint32_t *) (soundData->data + offset);
     offset +=  sizeof(uint32_t);
 
-    if (chunkType != 0x20746d66) { // "fmt " little-endian
-        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
-        return false;
-    }
+    // "fmt " little-endian
+    DEBUG_ASSERT(chunkType == 0x20746d66, "utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
 
     uint16_t formatCode = *(uint16_t *) (soundData->data + offset);            
     uint16_t channels   = *(uint16_t *) (soundData->data + offset + 2);            
     uint32_t rate       = *(uint32_t *) (soundData->data + offset + 4);            
     uint16_t bps        = *(uint16_t *) (soundData->data + offset + 14);
-
-    if (formatCode != 1 || channels != 2 || rate != 44100 || bps != 16) {
-        platform_debugLog("utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
-        return false;
-    }
+    DEBUG_ASSERT(formatCode == 1 && channels == 2 && rate == 44100 && bps == 16, "utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
 
     offset += chunkSize;
 
@@ -215,16 +185,13 @@ bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
     chunkSize = *(uint32_t *) (soundData->data + offset);
     offset +=  sizeof(uint32_t);
 
-    if (chunkType != 0x61746164) { // "data" little-endian
-        platform_debugLog("utils_wavToSound: Invalid WAVE file. Missing data chunk.");
-        return false;
-    }
+    DEBUG_ASSERT(chunkType == 0x61746164, "utils_wavToSound: Invalid WAVE file. Missing data chunk.");
 
     sound->size = chunkSize;
     sound->data = (uint8_t *) malloc(chunkSize);
 
     if (!sound->data) {
-        platform_debugLog("utils_wavToSound: Unable to allocate sound data.");
+        DEBUG_LOG("utils_wavToSound: Unable to allocate sound data.");
         return false; 
     }
 

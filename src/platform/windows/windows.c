@@ -42,6 +42,7 @@
 #include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
+#include "../../shared/debug.h"
 #include "windows-audio.h"
 
 #define INITIAL_WINDOW_WIDTH 1200
@@ -181,7 +182,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         while (*failures) {
             char debugMessage[256];
             snprintf(debugMessage, 256, "SOGL: Failed to load function %s\n", *failures);
-            platform_debugLog(debugMessage);
+            DEBUG_LOG(debugMessage);
             failures++;
         }
     }
@@ -351,10 +352,7 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
         goto ERROR_FILE_OPENED;
     }
 
-    if (fileSize.HighPart > 0) {
-        snprintf(errorMessage, 1024, "platform_loadFile: File too large: %s!", fileName);
-        goto ERROR_FILE_OPENED;
-    }
+    DEBUG_ASSERT(fileSize.HighPart == 0, "platform_loadFile: File too large!");
 
     DWORD allocation = fileSize.LowPart;
 
@@ -390,7 +388,7 @@ ERROR_DATA_ALLOCATED:
 ERROR_FILE_OPENED:
     CloseHandle(file);
 ERROR_NO_RESOURCES:
-    platform_debugLog(errorMessage);
+    DEBUG_LOG(errorMessage);
     return false;
 }
 
