@@ -1,4 +1,4 @@
-#version 450
+#version 330
 
 in vec2 vUV;
 in float vAlpha;

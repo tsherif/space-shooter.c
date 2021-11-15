@@ -2,8 +2,9 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
 - [ ] Debug versus release builds (e.g. disable debug logging, turn on optimizations)
-- [ ] Check the minimum version of OpenGL required
 - [ ] Shoot to skip title sequence
+- [ ] In intro sequence, get rid of delay between showing HUD and showing "level 1"
+- [x] Check the minimum version of OpenGL required
 - [x] Display fullscreen toggle controls
 - [x] More error checks, asserts, fault tolerance
 - [x] Can the pixels be kept blocky at smaller scales?

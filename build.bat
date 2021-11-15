@@ -3,7 +3,7 @@
 ) else (
 	set arg1=debug
 )
-@set shared_args=/std:c11 /W3 /WX /wd5105 /D SOGL_MAJOR_VERSION=4 /D SOGL_MINOR_VERSION=5 /Fespace-shooter
+@set shared_args=/std:c11 /W3 /WX /wd5105 /D SOGL_MAJOR_VERSION=3 /D SOGL_MINOR_VERSION=3 /Fespace-shooter
 @if %arg1%==release (
 	@set build_args=/O2
 ) else (
