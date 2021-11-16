@@ -56,8 +56,6 @@ static struct {
     bool down;
     bool space;
     bool lastSpace;
-    bool ctrl;
-    bool shift;
 } keyboard;
 
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
@@ -228,12 +226,9 @@ int main(int argc, char const *argv[]) {
                 case XK_Left: keyboard.left = down; break;
                 case XK_Right: keyboard.right = down; break;
                 case XK_space: keyboard.space = down; break;
-                case XK_Control_L: keyboard.ctrl = down; break;
-                case XK_Control_R: keyboard.ctrl = down; break;
-                case XK_Shift_L: keyboard.shift = down; break;
-                case XK_Shift_R: keyboard.shift = down; break;
+                case XK_Escape: running = false; break;
                 case XK_f: {
-                    if (down && keyboard.ctrl && keyboard.shift) {
+                    if (down) {
                         if (fullScreen) {
                             // NOTE(Tarek): Not sure what SubstructureNotifyMask/SubstructureRedirectMask mean. Took them from GLFW
                             // Documentation here: https://tronche.com/gui/x/xlib/events/mask.html
