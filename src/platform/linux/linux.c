@@ -341,7 +341,7 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
         goto ERROR_FILE_OPENED;
     }
 
-    uint8_t* data = (uint8_t*) malloc(allocation);
+    data = (uint8_t*) malloc(allocation);
 
     if (!data) {
         errorMessage = "platform_loadFile: Unable to allocate data.";

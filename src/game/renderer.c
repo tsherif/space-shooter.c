@@ -66,11 +66,11 @@ bool renderer_init(int width, int height) {
     }
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vsSource.data, NULL);
+    glShaderSource(vertexShader, 1, (const char **) &vsSource.data, NULL);
     glCompileShader(vertexShader);
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fsSource.data, NULL);
+    glShaderSource(fragmentShader, 1, (const char **) &fsSource.data, NULL);
     glCompileShader(fragmentShader);
 
     GLuint program = glCreateProgram();
