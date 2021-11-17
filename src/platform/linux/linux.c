@@ -70,12 +70,25 @@ int main(int argc, char const *argv[]) {
         return 1;
     }
 
+    XSetWindowAttributes windowAttributes = { 0 };
+    windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask;
+
     int screen = XDefaultScreen(display);
     Window rootWindow = XRootWindow(display, screen);
-    Window window = XCreateSimpleWindow(display, rootWindow, 20, 20, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, 0, 0, 0);
+    Window window = XCreateWindow(
+        display,
+        rootWindow,
+        20, 20, 
+        INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT,
+        0,
+        CopyFromParent,
+        CopyFromParent,
+        CopyFromParent,
+        CWEventMask,
+        &windowAttributes
+    );
     
 
-    XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask);
     XStoreName(display, window, "space-shooter.c (Linux)");
     XMapWindow(display, window);
     
@@ -230,8 +243,6 @@ int main(int argc, char const *argv[]) {
                 case XK_f: {
                     if (down) {
                         if (fullScreen) {
-                            // NOTE(Tarek): Not sure what SubstructureNotifyMask/SubstructureRedirectMask mean. Took them from GLFW
-                            // Documentation here: https://tronche.com/gui/x/xlib/events/mask.html
                             XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
                         } else {
                             XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
