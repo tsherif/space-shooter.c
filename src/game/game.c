@@ -385,11 +385,11 @@ static void updateStars(float dt) {
 //  HUD helpers
 //////////////////////////////////
 
-static void livesToEntities(Player *player, EntitiesList* lives) {
-    lives->count = 0;
-    for (int32_t i = 0; i < player->lives; ++i) {
-        entities_spawn(lives, &(EntitiesInitOptions) { 
-            .x = 12.5f + i * (player->sprite->panelDims[0] * 0.55f + 0.5f),
+static void livesToEntities(void) {
+    livesEntities.count = 0;
+    for (int32_t i = 0; i < player.lives; ++i) {
+        entities_spawn(&livesEntities, &(EntitiesInitOptions) { 
+            .x = 12.5f + i * (player.sprite->panelDims[0] * 0.55f + 0.5f),
             .y = GAME_HEIGHT - 32.0f, 
             .scale = 0.45f
         });
@@ -673,7 +673,7 @@ static void levelTransition(float dt) {
         });
     }
 
-    livesToEntities(&player, &livesEntities);
+    livesToEntities();
     updateStars(dt);
     updateEntities(&smallEnemies, dt, 0.0f);
     updateEntities(&mediumEnemies, dt, 0.0f);
@@ -699,7 +699,7 @@ static void mainGame(float dt) {
     updateStars(dt);
     simEnemies(dt);
 
-    livesToEntities(&player, &livesEntities);
+    livesToEntities();
 
     if (player.bulletThrottle > 0.0f) {
         player.bulletThrottle -= dt; 

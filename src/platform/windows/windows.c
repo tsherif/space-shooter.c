@@ -234,7 +234,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     // Start render and message loop
     //////////////////////////////////
 
-    MSG message;
+    MSG message = { 0 };
     LARGE_INTEGER lastPerfCount, tickFrequency;
     uint64_t ticks = 0;
     QueryPerformanceFrequency(&tickFrequency);
@@ -373,7 +373,7 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
         allocation += 1;
     }
 
-    uint32_t bytesRead = 0;
+    DWORD bytesRead = 0;
     data = (uint8_t*) malloc(allocation);
 
     if (!data) {
