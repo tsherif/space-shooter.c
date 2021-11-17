@@ -59,9 +59,8 @@ bool renderer_init(int width, int height) {
     DataBuffer vsSource = { 0 };
     DataBuffer fsSource = { 0 };
 
-    if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true) ||
-        !platform_loadFile("assets/shaders/fs.glsl", &fsSource, true)) {
-        DEBUG_LOG("renderer_init: Unable to load shaders.");
+    if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true)) {
+        DEBUG_LOG("renderer_init: Unable to vertex shader.");
         return false;
     }
 
@@ -69,17 +68,24 @@ bool renderer_init(int width, int height) {
     glShaderSource(vertexShader, 1, (const char **) &vsSource.data, NULL);
     glCompileShader(vertexShader);
 
+    data_freeBuffer(&vsSource);
+
+    if (!platform_loadFile("assets/shaders/fs.glsl", &fsSource, true)) {
+        DEBUG_LOG("renderer_init: Unable to vertex shader.");
+        return false;
+    }
+        
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, (const char **) &fsSource.data, NULL);
     glCompileShader(fragmentShader);
 
+    data_freeBuffer(&fsSource);
+    
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
     glLinkProgram(program);
 
-    data_freeBuffer(&vsSource);
-    data_freeBuffer(&fsSource);
 
     GLint result;
     glGetProgramiv(program, GL_LINK_STATUS, &result);
