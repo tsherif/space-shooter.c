@@ -352,38 +352,37 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
       NULL
     );
 
-    BYTE* data = 0;
-    char errorMessage[1024];
+    uint8_t* data = 0;
     
     if (file == INVALID_HANDLE_VALUE) {        
-        snprintf(errorMessage, 1024, "platform_loadFile: Failed to load file: %s!", fileName);
+        DEBUG_LOG("platform_loadFile: Unable to open file.");
         goto ERROR_NO_RESOURCES;
     }
 
     LARGE_INTEGER fileSize = { 0 }; 
     if (!GetFileSizeEx(file, &fileSize)) {
-        snprintf(errorMessage, 1024, "platform_loadFile: Failed to set file size: %s!", fileName);
+        DEBUG_LOG("platform_loadFile: Unable to get file size.");
         goto ERROR_FILE_OPENED;
     }
 
     DEBUG_ASSERT(fileSize.HighPart == 0, "platform_loadFile: File too large!");
 
-    DWORD allocation = fileSize.LowPart;
+    int32_t allocation = fileSize.LowPart;
 
     if (nullTerminate) {
         allocation += 1;
     }
 
-    DWORD bytesRead = 0;
-    data = (BYTE*) malloc(allocation);
+    uint32_t bytesRead = 0;
+    data = (uint8_t*) malloc(allocation);
 
     if (!data) {
-        snprintf(errorMessage, 1024, "platform_loadFile: Failed to allocate memory for file: %s!", fileName);
+        DEBUG_LOG("platform_loadFile: Unable to allocate data.");
         goto ERROR_FILE_OPENED;
     }
 
     if (!ReadFile(file, data, fileSize.LowPart, &bytesRead, NULL)) {
-        snprintf(errorMessage, 1024, "platform_loadFile: Failed to read file: %s!", fileName);
+        DEBUG_LOG("platform_loadFile: Unable to read data.");
         goto ERROR_DATA_ALLOCATED;
     }
 
@@ -402,7 +401,6 @@ ERROR_DATA_ALLOCATED:
 ERROR_FILE_OPENED:
     CloseHandle(file);
 ERROR_NO_RESOURCES:
-    DEBUG_LOG(errorMessage);
     return false;
 }
 

@@ -91,6 +91,7 @@ bool renderer_init(int width, int height) {
     glGetProgramiv(program, GL_LINK_STATUS, &result);
 
     if (result != GL_TRUE) {
+#ifdef SPACE_SHOOTER_DEBUG
         DEBUG_LOG("Program failed to link!");
         glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
         char buffer[1024];
@@ -105,6 +106,7 @@ bool renderer_init(int width, int height) {
             glGetShaderInfoLog(fragmentShader, 1024, NULL, buffer);
             DEBUG_LOG(buffer);
         }
+#endif
 
         return false;
     }

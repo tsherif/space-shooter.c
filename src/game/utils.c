@@ -79,15 +79,17 @@ void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
 
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
 bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
+    uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
+    int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
+    int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
+
+#ifdef SPACE_SHOOTER_DEBUG
     uint16_t type = *(uint16_t *) imageBuffer->data;
     DEBUG_ASSERT(type == 0x4d42, "utils_bmpToRgba: Invalid BMP data.");
 
-    uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
     uint32_t dibHeaderSize = *(uint32_t *) (imageBuffer->data + 14);
     DEBUG_ASSERT(dibHeaderSize >= 70, "utils_bmpToRgba: Unsupported DIB header.");
 
-    int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
-    int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
     uint16_t bpp           = *(uint16_t *) (imageBuffer->data + 28);
     DEBUG_ASSERT(bpp == 32, "utils_bmpToRgba: Unsupported bpp, must be 32.");
 
@@ -99,6 +101,7 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
     uint32_t blueMask      = *(uint32_t *) (imageBuffer->data + 62);
     uint32_t alphaMask     = *(uint32_t *) (imageBuffer->data + 66);
     DEBUG_ASSERT(redMask == 0x00ff0000 && greenMask == 0x0000ff00 && blueMask == 0x000000ff && alphaMask == 0xff000000, "utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
+#endif
 
     uint8_t* bmpImage = imageBuffer->data + imageOffset;
     
@@ -138,64 +141,48 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
 
 // NOTE(Tarek): Hardcoded to load 2-channel 44.1kHz 16-bit data, with RIFF, fmt and data chunks sequential.
 bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
-    int32_t offset = 0;
-    uint32_t chunkType = 0;
-    uint32_t chunkSize = 0;
-    uint32_t fileFormat = 0;
-
-    chunkType = *(uint32_t *) soundData->data;
-    offset +=  sizeof(uint32_t);
-
-    chunkSize = *(uint32_t *) (soundData->data + offset);
-    offset +=  sizeof(uint32_t);
-
+    uint32_t fmtSize = *(uint32_t *) (soundData->data + 16);
+    int32_t dataOffset = fmtSize + 20;
+        
+#ifdef SPACE_SHOOTER_DEBUG
     // "RIFF" little-endian
-    DEBUG_ASSERT(chunkType == 0x46464952, "utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
-
-
-    // chunkSize == size of file - 4 bytes each for this and the previous field.
-    DEBUG_ASSERT(chunkSize == soundData->size - 8, "utils_wavToSound: Invalid WAVE file. File size incorrect.");
-
-    fileFormat = *(uint32_t *) (soundData->data + offset);
-    offset += sizeof(uint32_t);
+    uint32_t riffType = *(uint32_t *) soundData->data;
+    DEBUG_ASSERT(riffType == 0x46464952, "utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
+    
+    // fileSize == size of file - 4 bytes each for this and the previous field.
+    uint32_t fileSize = *(uint32_t *) (soundData->data + 4);
+    DEBUG_ASSERT(fileSize == soundData->size - 8, "utils_wavToSound: Invalid WAVE file. File size incorrect.");
 
     // "WAVE" little-endian
+    uint32_t fileFormat = *(uint32_t *) (soundData->data + 8);
     DEBUG_ASSERT(fileFormat == 0x45564157, "utils_wavToSound: Invalid WAVE file. Missing WAVE chunk.");
 
-    chunkType = *(uint32_t *) (soundData->data + offset);
-    offset +=  sizeof(uint32_t);
-
-    chunkSize = *(uint32_t *) (soundData->data + offset);
-    offset +=  sizeof(uint32_t);
-
     // "fmt " little-endian
-    DEBUG_ASSERT(chunkType == 0x20746d66, "utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
+    uint32_t fmtType = *(uint32_t *) (soundData->data + 12);
+    DEBUG_ASSERT(fmtType == 0x20746d66, "utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
+    
 
-    uint16_t formatCode = *(uint16_t *) (soundData->data + offset);            
-    uint16_t channels   = *(uint16_t *) (soundData->data + offset + 2);            
-    uint32_t rate       = *(uint32_t *) (soundData->data + offset + 4);            
-    uint16_t bps        = *(uint16_t *) (soundData->data + offset + 14);
+    uint16_t formatCode = *(uint16_t *) (soundData->data + 20);            
+    uint16_t channels   = *(uint16_t *) (soundData->data + 22);            
+    uint32_t rate       = *(uint32_t *) (soundData->data + 24);            
+    uint16_t bps        = *(uint16_t *) (soundData->data + 34);
     DEBUG_ASSERT(formatCode == 1 && channels == 2 && rate == 44100 && bps == 16, "utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
 
-    offset += chunkSize;
+    // "data" little-endian
+    uint32_t dataType = *(uint32_t *) (soundData->data + dataOffset);
+    DEBUG_ASSERT(dataType == 0x61746164, "utils_wavToSound: Invalid WAVE file. Missing data chunk.");
+#endif
 
-    chunkType = *(uint32_t *) (soundData->data + offset);
-    offset +=  sizeof(uint32_t);
-
-    chunkSize = *(uint32_t *) (soundData->data + offset);
-    offset +=  sizeof(uint32_t);
-
-    DEBUG_ASSERT(chunkType == 0x61746164, "utils_wavToSound: Invalid WAVE file. Missing data chunk.");
-
-    sound->size = chunkSize;
-    sound->data = (uint8_t *) malloc(chunkSize);
+    uint32_t dataSize = *(uint32_t *) (soundData->data + dataOffset + 4);
+    sound->size = dataSize;
+    sound->data = (uint8_t *) malloc(dataSize);
 
     if (!sound->data) {
         DEBUG_LOG("utils_wavToSound: Unable to allocate sound data.");
         return false; 
     }
 
-    memcpy(sound->data, soundData->data + offset, chunkSize);
+    memcpy(sound->data, soundData->data + dataOffset, dataSize);
 
     return true;
 }

@@ -312,10 +312,9 @@ void platform_userMessage(const char* message) {
 bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
     uint8_t* data = 0;
-    const char* errorMessage = 0;
 
     if (fd == -1) {
-        errorMessage = "platform_loadFile: Unable to open file.";
+        DEBUG_LOG("platform_loadFile: Unable to open file.");
         goto ERROR_NO_RESOURCES;
     }
 
@@ -327,24 +326,24 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
     }
 
     if (size == -1) {
-        errorMessage = "platform_loadFile: Unable to get file size.";
+        DEBUG_LOG("platform_loadFile: Unable to get file size.");
         goto ERROR_FILE_OPENED;
     }
 
     if (lseek(fd, 0, SEEK_SET) == -1) {
-        errorMessage = "platform_loadFile: Unable to reset file cursor.";
+        DEBUG_LOG("platform_loadFile: Unable to reset file cursor.");
         goto ERROR_FILE_OPENED;
     }
 
     data = (uint8_t*) malloc(allocation);
 
     if (!data) {
-        errorMessage = "platform_loadFile: Unable to allocate data.";
+        DEBUG_LOG("platform_loadFile: Unable to allocate data.");
         goto ERROR_FILE_OPENED;
     }
 
     if (read(fd, data, size) == -1) {
-        errorMessage = "platform_loadFile: Unable to read data.";
+        DEBUG_LOG("platform_loadFile: Unable to read data.");
         goto ERROR_DATA_ALLOCATED;
     }
 
@@ -363,6 +362,5 @@ ERROR_DATA_ALLOCATED:
 ERROR_FILE_OPENED:
     close(fd);
 ERROR_NO_RESOURCES:
-    DEBUG_LOG(errorMessage);
     return false;
 }
