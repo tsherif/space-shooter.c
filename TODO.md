@@ -1,5 +1,6 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
+- [ ] Linux audio teardown
 - [x] Hide mouse cursor
 - [x] Linux: Use XCreateWindow instead of XCreateSimpleWindow?
 - [x] Linux: What does SubstructureNotifyMask | SubstructureRedirectMask do?
