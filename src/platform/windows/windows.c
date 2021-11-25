@@ -415,11 +415,13 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
 
     return true;
 
-ERROR_DATA_ALLOCATED:
+    ERROR_DATA_ALLOCATED:
     free(data);
-ERROR_FILE_OPENED:
+
+    ERROR_FILE_OPENED:
     CloseHandle(file);
-ERROR_NO_RESOURCES:
+    
+    ERROR_NO_RESOURCES:
     return false;
 }
 

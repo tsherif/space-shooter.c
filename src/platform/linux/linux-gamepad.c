@@ -109,26 +109,27 @@ void linux_detectGamepad(void) {
             snprintf(path, PATH_MAX, "%s/%s", INPUT_DIR, entry->d_name);
             gamepad.fd = open(path, O_RDONLY | O_NONBLOCK);
 
+            if (gamepad.fd == -1) {
+                continue;
+            }
+
             uint8_t absBits[(ABS_CNT + 7) / 8] = { 0 };
             if (ioctl(gamepad.fd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits) < 0) {
-                close(gamepad.fd);
-                gamepad.fd = -1;
-                continue;
+                goto NEXT;
             }
 
             uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
             if (ioctl(gamepad.fd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits) < 0) {
-                close(gamepad.fd);
-                gamepad.fd = -1;
-                continue;   
+                goto NEXT;  
             }
 
             if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A)) {
                 break;
-            } else {
-                close(gamepad.fd);
-                gamepad.fd = -1;
             }
+        
+            NEXT:
+            close(gamepad.fd);
+            gamepad.fd = -1;
         }
         entry = readdir(inputDir);
     }
@@ -194,4 +195,11 @@ void linux_gamepadInput(GameInput* input) {
 
     input->shoot = gamepad.aButton && gamepad.aButton != gamepad.lastAButton;
     gamepad.lastAButton = gamepad.aButton;
+}
+
+void linux_closeGamepad(void) {
+    if (gamepad.fd != -1) {
+        close(gamepad.fd);
+        gamepad.fd = -1;
+    }
 }

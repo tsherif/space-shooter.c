@@ -279,6 +279,7 @@ int main(int argc, char const *argv[]) {
         lastTime = time;
     };
 
+    linux_closeGamepad();
     linux_closeAudio();
     XDestroyWindow(display, window);
     XCloseDisplay(display);
@@ -375,10 +376,12 @@ bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTermin
 
     return true;
 
-ERROR_DATA_ALLOCATED:
+    ERROR_DATA_ALLOCATED:
     free(data);
-ERROR_FILE_OPENED:
+    
+    ERROR_FILE_OPENED:
     close(fd);
-ERROR_NO_RESOURCES:
+    
+    ERROR_NO_RESOURCES:
     return false;
 }
