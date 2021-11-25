@@ -1,6 +1,6 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
-- [ ] Hide mouse cursor
+- [x] Hide mouse cursor
 - [x] Linux: Use XCreateWindow instead of XCreateSimpleWindow?
 - [x] Linux: What does SubstructureNotifyMask | SubstructureRedirectMask do?
 - [x] Debug versus release builds (e.g. disable debug logging, turn on optimizations)

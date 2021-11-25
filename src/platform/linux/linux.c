@@ -88,6 +88,13 @@ int main(int argc, char const *argv[]) {
         &windowAttributes
     );
     
+    char hiddenCursorData[8] = { 0 };
+    XColor hiddenCursorColor = { 0 };
+    Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, hiddenCursorData, 8, 8, 1, 0, 1);
+    Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCursorPixmap, &hiddenCursorColor, &hiddenCursorColor, 0, 0);
+    XDefineCursor(display, window, hiddenCursor);
+    XFreeCursor(display, hiddenCursor);
+    XFreePixmap(display, hiddenCursorPixmap);
 
     XStoreName(display, window, "space-shooter.c (Linux)");
     XMapWindow(display, window);
