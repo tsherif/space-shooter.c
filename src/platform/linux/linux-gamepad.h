@@ -24,11 +24,18 @@
 #ifndef _LINUX_GAMEPAD_H_
 #define _LINUX_GAMEPAD_H_
 
+#include <stdbool.h>
+#include "../../shared/platform-interface.h"
+
+typedef struct {
+    bool start;
+    bool back;
+} LinuxGamepadMenuButtons;
+
 void linux_detectGamepad(void);
 void linux_updateGamepad(void);
 void linux_pingGamepad(void);
-bool linux_gamepadStartButtonPressed(void);
-bool linux_gamepadBackButtonPressed(void);
+void linux_gamepadMenuButtons(LinuxGamepadMenuButtons* gamepadMenuButtons);
 void linux_gamepadInput(GameInput* input);
 void linux_closeGamepad(void);
 

@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <math.h>
-#include "../../shared/platform-interface.h"
+#include "linux-gamepad.h"
 #include "../../shared/debug.h"
 
 #define PATH_MAX 512
@@ -161,7 +161,7 @@ void linux_pingGamepad(void) {
     }
 }
 
-void linux_updateGamepad(GameInput* input) {
+void linux_updateGamepad(void) {
     if (gamepad.fd == -1) {
         return;
     }
@@ -195,26 +195,19 @@ void linux_updateGamepad(GameInput* input) {
     }
 }
 
-bool linux_gamepadStartButtonPressed(void) {
+void linux_gamepadMenuButtons(LinuxGamepadMenuButtons* gamepadMenuButtons) {
     if (gamepad.fd == -1) {
-        return false;
+        gamepadMenuButtons->start = false;
+        gamepadMenuButtons->back = false;
+        return;
     }
 
-    bool pressed = gamepad.startButton && gamepad.startButton != gamepad.lastStartButton;
+    gamepadMenuButtons->start = gamepad.startButton && gamepad.startButton != gamepad.lastStartButton;
     gamepad.lastStartButton = gamepad.startButton;
 
-    return pressed;
-}
 
-bool linux_gamepadBackButtonPressed(void) {
-    if (gamepad.fd == -1) {
-        return false;
-    }
-
-    bool pressed = gamepad.backButton && gamepad.backButton != gamepad.lastBackButton;
+    gamepadMenuButtons->back = gamepad.backButton && gamepad.backButton != gamepad.lastBackButton;
     gamepad.lastBackButton = gamepad.backButton;
-
-    return pressed;
 }
 
 void linux_gamepadInput(GameInput* input) {

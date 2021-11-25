@@ -247,8 +247,9 @@ int main(int argc, char const *argv[]) {
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
     linux_detectGamepad();
 
-    XEvent event;
-    XWindowAttributes xWinAtt;
+    XEvent event = { 0 };
+    XWindowAttributes xWinAtt = { 0 };
+    LinuxGamepadMenuButtons gamepadMenuButtons = { 0 };
     uint64_t ticks = 0;
     uint64_t lastTime;
     struct timespec timeSpec;
@@ -299,12 +300,13 @@ int main(int argc, char const *argv[]) {
         }
 
         linux_updateGamepad();
-
-        if (linux_gamepadBackButtonPressed()) {
+        linux_gamepadMenuButtons(&gamepadMenuButtons);
+        
+        if (gamepadMenuButtons.back) {
             running = false;
         }
 
-        if (linux_gamepadStartButtonPressed()) {
+        if (gamepadMenuButtons.start) {
             if (fullScreen) {
                 XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
             } else {
