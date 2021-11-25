@@ -1,5 +1,6 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
+- [ ] Windows audio cleanup
 - [x] Linux audio cleanup
 - [x] Hide mouse cursor
 - [x] Linux: Use XCreateWindow instead of XCreateSimpleWindow?
