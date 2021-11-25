@@ -27,6 +27,8 @@
 void linux_detectGamepad(void);
 void linux_updateGamepad(void);
 void linux_pingGamepad(void);
+bool linux_gamepadStartButtonPressed(void);
+bool linux_gamepadBackButtonPressed(void);
 void linux_gamepadInput(GameInput* input);
 void linux_closeGamepad(void);
 

@@ -300,6 +300,19 @@ int main(int argc, char const *argv[]) {
 
         linux_updateGamepad();
 
+        if (linux_gamepadBackButtonPressed()) {
+            running = false;
+        }
+
+        if (linux_gamepadStartButtonPressed()) {
+            if (fullScreen) {
+                XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
+            } else {
+                XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
+            }
+            fullScreen = !fullScreen;
+        }
+
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
         uint64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
 

@@ -49,7 +49,11 @@ static struct {
     int16_t stickX;
     int16_t stickY;
     bool aButton;
+    bool startButton;
+    bool backButton;
     bool lastAButton;
+    bool lastStartButton;
+    bool lastBackButton;
 } gamepad = {
     .fd = -1
 };
@@ -131,7 +135,13 @@ void linux_detectGamepad(void) {
             }
 
             // Test for thumbstick (ABS_X/ABS_Y) and A button (BTN_A)
-            if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A)) {
+            if (
+                testBit(absBits, ABS_X) && 
+                testBit(absBits, ABS_Y) && 
+                testBit(keyBits, BTN_A) &&
+                testBit(keyBits, BTN_START) &&
+                testBit(keyBits, BTN_SELECT)
+            ) {
                 break;
             }
         
@@ -174,6 +184,8 @@ void linux_updateGamepad(GameInput* input) {
                 case EV_KEY: {
                     switch (event->code) {
                         case BTN_A: gamepad.aButton = event->value; break;
+                        case BTN_START: gamepad.startButton = event->value; break;
+                        case BTN_SELECT: gamepad.backButton = event->value; break;
                     }
                 } break;
             }
@@ -181,6 +193,28 @@ void linux_updateGamepad(GameInput* input) {
     } else if (errno != EWOULDBLOCK && errno != EAGAIN) {
         gamepad.fd = -1;
     }
+}
+
+bool linux_gamepadStartButtonPressed(void) {
+    if (gamepad.fd == -1) {
+        return false;
+    }
+
+    bool pressed = gamepad.startButton && gamepad.startButton != gamepad.lastStartButton;
+    gamepad.lastStartButton = gamepad.startButton;
+
+    return pressed;
+}
+
+bool linux_gamepadBackButtonPressed(void) {
+    if (gamepad.fd == -1) {
+        return false;
+    }
+
+    bool pressed = gamepad.backButton && gamepad.backButton != gamepad.lastBackButton;
+    gamepad.lastBackButton = gamepad.backButton;
+
+    return pressed;
 }
 
 void linux_gamepadInput(GameInput* input) {
