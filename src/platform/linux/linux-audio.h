@@ -25,5 +25,6 @@
 #define _LINUX_AUDIO_H_
 
 bool linux_initAudio(void);
+void linux_closeAudio(void);
 
 #endif

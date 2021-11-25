@@ -213,3 +213,9 @@ void platform_playSound(DataBuffer* sound, bool loop) {
 
     pthread_mutex_unlock(&mixerLock); 
 }
+
+void linux_closeAudio(void) {
+    pthread_cancel(audioThreadHandle);
+    pthread_mutex_destroy(&mixerLock);
+    snd_pcm_close(audioDevice);
+}

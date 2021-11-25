@@ -279,7 +279,7 @@ int main(int argc, char const *argv[]) {
         lastTime = time;
     };
 
-    // Teardown
+    linux_closeAudio();
     XDestroyWindow(display, window);
     XCloseDisplay(display);
 }
