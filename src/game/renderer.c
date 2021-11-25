@@ -27,14 +27,19 @@
 #include "../shared/platform-interface.h"
 #include "../shared/debug.h"
 
-static int32_t windowWidth;
-static int32_t windowHeight;
-static int32_t gameWidth;
-static int32_t gameHeight;
-static int32_t gameScreenOffsetX;
-static int32_t gameScreenOffsetY;
-static int32_t gameScreenWidth;
-static int32_t gameScreenHeight;
+static struct {
+    int32_t width;
+    int32_t height;
+} window;
+
+static struct {
+    int32_t worldWidth;
+    int32_t worldHeight;
+    int32_t displayOffsetX;
+    int32_t displayOffsetY;
+    int32_t displayWidth;
+    int32_t displayHeight;
+} game;
 
 static struct {
     GLuint panelIndex;
@@ -51,9 +56,9 @@ static struct {
     GLuint spriteSheetDimensions;
 } uniforms;
 
-bool renderer_init(int width, int height) {
-    gameWidth = width;
-    gameHeight = height;
+bool renderer_init(int worldWidth, int worldHeight) {
+    game.worldWidth = worldWidth;
+    game.worldHeight = worldHeight;
 
     glEnable(GL_SCISSOR_TEST);
     glEnable(GL_BLEND);
@@ -122,7 +127,7 @@ bool renderer_init(int width, int height) {
     GLuint pixelSizeUniform = glGetUniformLocation(program, "pixelSize");
     GLuint spriteSheetUniform = glGetUniformLocation(program, "spriteSheet");
 
-    glUniform2f(pixelSizeUniform, 2.0f / width, 2.0f / height);
+    glUniform2f(pixelSizeUniform, 2.0f / worldWidth, 2.0f / worldHeight);
     glUniform1i(spriteSheetUniform, 0);
 
     float positions[] = {
@@ -195,31 +200,31 @@ void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t
 }
 
 void renderer_resize(int32_t width, int32_t height) {
-    windowWidth = width;
-    windowHeight = height;
+    window.width = width;
+    window.height = height;
 
-    float aspect = (float) gameWidth / gameHeight;
-    gameScreenWidth = width;
-    gameScreenHeight = (int32_t) (width / aspect);
+    float aspect = (float) game.worldWidth / game.worldHeight;
+    game.displayWidth = width;
+    game.displayHeight = (int32_t) (width / aspect);
 
-    if (gameScreenHeight > height) {
-        gameScreenHeight = height;
-        gameScreenWidth = (int32_t) (aspect * gameScreenHeight);
+    if (game.displayHeight > height) {
+        game.displayHeight = height;
+        game.displayWidth = (int32_t) (aspect * game.displayHeight);
     }
 
-    gameScreenOffsetX = (width - gameScreenWidth) / 2;
-    gameScreenOffsetY = (height - gameScreenHeight) / 2;
+    game.displayOffsetX = (width - game.displayWidth) / 2;
+    game.displayOffsetY = (height - game.displayHeight) / 2;
 
-    glViewport(gameScreenOffsetX, gameScreenOffsetY, gameScreenWidth, gameScreenHeight);
+    glViewport(game.displayOffsetX, game.displayOffsetY, game.displayWidth, game.displayHeight);
 }
 
 void renderer_beforeFrame(void) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glScissor(0, 0, windowWidth, windowHeight);
+    glScissor(0, 0, window.width, window.height);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glScissor(gameScreenOffsetX, gameScreenOffsetY, gameScreenWidth, gameScreenHeight);
+    glScissor(game.displayOffsetX, game.displayOffsetY, game.displayWidth, game.displayHeight);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
