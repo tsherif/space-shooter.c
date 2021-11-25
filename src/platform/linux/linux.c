@@ -254,7 +254,7 @@ int main(int argc, char const *argv[]) {
     struct timespec timeSpec;
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
     lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
-    bool fullScreen = false;
+    bool fullScreen = true;
     bool running = true;
 
     while (running) {
