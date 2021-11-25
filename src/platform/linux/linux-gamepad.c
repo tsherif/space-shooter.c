@@ -21,11 +21,12 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 // Uses the evdev gamepad spec: 
 // - https://www.kernel.org/doc/html/v4.13/input/gamepad.html
 // - https://www.linuxjournal.com/article/6429
-////////////////////////////////////////////////////////////////
+// - https://ourmachinery.com/post/gamepad-implementation-on-linux/
+/////////////////////////////////////////////////////////////////////
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -53,6 +54,7 @@ static struct {
     .fd = -1
 };
 
+// Test single bit in multi-byte array
 static bool testBit(uint8_t* bitField, int32_t bit) {
     int32_t byte = bit / 8;
     int32_t innerBit = bit % 8;
@@ -60,6 +62,7 @@ static bool testBit(uint8_t* bitField, int32_t bit) {
     return( bitField[byte] & (1 << innerBit)) != 0;
 }
 
+// Check string suffix
 static bool endsWith(const char* s, const char* suffix) {
     const char* sp = s;
     int32_t sl = 0;
@@ -104,6 +107,9 @@ void linux_detectGamepad(void) {
     struct dirent* entry = readdir(inputDir);
 
     while (entry) {
+
+        // evdev gamepad file names end with "-event-joystick"
+        // See: https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems
         if (endsWith(entry->d_name, "-event-joystick")) {
             char path[PATH_MAX];
             snprintf(path, PATH_MAX, "%s/%s", INPUT_DIR, entry->d_name);
@@ -113,21 +119,23 @@ void linux_detectGamepad(void) {
                 continue;
             }
 
+            // Get bitfields to test for gamepad capabilities
             uint8_t absBits[(ABS_CNT + 7) / 8] = { 0 };
             if (ioctl(gamepad.fd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits) < 0) {
-                goto NEXT;
+                goto ERROR_FILE_OPENED;
             }
 
             uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
             if (ioctl(gamepad.fd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits) < 0) {
-                goto NEXT;  
+                goto ERROR_FILE_OPENED;  
             }
 
+            // Test for thumbstick (ABS_X/ABS_Y) and A button (BTN_A)
             if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A)) {
                 break;
             }
         
-            NEXT:
+            ERROR_FILE_OPENED:
             close(gamepad.fd);
             gamepad.fd = -1;
         }

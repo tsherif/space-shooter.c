@@ -1,6 +1,8 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
 - [ ] Windows audio cleanup
+- [ ] Start in fullscreen
+- [ ] Full controller support (toggle fullscreen and quit)
 - [x] Linux audio cleanup
 - [x] Hide mouse cursor
 - [x] Linux: Use XCreateWindow instead of XCreateSimpleWindow?

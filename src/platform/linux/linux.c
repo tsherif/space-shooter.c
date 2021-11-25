@@ -63,6 +63,11 @@ typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
 
 int main(int argc, char const *argv[]) {
 
+
+    ////////////////////////////////
+    // Create window
+    ////////////////////////////////
+
     Display* display = XOpenDisplay(NULL);
 
     if (display == NULL) {
@@ -87,7 +92,13 @@ int main(int argc, char const *argv[]) {
         CWEventMask,
         &windowAttributes
     );
+
+    XStoreName(display, window, "space-shooter.c (Linux)");
     
+    /////////////////
+    // Hide cursor
+    /////////////////
+
     char hiddenCursorData[8] = { 0 };
     XColor hiddenCursorColor = { 0 };
     Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, hiddenCursorData, 8, 8, 1, 0, 1);
@@ -95,10 +106,11 @@ int main(int argc, char const *argv[]) {
     XDefineCursor(display, window, hiddenCursor);
     XFreeCursor(display, hiddenCursor);
     XFreePixmap(display, hiddenCursorPixmap);
-
-    XStoreName(display, window, "space-shooter.c (Linux)");
-    XMapWindow(display, window);
     
+    ///////////////////////////
+    // Create OpenGL context
+    ///////////////////////////
+
     int numFBC = 0;
     GLint visualAtt[] = {
         GLX_RENDER_TYPE, GLX_RGBA_BIT, 
@@ -160,6 +172,10 @@ int main(int argc, char const *argv[]) {
         }
     }
 
+    /////////////////////////////////
+    // Set up window manager events
+    /////////////////////////////////
+
     Atom NET_WM_STATE = XInternAtom(display, "_NET_WM_STATE", False);
     Atom NET_WM_STATE_FULLSCREEN = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
     Atom WM_DELETE_WINDOW = XInternAtom(display, "WM_DELETE_WINDOW", False);
@@ -202,9 +218,27 @@ int main(int argc, char const *argv[]) {
         }
     };
 
+    // Start in fullscreen
+    XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
+
+    ////////////////////
+    // Display window
+    ////////////////////
+
+    XMapWindow(display, window);
+
+
+    /////////////////////
+    // Initialize audio
+    /////////////////////
+
     if (!linux_initAudio()) {
         platform_userMessage("Unable to initialize audio.");
     }
+
+    /////////////////////
+    // Start game
+    /////////////////////
 
     if (!game_init()) {
         return 1;
@@ -279,14 +313,15 @@ int main(int argc, char const *argv[]) {
         lastTime = time;
     };
 
+    /////////////////////
+    // Cleanup
+    /////////////////////
+
     linux_closeGamepad();
     linux_closeAudio();
     XDestroyWindow(display, window);
     XCloseDisplay(display);
 }
-
-
-
 
 void platform_getInput(GameInput* input) {
     input->velocity[0] = 0.0f;
