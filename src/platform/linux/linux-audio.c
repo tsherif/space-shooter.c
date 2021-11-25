@@ -44,18 +44,15 @@ typedef struct {
     bool loop;
 } AudioStream;
 
-///////////////////////////////////////////////////
-// Mixer is shared between main and audio threads.
-///////////////////////////////////////////////////
-
 static struct {
-    AudioStream channels[32];
-    int32_t count;
-} mixer;
-
-static snd_pcm_t* audioDevice;
-static pthread_t audioThreadHandle;
-static pthread_mutex_t mixerLock;
+    snd_pcm_t* device;
+    pthread_t thread;
+    struct {
+        AudioStream channels[32];
+        int32_t count;
+        pthread_mutex_t lock;
+    } mixer; // Mixer is shared between main and audio threads.
+} audio;
 
 static void *audioThread(void* args) {
     int16_t mixBuffer[MIX_BUFFER_FRAMES * 2];
@@ -67,16 +64,16 @@ static void *audioThread(void* args) {
             mixBuffer[i] = 0;
         }    
 
-        pthread_mutex_lock(&mixerLock);
+        pthread_mutex_lock(&audio.mixer.lock);
 
-        if (mixer.count > 0) {
+        if (audio.mixer.count > 0) {
 
             //////////////////////////////////////
             // Simple additive mix with clipping.
             //////////////////////////////////////
 
-            for (int32_t i = 0; i < mixer.count; ++i) {
-                AudioStream* channel = mixer.channels + i;
+            for (int32_t i = 0; i < audio.mixer.count; ++i) {
+                AudioStream* channel = audio.mixer.channels + i;
                 int32_t samplesToMix = numSamples;
                 int32_t samplesRemaining = channel->count - channel->cursor;
 
@@ -105,9 +102,9 @@ static void *audioThread(void* args) {
             // Handle streams that have finished.
             //////////////////////////////////////
 
-            int32_t last = mixer.count - 1;
-            for (int32_t i = mixer.count - 1; i >= 0; --i) {
-                AudioStream* channel = mixer.channels + i;
+            int32_t last = audio.mixer.count - 1;
+            for (int32_t i = audio.mixer.count - 1; i >= 0; --i) {
+                AudioStream* channel = audio.mixer.channels + i;
                 if (channel->cursor == channel->count) {
                     if (channel->loop) {
                         channel->cursor = 0;
@@ -117,21 +114,21 @@ static void *audioThread(void* args) {
                         // "Delete" stream by swapping to past the end of the array.
                         //////////////////////////////////////////////////////////////
 
-                        mixer.channels[i].data = mixer.channels[last].data;
-                        mixer.channels[i].count = mixer.channels[last].count;
-                        mixer.channels[i].cursor = mixer.channels[last].cursor;
-                        mixer.channels[i].loop = mixer.channels[last].loop;
+                        audio.mixer.channels[i].data = audio.mixer.channels[last].data;
+                        audio.mixer.channels[i].count = audio.mixer.channels[last].count;
+                        audio.mixer.channels[i].cursor = audio.mixer.channels[last].cursor;
+                        audio.mixer.channels[i].loop = audio.mixer.channels[last].loop;
 
-                        --mixer.count;
+                        --audio.mixer.count;
                     }
                 }
             }
         }
 
-        pthread_mutex_unlock(&mixerLock); 
+        pthread_mutex_unlock(&audio.mixer.lock); 
         
-        if (snd_pcm_writei(audioDevice, mixBuffer, MIX_BUFFER_FRAMES) < 0) {
-            snd_pcm_prepare(audioDevice);
+        if (snd_pcm_writei(audio.device, mixBuffer, MIX_BUFFER_FRAMES) < 0) {
+            snd_pcm_prepare(audio.device);
         }
     }
 
@@ -148,39 +145,39 @@ bool linux_initAudio(void) {
     // - 2k sample (~50ms) buffer size
     /////////////////////////////////////
 
-    if (snd_pcm_open(&audioDevice, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+    if (snd_pcm_open(&audio.device, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
         return false;
     }
 
     snd_pcm_hw_params_t *deviceParams = 0;
     snd_pcm_hw_params_alloca(&deviceParams);
-    snd_pcm_hw_params_any(audioDevice, deviceParams);
+    snd_pcm_hw_params_any(audio.device, deviceParams);
 
-    if (snd_pcm_hw_params_set_access(audioDevice, deviceParams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
+    if (snd_pcm_hw_params_set_access(audio.device, deviceParams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
         return false;   
     }
 
-    if (snd_pcm_hw_params_set_format(audioDevice, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
+    if (snd_pcm_hw_params_set_format(audio.device, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
         return false;   
     }
 
-    if (snd_pcm_hw_params_set_rate(audioDevice, deviceParams, 44100, 0) < 0) {
+    if (snd_pcm_hw_params_set_rate(audio.device, deviceParams, 44100, 0) < 0) {
         return false;   
     }
 
-    if (snd_pcm_hw_params_set_channels(audioDevice, deviceParams, 2) < 0) {
+    if (snd_pcm_hw_params_set_channels(audio.device, deviceParams, 2) < 0) {
         return false;   
     }
 
-    if (snd_pcm_hw_params_set_buffer_size(audioDevice, deviceParams, MIX_BUFFER_FRAMES) < 0) {
+    if (snd_pcm_hw_params_set_buffer_size(audio.device, deviceParams, MIX_BUFFER_FRAMES) < 0) {
         return false;   
     }
 
-    if (snd_pcm_hw_params(audioDevice, deviceParams) < 0) {
+    if (snd_pcm_hw_params(audio.device, deviceParams) < 0) {
         return false;   
     }
 
-    if (pthread_mutex_init(&mixerLock, NULL)) {
+    if (pthread_mutex_init(&audio.mixer.lock, NULL)) {
         return false;
     }
 
@@ -188,7 +185,7 @@ bool linux_initAudio(void) {
     // Create audio thread
     ////////////////////////
     
-    if (pthread_create(&audioThreadHandle, NULL, audioThread, NULL)) {
+    if (pthread_create(&audio.thread, NULL, audioThread, NULL)) {
         return false;
     }
 
@@ -196,26 +193,27 @@ bool linux_initAudio(void) {
 }
 
 void platform_playSound(DataBuffer* sound, bool loop) {
-    if (!audioDevice) {
+    if (!audio.device) {
         return;
     }
 
-    pthread_mutex_lock(&mixerLock);
+    pthread_mutex_lock(&audio.mixer.lock);
 
-    if (mixer.count < MIX_CHANNELS) {
-        mixer.channels[mixer.count].data = (int16_t *) sound->data;
-        mixer.channels[mixer.count].count = sound->size / 2;
-        mixer.channels[mixer.count].cursor = 0;
-        mixer.channels[mixer.count].loop = loop;
+    if (audio.mixer.count < MIX_CHANNELS) {
+        int32_t soundIndex = audio.mixer.count;
+        audio.mixer.channels[soundIndex].data = (int16_t *) sound->data;
+        audio.mixer.channels[soundIndex].count = sound->size / 2;
+        audio.mixer.channels[soundIndex].cursor = 0;
+        audio.mixer.channels[soundIndex].loop = loop;
 
-        ++mixer.count;
+        ++audio.mixer.count;
     }
 
-    pthread_mutex_unlock(&mixerLock); 
+    pthread_mutex_unlock(&audio.mixer.lock); 
 }
 
 void linux_closeAudio(void) {
-    pthread_cancel(audioThreadHandle);
-    pthread_mutex_destroy(&mixerLock);
-    snd_pcm_close(audioDevice);
+    pthread_cancel(audio.thread);
+    pthread_mutex_destroy(&audio.mixer.lock);
+    snd_pcm_close(audio.device);
 }
