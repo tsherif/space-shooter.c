@@ -66,6 +66,7 @@ static bool running = false;
 static bool fullScreen = false;
 static int controllerIndex = -1;
 static bool lastAButton = false;
+static bool mouseInWindow = false;
 
 LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
@@ -79,6 +80,24 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             }
             return 0;
         };
+        case WM_MOUSEMOVE: {
+            if (!mouseInWindow) {
+                ShowCursor(false);
+                TRACKMOUSEEVENT trackMouse = {
+                    .cbSize = sizeof(TRACKMOUSEEVENT),
+                    .dwFlags = TME_LEAVE,
+                    .hwndTrack = window
+                };
+                TrackMouseEvent(&trackMouse);
+                mouseInWindow = true;
+            }
+            return 0;
+        } break;
+        case WM_MOUSELEAVE: {
+            ShowCursor(true);
+            mouseInWindow = false;    
+            return 0;
+        } break;
         case WM_SIZING: {
             if (running) {
                 RECT clientRect;
