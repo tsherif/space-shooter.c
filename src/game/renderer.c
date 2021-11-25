@@ -27,17 +27,6 @@
 #include "../shared/platform-interface.h"
 #include "../shared/debug.h"
 
-static GLuint pixelSizeUniform;
-static GLuint spriteSheetUniform;
-static GLuint panelPixelSizeUniform;
-static GLuint spriteSheetDimensionsUniform;
-
-static GLuint panelIndexBuffer;
-static GLuint pixelOffsetBuffer;
-static GLuint scaleBuffer;
-static GLuint whiteOutBuffer;
-static GLuint alphaBuffer;
-
 static int32_t windowWidth;
 static int32_t windowHeight;
 static int32_t gameWidth;
@@ -46,6 +35,21 @@ static int32_t gameScreenOffsetX;
 static int32_t gameScreenOffsetY;
 static int32_t gameScreenWidth;
 static int32_t gameScreenHeight;
+
+static struct {
+    GLuint panelIndex;
+    GLuint pixelOffset;
+    GLuint scale;
+    GLuint whiteOut;
+    GLuint alpha;
+} buffers;
+
+static struct {
+    GLuint pixelSize;
+    GLuint spriteSheet;
+    GLuint panelPixelSize;
+    GLuint spriteSheetDimensions;
+} uniforms;
 
 bool renderer_init(int width, int height) {
     gameWidth = width;
@@ -113,10 +117,10 @@ bool renderer_init(int width, int height) {
 
     glUseProgram(program);
 
-    pixelSizeUniform = glGetUniformLocation(program, "pixelSize");
-    panelPixelSizeUniform = glGetUniformLocation(program, "panelPixelSize");
-    spriteSheetDimensionsUniform = glGetUniformLocation(program, "spriteSheetDimensions");
-    spriteSheetUniform = glGetUniformLocation(program, "spriteSheet");
+    uniforms.panelPixelSize = glGetUniformLocation(program, "panelPixelSize");
+    uniforms.spriteSheetDimensions = glGetUniformLocation(program, "spriteSheetDimensions");
+    GLuint pixelSizeUniform = glGetUniformLocation(program, "pixelSize");
+    GLuint spriteSheetUniform = glGetUniformLocation(program, "spriteSheet");
 
     glUniform2f(pixelSizeUniform, 2.0f / width, 2.0f / height);
     glUniform1i(spriteSheetUniform, 0);
@@ -141,37 +145,37 @@ bool renderer_init(int width, int height) {
 
     // Instanced attributes
 
-    glGenBuffers(1, &pixelOffsetBuffer);
-    glGenBuffers(1, &pixelOffsetBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, pixelOffsetBuffer);
+    glGenBuffers(1, &buffers.pixelOffset);
+    glGenBuffers(1, &buffers.pixelOffset);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.pixelOffset);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(1, 1);
     glEnableVertexAttribArray(1);
 
-    glGenBuffers(1, &panelIndexBuffer);
-    glGenBuffers(1, &panelIndexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, panelIndexBuffer);
+    glGenBuffers(1, &buffers.panelIndex);
+    glGenBuffers(1, &buffers.panelIndex);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.panelIndex);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(2, 1);
     glEnableVertexAttribArray(2);
 
-    glGenBuffers(1, &scaleBuffer);
-    glGenBuffers(1, &scaleBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, scaleBuffer);
+    glGenBuffers(1, &buffers.scale);
+    glGenBuffers(1, &buffers.scale);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.scale);
     glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(3, 1);
     glEnableVertexAttribArray(3);
 
-    glGenBuffers(1, &alphaBuffer);
-    glGenBuffers(1, &alphaBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, alphaBuffer);
+    glGenBuffers(1, &buffers.alpha);
+    glGenBuffers(1, &buffers.alpha);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.alpha);
     glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(4, 1);
     glEnableVertexAttribArray(4);
 
-    glGenBuffers(1, &whiteOutBuffer);
-    glGenBuffers(1, &whiteOutBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, whiteOutBuffer);
+    glGenBuffers(1, &buffers.whiteOut);
+    glGenBuffers(1, &buffers.whiteOut);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.whiteOut);
     glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(5, 1);
     glEnableVertexAttribArray(5);
@@ -225,22 +229,22 @@ void renderer_draw(RendererList* list) {
     }
 
     glBindTexture(GL_TEXTURE_2D, list->texture);
-    glUniform2fv(panelPixelSizeUniform, 1, list->sprite->panelDims);
-    glUniform2fv(spriteSheetDimensionsUniform, 1, list->sprite->sheetDims);
+    glUniform2fv(uniforms.panelPixelSize, 1, list->sprite->panelDims);
+    glUniform2fv(uniforms.spriteSheetDimensions, 1, list->sprite->sheetDims);
 
-    glBindBuffer(GL_ARRAY_BUFFER, pixelOffsetBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.pixelOffset);
     glBufferData(GL_ARRAY_BUFFER, list->count * 2 * sizeof(float), list->position, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, panelIndexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.panelIndex);
     glBufferData(GL_ARRAY_BUFFER, list->count * 2 * sizeof(float), list->currentSpritePanel, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, scaleBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.scale);
     glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->scale, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, alphaBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.alpha);
     glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->alpha, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, whiteOutBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.whiteOut);
     glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->whiteOut, GL_DYNAMIC_DRAW);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, list->count);
