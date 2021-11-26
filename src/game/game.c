@@ -162,8 +162,6 @@ static struct {
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
 
-#define LEVEL_BUFFER_LENGTH 32 
-static char levelString[LEVEL_BUFFER_LENGTH];
 
 static uint8_t whitePixelData[4] = {255, 255, 255, 255};
 
@@ -174,13 +172,27 @@ static float animationTime = 0.0f;
 //  Per-level state
 //////////////////////////////////
 
-static int32_t level = 1;
-static int32_t levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
-static float smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY;
-static float mediumEnemySpawnProbability = MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY;
-static float largeEnemySpawnProbability = LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY;
-static float levelWarpVy = 0.0f;
-static float starProbabilityMultiplier = 1.0f;
+#define LEVEL_TITLE_LENGTH 32 
+static struct {
+    int32_t level;
+    int32_t scoreThreshold;
+    float smallEnemySpawnProbability;
+    float mediumEnemySpawnProbability;
+    float largeEnemySpawnProbability;
+
+    // For level transitions
+    float starProbabilityMultiplier;
+    float warpVy;
+    char title[LEVEL_TITLE_LENGTH];
+} levelState = {
+    .level = 1,
+    .scoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD,
+    .smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY,
+    .mediumEnemySpawnProbability = MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY,
+    .largeEnemySpawnProbability = LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY,
+    .warpVy = 0.0f,
+    .starProbabilityMultiplier = 1.0f
+};
 
 
 //////////////////////////////////
@@ -211,18 +223,18 @@ static bool loadTexture(const char* fileName, GLuint *texture) {
 //  Level transition helpers
 //////////////////////////////////
 
-static void updateLevelText(void) {
-    snprintf(levelString, LEVEL_BUFFER_LENGTH, "Level %d", level);
+static void updateLevelTitle(void) {
+    snprintf(levelState.title, LEVEL_TITLE_LENGTH, "Level %d", levelState.level);
 }
 
 static void transitionLevel(void) {
     gameState = LEVEL_TRANSITION;
-    if (level > 1) {
-        levelWarpVy = LEVEL_WARP;
-        starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
+    if (levelState.level > 1) {
+        levelState.warpVy = LEVEL_WARP;
+        levelState.starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
     }
     entities.playerBullets.count = 0;
-    updateLevelText();
+    updateLevelTitle();
     events_start(&events_levelTransitionSequence);
 }
 
@@ -341,7 +353,7 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
         float* position = list->position + i * 2;
         float* velocity = list->velocity + i * 2;
         position[0] += velocity[0] * dt;
-        position[1] += (velocity[1] + levelWarpVy) * dt;
+        position[1] += (velocity[1] + levelState.warpVy) * dt;
 
         if (list->whiteOut[i] > 0.0f) {
             list->whiteOut[i] -= dt;
@@ -383,7 +395,7 @@ static void filterDeadEntities(void) {
 }
 
 static void updateStars(float dt) {
-    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * starProbabilityMultiplier * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * levelState.starProbabilityMultiplier * dt) {
         float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&entities.stars, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
@@ -425,7 +437,7 @@ static void updateScoreDisplay() {
 //////////////////////////////////
 
 static void simEnemies(float dt) {
-    if (utils_randomRange(0.0f, 1.0f) < smallEnemySpawnProbability * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < levelState.smallEnemySpawnProbability * dt) {
         entities_spawn(&entities.smallEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
@@ -434,7 +446,7 @@ static void simEnemies(float dt) {
         }); 
     }
 
-    if (utils_randomRange(0.0f, 1.0f) < mediumEnemySpawnProbability * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < levelState.mediumEnemySpawnProbability * dt) {
         entities_spawn(&entities.mediumEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
@@ -443,7 +455,7 @@ static void simEnemies(float dt) {
         });
     }
 
-    if (utils_randomRange(0.0f, 1.0f) < largeEnemySpawnProbability * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < levelState.largeEnemySpawnProbability * dt) {
         entities_spawn(&entities.largeEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
@@ -704,7 +716,7 @@ static void levelTransition(float dt) {
 
 
     if (events_on(&events_levelTransitionSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&entities.text, levelString, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, levelState.title, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 62.0f,
             .y = 72.0f, 
             .scale = 0.75f
@@ -722,8 +734,8 @@ static void levelTransition(float dt) {
 
     if (events_levelTransitionSequence.complete) {
         entities.text.count = 0;
-        levelWarpVy = 0.0f;
-        starProbabilityMultiplier = 1.0f;
+        levelState.warpVy = 0.0f;
+        levelState.starProbabilityMultiplier = 1.0f;
         gameState = MAIN_GAME;
     }
 
@@ -757,12 +769,12 @@ static void mainGame(float dt) {
             simPlayer(dt);           
         }
 
-        if (player->score >= levelScoreThreshold) {
-            ++level;
-            levelScoreThreshold *= 2;
-            smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-            mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
-            largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+        if (player->score >= levelState.scoreThreshold) {
+            ++levelState.level;
+            levelState.scoreThreshold *= 2;
+            levelState.smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+            levelState.mediumEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
+            levelState.largeEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
             transitionLevel();
         }
     } else {
@@ -818,11 +830,11 @@ static void gameOver(float dt) {
         entities.mediumEnemies.count = 0;
         entities.largeEnemies.count = 0;
         entities.enemyBullets.count = 0;
-        level = 1;
-        levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
-        smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY;
-        mediumEnemySpawnProbability = MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY;
-        largeEnemySpawnProbability = LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY;
+        levelState.level = 1;
+        levelState.scoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
+        levelState.smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY;
+        levelState.mediumEnemySpawnProbability = MEDIUM_ENEMY_INITIAL_SPAWN_PROBABILITY;
+        levelState.largeEnemySpawnProbability = LARGE_ENEMY_INITIAL_SPAWN_PROBABILITY;
         events_stop(&events_gameOverSequence);
         events_stop(&events_gameOverRestartSequence);
         transitionLevel();
@@ -914,7 +926,7 @@ bool game_init(void) {
 
 
     utils_uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
-    updateLevelText();
+    updateLevelTitle();
 
     events_start(&events_titleControlSequence);
 
