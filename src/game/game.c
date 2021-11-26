@@ -680,6 +680,7 @@ static void titleScreen(float dt) {
     }
 
     updateAnimations();
+    filterDeadEntities();
 }
 
 static void levelTransition(float dt) {
@@ -713,6 +714,7 @@ static void levelTransition(float dt) {
 
     updateScoreDisplay();
     updateAnimations();
+    filterDeadEntities();
 }
 
 static void mainGame(float dt) {
