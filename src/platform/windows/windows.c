@@ -57,13 +57,6 @@ static struct {
     bool keyboard;
 } gamepad;
 
-static struct {
-    bool toggleFullscreen;
-    bool quit;
-    bool lastToggleFullscreen;
-    bool lastQuit;
-} menuButtons;
-
 static int32_t windowWidth = INITIAL_WINDOW_WIDTH;
 static int32_t windowHeight = INITIAL_WINDOW_HEIGHT;
 static int32_t preFullscreenWindowWidth = INITIAL_WINDOW_WIDTH;
@@ -304,6 +297,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     // Start render and message loop
     //////////////////////////////////
 
+    struct {
+        bool toggleFullscreen;
+        bool quit;
+        bool lastToggleFullscreen;
+        bool lastQuit;
+    } systemInput = { 0 };
     MSG message = { 0 };
     LARGE_INTEGER lastPerfCount, tickFrequency;
     uint64_t ticks = 0;
@@ -338,17 +337,17 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             gamepad.keyboard = false;
         }
 
-        menuButtons.toggleFullscreen = gamepad.startButton;
-        if (menuButtons.toggleFullscreen && !menuButtons.lastToggleFullscreen) {
+        systemInput.toggleFullscreen = gamepad.startButton;
+        if (systemInput.toggleFullscreen && !systemInput.lastToggleFullscreen) {
             toggleFullscreen(window);
         }
-        menuButtons.lastToggleFullscreen = menuButtons.toggleFullscreen;
+        systemInput.lastToggleFullscreen = systemInput.toggleFullscreen;
 
-        menuButtons.quit = gamepad.backButton;
-        if (menuButtons.quit && !menuButtons.lastQuit) {
+        systemInput.quit = gamepad.backButton;
+        if (systemInput.quit && !systemInput.lastQuit) {
             running = false;
         }
-        menuButtons.lastQuit = menuButtons.quit;
+        systemInput.lastQuit = systemInput.quit;
 
         LARGE_INTEGER perfCount;
         QueryPerformanceCounter(&perfCount);
