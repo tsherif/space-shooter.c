@@ -241,6 +241,12 @@ int main(int argc, char const *argv[]) {
     linux_detectGamepad();
 
     struct {
+        bool left;
+        bool right;
+        bool up;
+        bool down;
+    } keyboardDirections = { 0 };
+    struct {
         bool toggleFullscreen;
         bool quit;
         bool lastToggleFullscreen;
@@ -274,25 +280,29 @@ int main(int argc, char const *argv[]) {
             KeySym key = XLookupKeysym(&event.xkey, 0);
 
             switch (key) {
-                case XK_Left:
-                case XK_Right: {
-                    if (down) {
-                        gamepad.stickX = key == XK_Left ? -1.0f : 1.0f;
-                    } else {
-                        gamepad.stickX = 0.0f;
-                    }
-                } break;
-                case XK_Up: 
-                case XK_Down: {
-                    if (down) {
-                        gamepad.stickY = key == XK_Down ? -1.0f : 1.0f;
-                    } else {
-                        gamepad.stickY = 0.0f;
-                    }
-                } break;
+                case XK_Left: keyboardDirections.left = down; break;
+                case XK_Right: keyboardDirections.right = down; break;
+                case XK_Up: keyboardDirections.up = down; break;
+                case XK_Down: keyboardDirections.down = down; break;
                 case XK_space: gamepad.aButton = down; break;
                 case XK_Escape: gamepad.backButton = down; break;
                 case XK_f: gamepad.startButton = down; break;
+            }
+
+            if (keyboardDirections.left) {
+                gamepad.stickX = -1.0f;
+            } else if (keyboardDirections.right) {
+                gamepad.stickX = 1.0f;
+            } else {
+                gamepad.stickX = 0.0f;
+            }
+
+            if (keyboardDirections.down) {
+                gamepad.stickY = -1.0f;
+            } else if (keyboardDirections.up) {
+                gamepad.stickY = 1.0f;
+            } else {
+                gamepad.stickY = 0.0f;
             }
 
             gamepad.keyboard = true;
