@@ -49,6 +49,22 @@
 #define INITIAL_WINDOW_HEIGHT 600
 
 static struct {
+    int32_t width;
+    int32_t height;
+    int32_t preFullscreenWidth;
+    int32_t preFullscreenHeight;
+    bool fullscreen;
+    bool mouseHovering;
+} windowState = {
+    .width = INITIAL_WINDOW_WIDTH,
+    .height = INITIAL_WINDOW_HEIGHT,
+    .preFullscreenWidth = INITIAL_WINDOW_WIDTH,
+    .preFullscreenHeight = INITIAL_WINDOW_HEIGHT,
+    .fullscreen = true,
+    .mouseHovering = false
+};
+
+static struct {
     float stickX;
     float stickY;
     bool aButton;
@@ -57,27 +73,19 @@ static struct {
     bool keyboard;
 } gamepad;
 
-static int32_t windowWidth = INITIAL_WINDOW_WIDTH;
-static int32_t windowHeight = INITIAL_WINDOW_HEIGHT;
-static int32_t preFullscreenWindowWidth = INITIAL_WINDOW_WIDTH;
-static int32_t preFullscreenWindowHeight = INITIAL_WINDOW_HEIGHT;
 static bool running = false;
-static bool fullscreen = true;
-static int controllerIndex = -1;
-static bool lastAButton = false;
-static bool mouseInWindow = false;
 
 void toggleFullscreen(HWND window) {
-    fullscreen = !fullscreen;
+    windowState.fullscreen = !windowState.fullscreen;
     int  x = 100;
     int  y = 100;
-    int  width = preFullscreenWindowWidth;
-    int  height = preFullscreenWindowHeight;
+    int  width = windowState.preFullscreenWidth;
+    int  height = windowState.preFullscreenHeight;
     UINT flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
     DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-    if (fullscreen) {
-        preFullscreenWindowWidth = windowWidth;
-        preFullscreenWindowHeight = windowHeight;
+    if (windowState.fullscreen) {
+        windowState.preFullscreenWidth = windowState.width;
+        windowState.preFullscreenHeight = windowState.height;
         HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
         MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
         GetMonitorInfo(monitor, &monitorInfo);
@@ -146,19 +154,21 @@ void processXinputState(XINPUT_STATE* xinputState) {
 }
 
 LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (!running) {
+        return DefWindowProc(window, message, wParam, lParam);
+    }
+
     switch (message) {
         case WM_SIZE: {
-            if (running) {
-                RECT clientRect;
-                GetClientRect(window, &clientRect);
-                windowWidth = clientRect.right - clientRect.left;
-                windowHeight = clientRect.bottom - clientRect.top;
-                game_resize(windowWidth, windowHeight);
-            }
+            RECT clientRect;
+            GetClientRect(window, &clientRect);
+            windowState.width = clientRect.right - clientRect.left;
+            windowState.height = clientRect.bottom - clientRect.top;
+            game_resize(windowState.width, windowState.height);
             return 0;
         };
         case WM_MOUSEMOVE: {
-            if (!mouseInWindow) {
+            if (!windowState.mouseHovering) {
                 ShowCursor(false);
                 TRACKMOUSEEVENT trackMouse = {
                     .cbSize = sizeof(TRACKMOUSEEVENT),
@@ -166,32 +176,28 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                     .hwndTrack = window
                 };
                 TrackMouseEvent(&trackMouse);
-                mouseInWindow = true;
+                windowState.mouseHovering = true;
             }
             return 0;
         } break;
         case WM_MOUSELEAVE: {
             ShowCursor(true);
-            mouseInWindow = false;    
+            windowState.mouseHovering = false;    
             return 0;
         } break;
         case WM_SIZING: {
-            if (running) {
-                RECT clientRect;
-                GetClientRect(window, &clientRect); 
-                windowWidth = clientRect.right - clientRect.left;
-                windowHeight = clientRect.bottom - clientRect.top;
-                game_resize(windowWidth, windowHeight);
-            }
+            RECT clientRect;
+            GetClientRect(window, &clientRect); 
+            windowState.width = clientRect.right - clientRect.left;
+            windowState.height = clientRect.bottom - clientRect.top;
+            game_resize(windowState.width, windowState.height);
             return 0;
         } break;
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC deviceContext = BeginPaint(window, &ps);
-            if (running) {
-                game_draw();
-                SwapBuffers(deviceContext);
-            }
+            game_draw();
+            SwapBuffers(deviceContext);
             EndPaint(window, &ps);
             return 0;
         } break;
@@ -262,6 +268,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     }
 
     XINPUT_STATE xinputState;
+    int32_t controllerIndex = -1;
+
 
     for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
         if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
@@ -281,9 +289,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     RECT clientRect;
     GetClientRect(window, &clientRect); 
-    windowWidth = clientRect.right - clientRect.left;
-    windowHeight = clientRect.bottom - clientRect.top;
-    game_resize(windowWidth, windowHeight);
+    windowState.width = clientRect.right - clientRect.left;
+    windowState.height = clientRect.bottom - clientRect.top;
+    game_resize(windowState.width, windowState.height);
 
     ///////////////////
     // Display window
