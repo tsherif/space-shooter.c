@@ -135,14 +135,6 @@ static struct {
 };
 
 static struct {
-    DataBuffer music;
-    DataBuffer playerBullet;
-    DataBuffer enemyBullet;
-    DataBuffer explosion;
-    DataBuffer enemyHit;
-} sounds;
-
-static struct {
     Player player;
     EntitiesList smallEnemies;
     EntitiesList mediumEnemies;
@@ -166,11 +158,18 @@ static struct {
     .lives = { .sprite = &sprites_player }
 };
 
-static uint8_t whitePixelData[4] = {255, 255, 255, 255};
-
-//////////////////////////////////
-//  Per-level state
-//////////////////////////////////
+static struct {
+    struct {
+        DataBuffer music;
+        DataBuffer playerBullet;
+        DataBuffer enemyBullet;
+        DataBuffer explosion;
+        DataBuffer enemyHit;
+    } sounds;
+    uint8_t whitePixel[4];
+} gameData = {
+    .whitePixel = {255, 255, 255, 255}
+};
 
 #define LEVEL_TITLE_LENGTH 32 
 static struct {
@@ -255,7 +254,7 @@ static void firePlayerBullet(float x, float y) {
         .y = y, 
         .vy = PLAYER_BULLET_VELOCITY
     });
-    platform_playSound(&sounds.playerBullet, false);
+    platform_playSound(&gameData.sounds.playerBullet, false);
     entities.player.bulletThrottle = PLAYER_BULLET_THROTTLE;
 }
 
@@ -288,11 +287,11 @@ static bool checkPlayerBulletCollision(
                     .x = position[0] + explosionXOffset, 
                     .y = position[1] + explosionYOffset
                 });
-                platform_playSound(&sounds.explosion, false);
+                platform_playSound(&gameData.sounds.explosion, false);
                 enemies->dead[i] = true;
                 entities.player.score += points;
             } else {
-                platform_playSound(&sounds.enemyHit, false);
+                platform_playSound(&gameData.sounds.enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
             }
         }    
@@ -341,7 +340,7 @@ static void fireEnemyBullet(float x, float y) {
         .vy = (dy / d) * ENEMY_BULLET_SPEED
     });
 
-    platform_playSound(&sounds.enemyBullet, false);
+    platform_playSound(&gameData.sounds.enemyBullet, false);
 }
 
 //////////////////////////////////
@@ -590,7 +589,7 @@ static void simPlayer(float dt) {
                 .y = player->position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
             });
 
-            platform_playSound(&sounds.explosion, false);
+            platform_playSound(&gameData.sounds.explosion, false);
             player->position[0] = GAME_WIDTH / 2 - player->sprite->panelDims[0] / 2;
             player->position[1] = GAME_HEIGHT - player->sprite->panelDims[0] * 3.0f;
             player->deadTimer = PLAYER_DEAD_TIME;
@@ -889,11 +888,11 @@ bool game_init(void) {
     }
 
     if (
-        !loadSound("assets/audio/music.wav", &sounds.music) ||
-        !loadSound("assets/audio/Laser_002.wav", &sounds.playerBullet) ||
-        !loadSound("assets/audio/Hit_Hurt2.wav", &sounds.enemyBullet) ||
-        !loadSound("assets/audio/Explode1.wav", &sounds.explosion) ||
-        !loadSound("assets/audio/Jump1.wav", &sounds.enemyHit)
+        !loadSound("assets/audio/music.wav", &gameData.sounds.music) ||
+        !loadSound("assets/audio/Laser_002.wav", &gameData.sounds.playerBullet) ||
+        !loadSound("assets/audio/Hit_Hurt2.wav", &gameData.sounds.enemyBullet) ||
+        !loadSound("assets/audio/Explode1.wav", &gameData.sounds.explosion) ||
+        !loadSound("assets/audio/Jump1.wav", &gameData.sounds.enemyHit)
     ) {
         platform_userMessage("Unable to load all audio.");
     }
@@ -902,10 +901,10 @@ bool game_init(void) {
     entities.lives.texture = entities.player.texture;
     entities.enemyBullets.texture = entities.playerBullets.texture;
 
-    renderer_initTexture(&entities.stars.texture, whitePixelData, 1, 1);
+    renderer_initTexture(&entities.stars.texture, gameData.whitePixel, 1, 1);
 
     // Init game
-    platform_playSound(&sounds.music, true);
+    platform_playSound(&gameData.sounds.music, true);
 
     entities_spawn(&entities.player.entity, & (EntitiesInitOptions) {
         .x = (GAME_WIDTH - entities.player.sprite->panelDims[0]) / 2,

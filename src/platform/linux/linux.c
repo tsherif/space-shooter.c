@@ -56,7 +56,6 @@ typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
 
 int main(int argc, char const *argv[]) {
 
-
     ////////////////////////////////
     // Create window
     ////////////////////////////////

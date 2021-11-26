@@ -82,7 +82,7 @@ static struct {
 
 static bool running = false;
 
-void toggleFullscreen(HWND window) {
+static void toggleFullscreen(HWND window) {
     windowState.fullscreen = !windowState.fullscreen;
     int  x = 100;
     int  y = 100;
@@ -115,7 +115,7 @@ void toggleFullscreen(HWND window) {
     );
 }
 
-void processXinputState(XINPUT_STATE* xinputState) {
+static void processXinputState(XINPUT_STATE* xinputState) {
     bool gamepadHasInput = false;
     float stickX = 0.0f;
     float stickY = 0.0f;
@@ -160,7 +160,7 @@ void processXinputState(XINPUT_STATE* xinputState) {
     }
 }
 
-LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     if (!running) {
         return DefWindowProc(window, message, wParam, lParam);
     }

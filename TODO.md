@@ -1,5 +1,5 @@
-- [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
+- [x] Clean up globals 
 - [x] Fix keyboard input so pressing two direction keys at the same time works
 - [x] Switch instruction text based on whether keyboard or controller was last used
 - [x] Start in fullscreen

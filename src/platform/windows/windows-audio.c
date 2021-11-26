@@ -54,7 +54,6 @@ typedef struct {
 } Channel;
 
 #define MAX_CHANNELS 32
-#define MAX_SOUNDS 32
 
 void OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
     Channel* channel = (Channel*) pBufferContext;
@@ -72,10 +71,8 @@ static struct {
     IXAudio2* xaudio;
     IXAudio2MasteringVoice* xaudioMasterVoice;
     Channel channels[MAX_CHANNELS];
-    DataBuffer sounds[MAX_SOUNDS];
-    size_t numSounds;
     IXAudio2VoiceCallback callbacks;
-} audioEngine = {
+} audio = {
     .callbacks = {
         .lpVtbl = &(IXAudio2VoiceCallbackVtbl) {
             .OnStreamEnd = OnStreamEnd,
@@ -96,15 +93,15 @@ bool windows_initAudio(void) {
         return false;
     }
 
-    comResult = XAudio2Create(&audioEngine.xaudio, 0, XAUDIO2_DEFAULT_PROCESSOR );
+    comResult = XAudio2Create(&audio.xaudio, 0, XAUDIO2_DEFAULT_PROCESSOR );
 
     if (FAILED(comResult)) {
         return false;
     }
 
     comResult = IXAudio2_CreateMasteringVoice(
-        audioEngine.xaudio,
-        &audioEngine.xaudioMasterVoice,
+        audio.xaudio,
+        &audio.xaudioMasterVoice,
         AUDIO_CHANNELS,
         AUDIO_SAMPLE_RATE,
         0,
@@ -118,16 +115,16 @@ bool windows_initAudio(void) {
     }
 
     for (int i = 0; i < MAX_CHANNELS; ++i) {
-        audioEngine.channels[i].buffer.Flags = XAUDIO2_END_OF_STREAM;
-        audioEngine.channels[i].buffer.pContext = audioEngine.channels + i;
+        audio.channels[i].buffer.Flags = XAUDIO2_END_OF_STREAM;
+        audio.channels[i].buffer.pContext = audio.channels + i;
 
         comResult = IXAudio2_CreateSourceVoice(
-            audioEngine.xaudio,
-            &audioEngine.channels[i].voice,
+            audio.xaudio,
+            &audio.channels[i].voice,
             &AUDIO_SOURCE_FORMAT,
             0,
             XAUDIO2_DEFAULT_FREQ_RATIO,
-            &audioEngine.callbacks,
+            &audio.callbacks,
             NULL,
             NULL
         );
@@ -141,26 +138,26 @@ bool windows_initAudio(void) {
 }
 
 void platform_playSound(DataBuffer* sound, bool loop) {
-    if (!audioEngine.xaudio) {
+    if (!audio.xaudio) {
         return;
     }
 
     for (int i = 0; i < MAX_CHANNELS; ++i) {
-        if (!audioEngine.channels[i].inUse) {
-            XAUDIO2_BUFFER* buffer = &audioEngine.channels[i].buffer;
+        if (!audio.channels[i].inUse) {
+            XAUDIO2_BUFFER* buffer = &audio.channels[i].buffer;
             buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
             buffer->AudioBytes = sound->size;
             buffer->pAudioData = sound->data;
-            IXAudio2SourceVoice_Start(audioEngine.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
-            IXAudio2SourceVoice_SubmitSourceBuffer(audioEngine.channels[i].voice, buffer, NULL);
-            audioEngine.channels[i].inUse = true;
+            IXAudio2SourceVoice_Start(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
+            IXAudio2SourceVoice_SubmitSourceBuffer(audio.channels[i].voice, buffer, NULL);
+            audio.channels[i].inUse = true;
             break;
         }
     }
 }
 
 void windows_closeAudio(void) {
-    IXAudio2_Release(audioEngine.xaudio);
+    IXAudio2_Release(audio.xaudio);
     CoUninitialize();
 }
 
