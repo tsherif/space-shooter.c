@@ -282,8 +282,8 @@ int main(int argc, char const *argv[]) {
             switch (key) {
                 case XK_Left: keyboardDirections.left = down; break;
                 case XK_Right: keyboardDirections.right = down; break;
-                case XK_Up: keyboardDirections.up = down; break;
                 case XK_Down: keyboardDirections.down = down; break;
+                case XK_Up: keyboardDirections.up = down; break;
                 case XK_space: gamepad.aButton = down; break;
                 case XK_Escape: gamepad.backButton = down; break;
                 case XK_f: gamepad.startButton = down; break;

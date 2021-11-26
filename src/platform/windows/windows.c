@@ -73,6 +73,13 @@ static struct {
     bool keyboard;
 } gamepad;
 
+static struct {
+    bool left;
+    bool right;
+    bool up;
+    bool down;
+} keyboardDirections;
+
 static bool running = false;
 
 void toggleFullscreen(HWND window) {
@@ -203,34 +210,33 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         } break;
         case WM_KEYDOWN:
         case WM_KEYUP: {
-            bool isDown = (lParam & (1 << 31)) == 0;
+            bool down = (lParam & (1 << 31)) == 0;
             switch (wParam) {
-                case VK_LEFT:
-                case VK_RIGHT: {
-                    if (isDown) {
-                        gamepad.stickX = wParam == VK_LEFT ? -1.0f : 1.0f;
-                    } else {
-                        gamepad.stickX = 0.0f;
-                    }
-                } break;
-                case VK_DOWN:
-                case VK_UP: {
-                    if (isDown) {
-                        gamepad.stickY = wParam == VK_DOWN ? -1.0f : 1.0f;
-                    } else {
-                        gamepad.stickY = 0.0f;
-                    }
-                } break;
-                case VK_SPACE: {
-                    gamepad.aButton = isDown;
-                } break;
-                case VK_ESCAPE: {
-                    gamepad.backButton = isDown;
-                } break;
-                case 'F': {
-                    gamepad.startButton = isDown;
-                } break;
+                case VK_LEFT: keyboardDirections.left = down; break;
+                case VK_RIGHT: keyboardDirections.right = down; break;
+                case VK_DOWN: keyboardDirections.down = down; break;
+                case VK_UP: keyboardDirections.up = down; break; 
+                case VK_SPACE: gamepad.aButton = down; break;
+                case VK_ESCAPE: gamepad.backButton = down; break;
+                case 'F': gamepad.startButton = down; break;
             }
+
+            if (keyboardDirections.left) {
+                gamepad.stickX = -1.0f;
+            } else if (keyboardDirections.right) {
+                gamepad.stickX = 1.0f;
+            } else {
+                gamepad.stickX = 0.0f;
+            }
+
+            if (keyboardDirections.down) {
+                gamepad.stickY = -1.0f;
+            } else if (keyboardDirections.up) {
+                gamepad.stickY = 1.0f;
+            } else {
+                gamepad.stickY = 0.0f;
+            }
+
             gamepad.keyboard = true;
             return 0;
         } break;
@@ -341,7 +347,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             processXinputState(&xinputState);
         } else {
             controllerIndex = -1;
-            gamepad.keyboard = false;
+            gamepad.keyboard = true;
         }
 
         systemInput.toggleFullscreen = gamepad.startButton;
