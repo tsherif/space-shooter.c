@@ -1,5 +1,6 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
+- [ ] Switch controller text based on whether keyboard or controller was last used.
 - [x] Start in fullscreen
 - [x] Full controller support (toggle fullscreen and quit)
 - [x] Windows audio cleanup
