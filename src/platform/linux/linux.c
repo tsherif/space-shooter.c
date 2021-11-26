@@ -99,9 +99,9 @@ int main(int argc, char const *argv[]) {
     // Hide cursor
     /////////////////
 
-    char hiddenCursorData[8] = { 0 };
+    char hiddenCursorData = 0;
     XColor hiddenCursorColor = { 0 };
-    Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, hiddenCursorData, 8, 8, 1, 0, 1);
+    Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, &hiddenCursorData, 1, 1, 1, 0, 1);
     Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCursorPixmap, &hiddenCursorColor, &hiddenCursorColor, 0, 0);
     XDefineCursor(display, window, hiddenCursor);
     XFreeCursor(display, hiddenCursor);
