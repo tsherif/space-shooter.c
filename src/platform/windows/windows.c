@@ -270,7 +270,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     XINPUT_STATE xinputState;
     int32_t controllerIndex = -1;
 
-
     for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
         if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
             controllerIndex = i;

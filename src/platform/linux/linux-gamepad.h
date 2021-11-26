@@ -28,15 +28,17 @@
 #include "../../shared/platform-interface.h"
 
 typedef struct {
-    bool start;
-    bool back;
-} LinuxGamepadMenuButtons;
+    int16_t stickX;
+    int16_t stickY;
+    bool aButton;
+    bool startButton;
+    bool backButton;
+    bool keyboard;
+} LinuxGamepad;
 
 void linux_detectGamepad(void);
-void linux_updateGamepad(void);
+void linux_updateGamepad(LinuxGamepad* gamepad);
 void linux_pingGamepad(void);
-void linux_gamepadMenuButtons(LinuxGamepadMenuButtons* gamepadMenuButtons);
-void linux_gamepadInput(GameInput* input);
 void linux_closeGamepad(void);
 
 #endif

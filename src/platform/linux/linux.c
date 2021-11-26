@@ -49,14 +49,7 @@
 #define _NET_WM_STATE_ADD    1
 #define _NET_WM_STATE_TOGGLE 2
 
-static struct {
-    bool left;
-    bool right;
-    bool up;
-    bool down;
-    bool space;
-    bool lastSpace;
-} keyboard;
+static LinuxGamepad gamepad;
 
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
@@ -247,9 +240,14 @@ int main(int argc, char const *argv[]) {
     game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
     linux_detectGamepad();
 
+    struct {
+        bool toggleFullscreen;
+        bool quit;
+        bool lastToggleFullscreen;
+        bool lastQuit;
+    } systemInput = { 0 };
     XEvent event = { 0 };
     XWindowAttributes xWinAtt = { 0 };
-    LinuxGamepadMenuButtons gamepadMenuButtons = { 0 };
     uint64_t ticks = 0;
     uint64_t lastTime;
     struct timespec timeSpec;
@@ -276,37 +274,38 @@ int main(int argc, char const *argv[]) {
             KeySym key = XLookupKeysym(&event.xkey, 0);
 
             switch (key) {
-                case XK_Up: keyboard.up = down; break;
-                case XK_Down: keyboard.down = down; break;
-                case XK_Left: keyboard.left = down; break;
-                case XK_Right: keyboard.right = down; break;
-                case XK_space: keyboard.space = down; break;
-                case XK_Escape: running = false; break;
-                case XK_f: {
+                case XK_Left:
+                case XK_Right: {
                     if (down) {
-                        if (fullscreen) {
-                            XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
-                        } else {
-                            XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
-                        }
-                        fullscreen = !fullscreen;
+                        gamepad.stickX = key == XK_Left ? -1.0f : 1.0f;
+                    } else {
+                        gamepad.stickX = 0.0f;
                     }
                 } break;
+                case XK_Up: 
+                case XK_Down: {
+                    if (down) {
+                        gamepad.stickY = key == XK_Down ? -1.0f : 1.0f;
+                    } else {
+                        gamepad.stickY = 0.0f;
+                    }
+                } break;
+                case XK_space: gamepad.aButton = down; break;
+                case XK_Escape: gamepad.backButton = down; break;
+                case XK_f: gamepad.startButton = down; break;
             }
+
+            gamepad.keyboard = true;
         }
 
         if (ticks % 200 == 0) {
             linux_pingGamepad();
         }
 
-        linux_updateGamepad();
-        linux_gamepadMenuButtons(&gamepadMenuButtons);
+        linux_updateGamepad(&gamepad);
         
-        if (gamepadMenuButtons.back) {
-            running = false;
-        }
-
-        if (gamepadMenuButtons.start) {
+        systemInput.toggleFullscreen = gamepad.startButton;
+        if (systemInput.toggleFullscreen && !systemInput.lastToggleFullscreen) {
             if (fullscreen) {
                 XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
             } else {
@@ -314,6 +313,13 @@ int main(int argc, char const *argv[]) {
             }
             fullscreen = !fullscreen;
         }
+        systemInput.lastToggleFullscreen = systemInput.toggleFullscreen;
+
+        systemInput.quit = gamepad.backButton;
+        if (systemInput.quit && !systemInput.lastQuit) {
+            running = false;
+        }
+        systemInput.lastQuit = systemInput.quit;
 
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
         uint64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
@@ -339,28 +345,11 @@ int main(int argc, char const *argv[]) {
 }
 
 void platform_getInput(GameInput* input) {
-    input->velocity[0] = 0.0f;
-    input->velocity[1] = 0.0f;
-    input->shoot = false;
-
-    linux_gamepadInput(input);
-
-    if (keyboard.left) {
-        input->velocity[0] = -1.0f;
-    } else if (keyboard.right) {
-        input->velocity[0] = 1.0f;
-    }
-
-    if (keyboard.up) {
-        input->velocity[1] = 1.0f;
-    } else if (keyboard.down) {
-        input->velocity[1] = -1.0f;
-    }
-
-    if (keyboard.space && !keyboard.lastSpace) {
-        input->shoot = true;
-    }
-    keyboard.lastSpace = keyboard.space;
+    input->lastShoot = input->shoot;
+    input->velocity[0] = gamepad.stickX;
+    input->velocity[1] = gamepad.stickY;
+    input->shoot = gamepad.aButton;
+    input->keyboard = gamepad.keyboard;
 }
 
 void platform_debugLog(const char* message) {
