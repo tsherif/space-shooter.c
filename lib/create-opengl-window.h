@@ -39,6 +39,7 @@ typedef struct {
 	int width;
 	int height;
     bool vsync;
+    DWORD windowStyle;
 } CreateOpenGLWindowArgs;
 
 HWND createOpenGLWindow(CreateOpenGLWindowArgs* args);

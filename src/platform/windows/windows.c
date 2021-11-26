@@ -74,7 +74,7 @@ static int32_t windowHeight = INITIAL_WINDOW_HEIGHT;
 static int32_t preFullscreenWindowWidth = INITIAL_WINDOW_WIDTH;
 static int32_t preFullscreenWindowHeight = INITIAL_WINDOW_HEIGHT;
 static bool running = false;
-static bool fullscreen = false;
+static bool fullscreen = true;
 static int controllerIndex = -1;
 static bool lastAButton = false;
 static bool mouseInWindow = false;
@@ -207,8 +207,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = winProc,
-        .width = INITIAL_WINDOW_WIDTH,
-        .height = INITIAL_WINDOW_HEIGHT,
         .vsync = true
     });
 
@@ -245,9 +243,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         return 1;
     }
 
-    // Start in fullscreen
-    toggleFullscreen(window);
-
     RECT clientRect;
     GetClientRect(window, &clientRect); 
     windowWidth = clientRect.right - clientRect.left;
@@ -260,6 +255,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     ShowWindow(window, showWindow);
     HDC deviceContext = GetDC(window);
+
 
     //////////////////////////////////
     // Start render and message loop
