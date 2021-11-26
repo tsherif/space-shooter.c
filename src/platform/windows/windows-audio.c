@@ -158,3 +158,9 @@ void platform_playSound(DataBuffer* sound, bool loop) {
         }
     }
 }
+
+void windows_closeAudio(void) {
+    IXAudio2_Release(audioEngine.xaudio);
+    CoUninitialize();
+}
+

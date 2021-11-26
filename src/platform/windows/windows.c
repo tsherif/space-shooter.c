@@ -293,6 +293,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         ++ticks;
     }
 
+    windows_closeAudio();
+
     return (int) message.wParam;
 }
 

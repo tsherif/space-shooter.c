@@ -25,5 +25,6 @@
 #define _WINDOWS_AUDIO_H_
 
 bool windows_initAudio(void);
+void windows_closeAudio(void);
 
 #endif
