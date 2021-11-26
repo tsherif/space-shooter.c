@@ -473,7 +473,7 @@ static void simPlayer(float dt) {
     player.velocity[0] = PLAYER_VELOCITY * input.velocity[0];
     player.velocity[1] = -PLAYER_VELOCITY * input.velocity[1];
 
-    if (input.shoot) {
+    if (input.shoot && !input.lastShoot) {
         firePlayerBullet(player.position[0] + SPRITES_PLAYER_BULLET_X_OFFSET, player.position[1] + SPRITES_PLAYER_BULLET_Y_OFFSET);
     }
 

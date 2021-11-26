@@ -54,7 +54,6 @@ static struct {
     bool up;
     bool down;
     bool space;
-    bool lastSpace;
     bool ctrl;
 } keyboard;
 
@@ -64,10 +63,14 @@ static struct {
     bool aButton;
     bool startButton;
     bool backButton;
-    bool lastAButton;
-    bool lastStartButton;
-    bool lastBackButton;
 } gamepad;
+
+static struct {
+    bool toggleFullscreen;
+    bool quit;
+    bool lastToggleFullscreen;
+    bool lastQuit;
+} menuButtons;
 
 static int32_t windowWidth = INITIAL_WINDOW_WIDTH;
 static int32_t windowHeight = INITIAL_WINDOW_HEIGHT;
@@ -182,12 +185,10 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                     keyboard.space = isDown;
                 } break;
                 case VK_ESCAPE: {
-                    running = false;
+                    menuButtons.quit = isDown;
                 } break;
                 case 'F': {
-                    if (isDown) {
-                        toggleFullscreen(window);
-                    }
+                    menuButtons.toggleFullscreen = isDown;
                 } break;
             }
             return 0;
@@ -292,21 +293,21 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             gamepad.stickX = xinputState.Gamepad.sThumbLX;
             gamepad.stickY = xinputState.Gamepad.sThumbLY;
             gamepad.aButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-            gamepad.startButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
-            gamepad.backButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+            menuButtons.toggleFullscreen = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
+            menuButtons.quit = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
         } else {
             controllerIndex = -1;
         }
 
-        if (gamepad.startButton && !gamepad.lastStartButton) {
+        if (menuButtons.toggleFullscreen && !menuButtons.lastToggleFullscreen) {
             toggleFullscreen(window);
         }
-        gamepad.lastStartButton = gamepad.startButton;
+        menuButtons.lastToggleFullscreen = menuButtons.toggleFullscreen;
 
-        if (gamepad.backButton && !gamepad.lastBackButton) {
+        if (menuButtons.quit && !menuButtons.lastQuit) {
             running = false;
         }
-        gamepad.lastBackButton = gamepad.backButton;
+        menuButtons.lastQuit = menuButtons.quit;
 
         LARGE_INTEGER perfCount;
         QueryPerformanceCounter(&perfCount);
@@ -327,6 +328,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 }
 
 void platform_getInput(GameInput* input) {
+    input->lastShoot = input->shoot;
     input->velocity[0] = 0.0f;
     input->velocity[1] = 0.0f;
     input->shoot = false;
@@ -353,11 +355,10 @@ void platform_getInput(GameInput* input) {
             input->velocity[0] = 0.0f;
             input->velocity[1] = 0.0f;
         }
-        if (gamepad.aButton && !gamepad.lastAButton) {
+        if (gamepad.aButton) {
             input->shoot = true;
             input->controller = true;
         }
-        gamepad.lastAButton = gamepad.aButton;
     } else {
         input->controller = false;
     }
@@ -378,12 +379,10 @@ void platform_getInput(GameInput* input) {
         input->controller = false;
     }
 
-    if (keyboard.space && !keyboard.lastSpace) {
+    if (keyboard.space) {
         input->shoot = true;
         input->controller = false;
     }
-
-    keyboard.lastSpace = keyboard.space;
 }
 
 void platform_debugLog(const char* message) {

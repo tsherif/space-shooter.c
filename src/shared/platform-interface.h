@@ -31,6 +31,7 @@
 typedef struct {
 	float velocity[2];
 	bool shoot;
+	bool lastShoot;
 	bool controller;
 } GameInput;
 
