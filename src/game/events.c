@@ -132,7 +132,7 @@ EventsSequence events_subtitleSequence = {
 static EventsEvent instructionEvents[] = {
     { 
         .delay = 500.0f,
-        .duration = 2000.0f,
+        .duration = 3000.0f,
         .id =  EVENTS_DISPLAY
     },
     { 

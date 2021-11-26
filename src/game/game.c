@@ -633,11 +633,29 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_instructionSequence, EVENTS_DISPLAY)) {
+        float yBase = 57.0f;
+
+        const char* movementText = input.keyboard ? "Arrow keys to move" : "Left stick to move";
+        float movementXOffset = input.keyboard ? 62.0f : 62.0f;
+        entities_fromText(&textEntities, movementText, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - movementXOffset,
+            .y = yBase, 
+            .scale = 0.3f
+        });
+
+        const char* shootText = input.keyboard ? "'Space' to shoot" : "'A' to shoot";
+        float shootXOffset = input.keyboard ? 58.0f : 42.0f;
+        entities_fromText(&textEntities, shootText, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - shootXOffset,
+            .y = yBase + 13.0f, 
+            .scale = 0.3f
+        });
+
         const char* fullscreenText = input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
         float fullscreenXOffset = input.keyboard ? 82.0f : 97.0f;
         entities_fromText(&textEntities, fullscreenText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
-            .y = 78.0f, 
+            .y = yBase + 26.0f, 
             .scale = 0.3f
         });
 
@@ -645,7 +663,7 @@ static void titleScreen(float dt) {
         float quitXOffset = input.keyboard ? 47.0f : 50.0f;
         entities_fromText(&textEntities, quitText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - quitXOffset,
-            .y = 91.0f, 
+            .y = yBase + 39.0f, 
             .scale = 0.3f
         });
     }
