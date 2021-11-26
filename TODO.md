@@ -1,7 +1,7 @@
 - [ ] Clean up globals 
 - [ ] See if game loop can be tightened up
-- [ ] Start in fullscreen
-- [ ] Full controller support (toggle fullscreen and quit)
+- [x] Start in fullscreen
+- [x] Full controller support (toggle fullscreen and quit)
 - [x] Windows audio cleanup
 - [x] Linux audio cleanup
 - [x] Hide mouse cursor

@@ -58,15 +58,59 @@ static struct {
     bool ctrl;
 } keyboard;
 
+static struct {
+    int16_t stickX;
+    int16_t stickY;
+    bool aButton;
+    bool startButton;
+    bool backButton;
+    bool lastAButton;
+    bool lastStartButton;
+    bool lastBackButton;
+} gamepad;
+
 static int32_t windowWidth = INITIAL_WINDOW_WIDTH;
 static int32_t windowHeight = INITIAL_WINDOW_HEIGHT;
 static int32_t preFullscreenWindowWidth = INITIAL_WINDOW_WIDTH;
 static int32_t preFullscreenWindowHeight = INITIAL_WINDOW_HEIGHT;
 static bool running = false;
-static bool fullScreen = false;
+static bool fullscreen = false;
 static int controllerIndex = -1;
 static bool lastAButton = false;
 static bool mouseInWindow = false;
+
+void toggleFullscreen(HWND window) {
+    fullscreen = !fullscreen;
+    int  x = 100;
+    int  y = 100;
+    int  width = preFullscreenWindowWidth;
+    int  height = preFullscreenWindowHeight;
+    UINT flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
+    DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    if (fullscreen) {
+        preFullscreenWindowWidth = windowWidth;
+        preFullscreenWindowHeight = windowHeight;
+        HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+        GetMonitorInfo(monitor, &monitorInfo);
+        x = monitorInfo.rcMonitor.left;
+        y = monitorInfo.rcMonitor.top;
+        width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+        height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+        windowStyle = WS_POPUP | WS_VISIBLE;
+    }
+
+    SetWindowLong(window, GWL_STYLE, windowStyle);
+    SetWindowPos(
+        window,
+        HWND_TOP,
+        x,
+        y,
+        width,
+        height,
+        flags
+    );
+}
 
 LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
@@ -142,42 +186,7 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
                 } break;
                 case 'F': {
                     if (isDown) {
-                        fullScreen = !fullScreen;
-                        int  x = 100;
-                        int  y = 100;
-                        int  width = preFullscreenWindowWidth;
-                        int  height = preFullscreenWindowHeight;
-                        UINT flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
-                        DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-                        if (fullScreen) {
-                            preFullscreenWindowWidth = windowWidth;
-                            preFullscreenWindowHeight = windowHeight;
-                            HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-                            MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
-                            GetMonitorInfo(monitor, &monitorInfo);
-                            x = monitorInfo.rcMonitor.left;
-                            y = monitorInfo.rcMonitor.top;
-                            width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-                            height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-                            windowStyle = WS_POPUP | WS_VISIBLE;
-                        }
-
-                        SetWindowLong(window, GWL_STYLE, windowStyle);
-                        SetWindowPos(
-                            window,
-                            HWND_TOP,
-                            x,
-                            y,
-                            width,
-                            height,
-                            flags
-                        );
-
-                        RECT clientRect;
-                        GetClientRect(window, &clientRect); 
-                        windowWidth = clientRect.right - clientRect.left;
-                        windowHeight = clientRect.bottom - clientRect.top;
-                        game_resize(windowWidth, windowHeight);
+                        toggleFullscreen(window);
                     }
                 } break;
             }
@@ -218,10 +227,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         }
     }
 
-    XINPUT_STATE controllerState;
+    XINPUT_STATE xinputState;
 
     for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
-        if (XInputGetState(i, &controllerState) == ERROR_SUCCESS) {
+        if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
             controllerIndex = i;
             break;
         }
@@ -235,6 +244,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     if (!game_init()) {
         return 1;
     }
+
+    // Start in fullscreen
+    toggleFullscreen(window);
 
     RECT clientRect;
     GetClientRect(window, &clientRect); 
@@ -271,13 +283,31 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
             }
         }
 
-        if (ticks % 200 == 0 && controllerIndex == -1) {
+        if (controllerIndex == -1 && ticks % 200 == 0) {
             for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
-                if (XInputGetState(i, &controllerState) == ERROR_SUCCESS) {
+                if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
                     controllerIndex = i;
                     break;
                 }
             }
+        }
+
+        if (controllerIndex > -1 && XInputGetState(controllerIndex, &xinputState) == ERROR_SUCCESS) {
+            gamepad.stickX = xinputState.Gamepad.sThumbLX;
+            gamepad.stickY = xinputState.Gamepad.sThumbLY;
+            gamepad.aButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
+            gamepad.startButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
+            gamepad.backButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+        } else {
+            controllerIndex = -1;
+        }
+
+        if (gamepad.startButton && !gamepad.lastStartButton) {
+            toggleFullscreen(window);
+        }
+
+        if (gamepad.backButton && !gamepad.lastBackButton) {
+            running = false;
         }
 
         LARGE_INTEGER perfCount;
@@ -289,6 +319,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         game_draw();
         SwapBuffers(deviceContext);
 
+        gamepad.lastStartButton = gamepad.startButton;
+        gamepad.lastBackButton = gamepad.backButton;
         lastPerfCount = perfCount;
         ++ticks;
     }
@@ -303,10 +335,9 @@ void platform_getInput(GameInput* input) {
     input->velocity[1] = 0.0f;
     input->shoot = false;
 
-    XINPUT_STATE controllerState;
-    if (controllerIndex > -1 && XInputGetState(controllerIndex, &controllerState) == ERROR_SUCCESS) {
-        float x = controllerState.Gamepad.sThumbLX;
-        float y = controllerState.Gamepad.sThumbLY;
+    if (controllerIndex > -1) {
+        float x = gamepad.stickX;
+        float y = gamepad.stickY;
 
         float mag = (float) sqrt(x * x + y * y);
         x /= mag;
@@ -325,13 +356,10 @@ void platform_getInput(GameInput* input) {
             input->velocity[0] = 0.0f;
             input->velocity[1] = 0.0f;
         }
-        bool aButton = controllerState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-        if (aButton && !lastAButton) {
+        if (gamepad.aButton && !gamepad.lastAButton) {
             input->shoot = true;
         }
-        lastAButton = aButton;
-    } else {
-        controllerIndex = -1;
+        gamepad.lastAButton = gamepad.aButton;
     }
 
     if (keyboard.left) {

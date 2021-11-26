@@ -202,11 +202,11 @@ void linux_gamepadMenuButtons(LinuxGamepadMenuButtons* gamepadMenuButtons) {
         return;
     }
 
-    gamepadMenuButtons->start = gamepad.startButton && gamepad.startButton != gamepad.lastStartButton;
+    gamepadMenuButtons->start = gamepad.startButton && !gamepad.lastStartButton;
     gamepad.lastStartButton = gamepad.startButton;
 
 
-    gamepadMenuButtons->back = gamepad.backButton && gamepad.backButton != gamepad.lastBackButton;
+    gamepadMenuButtons->back = gamepad.backButton && !gamepad.lastBackButton;
     gamepad.lastBackButton = gamepad.backButton;
 }
 
@@ -228,7 +228,7 @@ void linux_gamepadInput(GameInput* input) {
         input->velocity[1] = 0.0f;
     }
 
-    input->shoot = gamepad.aButton && gamepad.aButton != gamepad.lastAButton;
+    input->shoot = gamepad.aButton && !gamepad.lastAButton;
     gamepad.lastAButton = gamepad.aButton;
 }
 

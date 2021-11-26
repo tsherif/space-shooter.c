@@ -182,7 +182,7 @@ int main(int argc, char const *argv[]) {
 
     XSetWMProtocols(display, window, &WM_DELETE_WINDOW, 1);
 
-    XEvent fullScreenEvent = {
+    XEvent fullscreenEvent = {
         .xclient = {
             .type = ClientMessage,
             .window = window,
@@ -219,7 +219,7 @@ int main(int argc, char const *argv[]) {
     };
 
     // Start in fullscreen
-    XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
+    XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
 
     ////////////////////
     // Display window
@@ -255,7 +255,7 @@ int main(int argc, char const *argv[]) {
     struct timespec timeSpec;
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
     lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
-    bool fullScreen = true;
+    bool fullscreen = true;
     bool running = true;
 
     while (running) {
@@ -284,12 +284,12 @@ int main(int argc, char const *argv[]) {
                 case XK_Escape: running = false; break;
                 case XK_f: {
                     if (down) {
-                        if (fullScreen) {
+                        if (fullscreen) {
                             XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
                         } else {
-                            XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
+                            XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
                         }
-                        fullScreen = !fullScreen;
+                        fullscreen = !fullscreen;
                     }
                 } break;
             }
@@ -307,12 +307,12 @@ int main(int argc, char const *argv[]) {
         }
 
         if (gamepadMenuButtons.start) {
-            if (fullScreen) {
+            if (fullscreen) {
                 XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &windowedEvent);
             } else {
-                XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullScreenEvent);
+                XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
             }
-            fullScreen = !fullScreen;
+            fullscreen = !fullscreen;
         }
 
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
