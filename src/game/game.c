@@ -118,14 +118,21 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-static enum {
-    TITLE,
-    LEVEL_TRANSITION,
-    MAIN_GAME,
-    GAME_OVER
-} gameState = TITLE;
-
-static GameInput input;
+#define SCORE_TEXT_LENGTH 5 
+static struct {
+    enum {
+        TITLE_SCREEN,
+        LEVEL_TRANSITION,
+        MAIN_GAME,
+        GAME_OVER
+    } state;
+    GameInput input;
+    float tickTime;
+    float animationTime;
+    char scoreText[SCORE_TEXT_LENGTH];
+} gameState = {
+    .state = TITLE_SCREEN
+};
 
 static struct {
     DataBuffer music;
@@ -159,14 +166,7 @@ static struct {
     .lives = { .sprite = &sprites_player }
 };
 
-#define SCORE_BUFFER_LENGTH 5 
-static char scoreString[SCORE_BUFFER_LENGTH];
-
-
 static uint8_t whitePixelData[4] = {255, 255, 255, 255};
-
-static float tickTime = 0.0f;
-static float animationTime = 0.0f;
 
 //////////////////////////////////
 //  Per-level state
@@ -228,7 +228,7 @@ static void updateLevelTitle(void) {
 }
 
 static void transitionLevel(void) {
-    gameState = LEVEL_TRANSITION;
+    gameState.state = LEVEL_TRANSITION;
     if (levelState.level > 1) {
         levelState.warpVy = LEVEL_WARP;
         levelState.starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
@@ -371,7 +371,7 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
 }
 
 static void updateAnimations(void) {
-    if (animationTime > TIME_PER_ANIMATION) {
+    if (gameState.animationTime > TIME_PER_ANIMATION) {
         entities_updateAnimations(&entities.player.entity);  
         entities_updateAnimations(&entities.playerBullets);  
         entities_updateAnimations(&entities.smallEnemies);
@@ -380,7 +380,7 @@ static void updateAnimations(void) {
         entities_updateAnimations(&entities.enemyBullets);  
         entities_updateAnimations(&entities.explosions);
 
-        animationTime = 0.0f;
+        gameState.animationTime = 0.0f;
     }
 }
 
@@ -424,8 +424,8 @@ static void livesToEntities(void) {
 }
 
 static void updateScoreDisplay() {
-    utils_uintToString(entities.player.score, scoreString, SCORE_BUFFER_LENGTH);
-    entities_fromText(&entities.text, scoreString, &(EntitiesFromTextOptions) {
+    utils_uintToString(entities.player.score, gameState.scoreText, SCORE_TEXT_LENGTH);
+    entities_fromText(&entities.text, gameState.scoreText, &(EntitiesFromTextOptions) {
         .x = 10.0f,
         .y = GAME_HEIGHT - 20.0f, 
         .scale = 0.4f
@@ -491,14 +491,14 @@ static void simEnemies(float dt) {
 }
 
 static void simPlayer(float dt) {
-    platform_getInput(&input);
+    platform_getInput(&gameState.input);
 
     Player* player = &entities.player;
 
-    player->velocity[0] = PLAYER_VELOCITY * input.velocity[0];
-    player->velocity[1] = -PLAYER_VELOCITY * input.velocity[1];
+    player->velocity[0] = PLAYER_VELOCITY * gameState.input.velocity[0];
+    player->velocity[1] = -PLAYER_VELOCITY * gameState.input.velocity[1];
 
-    if (input.shoot && !input.lastShoot) {
+    if (gameState.input.shoot && !gameState.input.lastShoot) {
         firePlayerBullet(player->position[0] + SPRITES_PLAYER_BULLET_X_OFFSET, player->position[1] + SPRITES_PLAYER_BULLET_Y_OFFSET);
     }
 
@@ -611,7 +611,7 @@ static void titleScreen(float dt) {
     events_beforeFrame(&events_subtitleSequence, dt);
     events_beforeFrame(&events_instructionSequence, dt);
 
-    platform_getInput(&input);
+    platform_getInput(&gameState.input);
     
     updateStars(dt);
 
@@ -662,32 +662,32 @@ static void titleScreen(float dt) {
     if (events_on(&events_instructionSequence, EVENTS_DISPLAY)) {
         float yBase = 57.0f;
 
-        const char* movementText = input.keyboard ? "Arrow keys to move" : "Left stick to move";
-        float movementXOffset = input.keyboard ? 62.0f : 62.0f;
+        const char* movementText = gameState.input.keyboard ? "Arrow keys to move" : "Left stick to move";
+        float movementXOffset = gameState.input.keyboard ? 62.0f : 62.0f;
         entities_fromText(&entities.text, movementText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - movementXOffset,
             .y = yBase, 
             .scale = 0.3f
         });
 
-        const char* shootText = input.keyboard ? "'Space' to shoot" : "'A' to shoot";
-        float shootXOffset = input.keyboard ? 58.0f : 42.0f;
+        const char* shootText = gameState.input.keyboard ? "'Space' to shoot" : "'A' to shoot";
+        float shootXOffset = gameState.input.keyboard ? 58.0f : 42.0f;
         entities_fromText(&entities.text, shootText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - shootXOffset,
             .y = yBase + 13.0f, 
             .scale = 0.3f
         });
 
-        const char* fullscreenText = input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
-        float fullscreenXOffset = input.keyboard ? 82.0f : 97.0f;
+        const char* fullscreenText = gameState.input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
+        float fullscreenXOffset = gameState.input.keyboard ? 82.0f : 97.0f;
         entities_fromText(&entities.text, fullscreenText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
             .y = yBase + 26.0f, 
             .scale = 0.3f
         });
 
-        const char* quitText = input.keyboard ? "'ESC' to quit" : "'Back' to quit";
-        float quitXOffset = input.keyboard ? 47.0f : 50.0f;
+        const char* quitText = gameState.input.keyboard ? "'ESC' to quit" : "'Back' to quit";
+        float quitXOffset = gameState.input.keyboard ? 47.0f : 50.0f;
         entities_fromText(&entities.text, quitText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - quitXOffset,
             .y = yBase + 39.0f, 
@@ -701,7 +701,7 @@ static void titleScreen(float dt) {
         events_stop(&events_subtitleSequence);
     }
 
-    if (input.shoot || events_instructionSequence.complete) {
+    if (gameState.input.shoot || events_instructionSequence.complete) {
         entities.text.count = 0;
         transitionLevel();
     }
@@ -736,7 +736,7 @@ static void levelTransition(float dt) {
         entities.text.count = 0;
         levelState.warpVy = 0.0f;
         levelState.starProbabilityMultiplier = 1.0f;
-        gameState = MAIN_GAME;
+        gameState.state = MAIN_GAME;
     }
 
     updateScoreDisplay();
@@ -779,7 +779,7 @@ static void mainGame(float dt) {
         }
     } else {
         events_start(&events_gameOverSequence);
-        gameState = GAME_OVER;
+        gameState.state = GAME_OVER;
     }
 
     updateScoreDisplay();
@@ -792,7 +792,7 @@ static void gameOver(float dt) {
     events_beforeFrame(&events_gameOverRestartSequence, dt);
     entities.text.count = 0;
 
-    platform_getInput(&input);
+    platform_getInput(&gameState.input);
 
     updateStars(dt);
     simEnemies(dt);
@@ -809,8 +809,8 @@ static void gameOver(float dt) {
     }
 
     if (events_on(&events_gameOverRestartSequence, EVENTS_DISPLAY)) {
-        const char* text = input.keyboard ? "Press 'Space' to Restart" : "Press 'A' to Restart";
-        float xOffset = input.keyboard ? 107.0f : 91.0f;
+        const char* text = gameState.input.keyboard ? "Press 'Space' to Restart" : "Press 'A' to Restart";
+        float xOffset = gameState.input.keyboard ? 107.0f : 91.0f;
         entities_fromText(&entities.text, text, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 104.0f,
@@ -822,7 +822,7 @@ static void gameOver(float dt) {
     updateAnimations();
     filterDeadEntities();
 
-    if (events_gameOverRestartSequence.running && input.shoot) {
+    if (events_gameOverRestartSequence.running && gameState.input.shoot) {
         entities.player.lives = PLAYER_NUM_LIVES;
         entities.player.score = 0;
         entities.player.deadTimer = 0.0f;
@@ -847,17 +847,17 @@ static void gameOver(float dt) {
 //////////////////////////////////
 
 static void simulate(float dt) {
-    animationTime += dt;
+    gameState.animationTime += dt;
 
-    switch(gameState) {
-        case TITLE: titleScreen(dt); break;
+    switch(gameState.state) {
+        case TITLE_SCREEN: titleScreen(dt); break;
         case LEVEL_TRANSITION: levelTransition(dt); break;
         case MAIN_GAME: mainGame(dt); break;
         case GAME_OVER: gameOver(dt); break;
     }
 
-    if (animationTime > TIME_PER_ANIMATION) {
-        animationTime = 0.0f;
+    if (gameState.animationTime > TIME_PER_ANIMATION) {
+        gameState.animationTime = 0.0f;
     }
 }
 
@@ -925,7 +925,7 @@ bool game_init(void) {
     }
 
 
-    utils_uintToString(0, scoreString, SCORE_BUFFER_LENGTH);
+    utils_uintToString(0, gameState.scoreText, SCORE_TEXT_LENGTH);
     updateLevelTitle();
 
     events_start(&events_titleControlSequence);
@@ -947,16 +947,16 @@ void game_update(float elapsedTime) {
         elapsedTime = 33.3f;
     }
 
-    tickTime += elapsedTime;
+    gameState.tickTime += elapsedTime;
 
-    if (tickTime > TICK_DURATION) {
-        while (tickTime > TICK_DURATION) {
+    if (gameState.tickTime > TICK_DURATION) {
+        while (gameState.tickTime > TICK_DURATION) {
             simulate(TICK_DURATION);    
-            tickTime -= TICK_DURATION;
+            gameState.tickTime -= TICK_DURATION;
         }
 
-        simulate(tickTime);
-        tickTime = 0.0f;
+        simulate(gameState.tickTime);
+        gameState.tickTime = 0.0f;
     }
 }
 
