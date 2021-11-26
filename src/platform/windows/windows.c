@@ -107,6 +107,51 @@ void toggleFullscreen(HWND window) {
     );
 }
 
+void processXinputState(XINPUT_STATE* xinputState) {
+    bool gamepadHasInput = false;
+    float stickX = 0.0f;
+    float stickY = 0.0f;
+    bool aButton = false;
+    bool startButton = false;
+    bool backButton = false;
+
+    float x = xinputState->Gamepad.sThumbLX;
+    float y = xinputState->Gamepad.sThumbLY;
+
+    float mag = (float) sqrt(x * x + y * y);
+    x /= mag;
+    y /= mag;
+
+    if (mag > 32767.0f) {
+        mag = 32767.0f;
+    }
+
+    if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
+        mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+        mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+        stickX = x * mag;
+        stickY = y * mag;
+        gamepadHasInput = true;
+    }
+    
+    aButton = xinputState->Gamepad.wButtons & XINPUT_GAMEPAD_A;
+    startButton = xinputState->Gamepad.wButtons & XINPUT_GAMEPAD_START;
+    backButton = xinputState->Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+
+    if (aButton || startButton || backButton) {
+        gamepadHasInput = true;
+    }
+
+    if (gamepadHasInput || !gamepad.keyboard) {
+        gamepad.stickX = stickX;
+        gamepad.stickY = stickY;
+        gamepad.aButton = aButton;
+        gamepad.startButton = startButton;
+        gamepad.backButton = backButton;
+        gamepad.keyboard = false;
+    }
+}
+
 LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
         case WM_SIZE: {
@@ -162,19 +207,19 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
             bool isDown = (lParam & (1 << 31)) == 0;
             switch (wParam) {
                 case VK_LEFT:
-                case VK_RIGHT:   {
+                case VK_RIGHT: {
                     if (isDown) {
                         gamepad.stickX = wParam == VK_LEFT ? -1.0f : 1.0f;
                     } else {
                         gamepad.stickX = 0.0f;
                     }
                 } break;
-                case VK_UP:
-                case VK_DOWN: {
+                case VK_DOWN:
+                case VK_UP: {
                     if (isDown) {
-                        gamepad.stickX = wParam == VK_UP ? -1.0f : 1.0f;
+                        gamepad.stickY = wParam == VK_DOWN ? -1.0f : 1.0f;
                     } else {
-                        gamepad.stickX = 0.0f;
+                        gamepad.stickY = 0.0f;
                     }
                 } break;
                 case VK_SPACE: {
@@ -287,48 +332,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         }
 
         if (controllerIndex > -1 && XInputGetState(controllerIndex, &xinputState) == ERROR_SUCCESS) {
-            bool gamepadHasInput = false;
-            float stickX = 0.0f;
-            float stickY = 0.0f;
-            bool aButton = false;
-            bool startButton = false;
-            bool backButton = false;
-
-            float x = xinputState.Gamepad.sThumbLX;
-            float y = xinputState.Gamepad.sThumbLY;
-
-            float mag = (float) sqrt(x * x + y * y);
-            x /= mag;
-            y /= mag;
-
-            if (mag > 32767.0f) {
-                mag = 32767.0f;
-            }
-
-            if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
-                mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-                mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-                stickX = x * mag;
-                stickY = y * mag;
-                gamepadHasInput = true;
-            }
-            
-            aButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-            startButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
-            backButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
-
-            if (aButton || startButton || backButton) {
-                gamepadHasInput = true;
-            }
-
-            if (gamepadHasInput || !gamepad.keyboard) {
-                gamepad.stickX = stickX;
-                gamepad.stickY = stickY;
-                gamepad.aButton = aButton;
-                gamepad.startButton = startButton;
-                gamepad.backButton = backButton;
-                gamepad.keyboard = false;
-            }
+            processXinputState(&xinputState);
         } else {
             controllerIndex = -1;
             gamepad.keyboard = false;
