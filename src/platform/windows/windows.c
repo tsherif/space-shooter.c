@@ -301,10 +301,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         if (gamepad.startButton && !gamepad.lastStartButton) {
             toggleFullscreen(window);
         }
+        gamepad.lastStartButton = gamepad.startButton;
 
         if (gamepad.backButton && !gamepad.lastBackButton) {
             running = false;
         }
+        gamepad.lastBackButton = gamepad.backButton;
 
         LARGE_INTEGER perfCount;
         QueryPerformanceCounter(&perfCount);
@@ -315,8 +317,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         game_draw();
         SwapBuffers(deviceContext);
 
-        gamepad.lastStartButton = gamepad.startButton;
-        gamepad.lastBackButton = gamepad.backButton;
         lastPerfCount = perfCount;
         ++ticks;
     }
