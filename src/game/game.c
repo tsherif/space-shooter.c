@@ -104,13 +104,6 @@
 //  Game state
 //////////////////////////////////
 
-static enum {
-    TITLE,
-    LEVEL_TRANSITION,
-    MAIN_GAME,
-    GAME_OVER
-} gameState = TITLE;
-
 typedef struct {
     ENTITIES_LIST_MIXIN(entity);
     float bulletThrottle;
@@ -124,6 +117,17 @@ typedef struct {
     float xOffset;
     float yOffset;
 } PlayerCollisionExplosionOptions;
+
+static enum {
+    TITLE,
+    LEVEL_TRANSITION,
+    MAIN_GAME,
+    GAME_OVER
+} gameState = TITLE;
+
+static GameInput input = {
+    .controller = true
+};
 
 static struct {
     DataBuffer music;
@@ -464,7 +468,6 @@ static void simEnemies(float dt) {
 }
 
 static void simPlayer(float dt) {
-    GameInput input = { 0 };
     platform_getInput(&input);
 
     player.velocity[0] = PLAYER_VELOCITY * input.velocity[0];
@@ -583,7 +586,6 @@ static void titleScreen(float dt) {
     events_beforeFrame(&events_subtitleSequence, dt);
     events_beforeFrame(&events_instructionSequence, dt);
 
-    GameInput input = { 0 };
     platform_getInput(&input);
     
     updateStars(dt);
@@ -633,14 +635,18 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_instructionSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&textEntities, "'F' to toggle fullScreen", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 82.0f,
+        const char* fullscreenText = input.controller ? "'Start' to toggle fullscreen" : "'F' to toggle fullscreen";
+        float fullscreenXOffset = input.controller ? 97.0f : 82.0f;
+        entities_fromText(&textEntities, fullscreenText, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
             .y = 78.0f, 
             .scale = 0.3f
         });
 
-        entities_fromText(&textEntities, "'ESC' to quit", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 42.0f,
+        const char* quitText = input.controller ? "'Back' to quit" : "'ESC' to quit";
+        float quitXOffset = input.controller ? 50.0f : 47.0f;
+        entities_fromText(&textEntities, quitText, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - quitXOffset,
             .y = 91.0f, 
             .scale = 0.3f
         });
@@ -739,7 +745,6 @@ static void gameOver(float dt) {
     events_beforeFrame(&events_gameOverRestartSequence, dt);
     textEntities.count = 0;
 
-    GameInput input = { 0 };
     platform_getInput(&input);
 
     updateStars(dt);
@@ -757,8 +762,10 @@ static void gameOver(float dt) {
     }
 
     if (events_on(&events_gameOverRestartSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&textEntities, "Press 'Shoot' to Restart", &(EntitiesFromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - 107.0f,
+        const char* text = input.controller ? "Press 'A' to Restart" : "Press 'Space' to Restart";
+        float xOffset = input.controller ? 91.0f : 107.0f;
+        entities_fromText(&textEntities, text, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 104.0f,
             .scale = 0.4f
         }); 

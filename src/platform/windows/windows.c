@@ -348,30 +348,39 @@ void platform_getInput(GameInput* input) {
             mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
             input->velocity[0] = x * mag;
             input->velocity[1] = y * mag;
+            input->controller = true;
         } else {
             input->velocity[0] = 0.0f;
             input->velocity[1] = 0.0f;
         }
         if (gamepad.aButton && !gamepad.lastAButton) {
             input->shoot = true;
+            input->controller = true;
         }
         gamepad.lastAButton = gamepad.aButton;
+    } else {
+        input->controller = false;
     }
 
     if (keyboard.left) {
         input->velocity[0] = -1.0f;
+        input->controller = false;
     } else if (keyboard.right) {
         input->velocity[0] = 1.0f;
+        input->controller = false;
     }
 
     if (keyboard.up) {
         input->velocity[1] = 1.0f;
+        input->controller = false;
     } else if (keyboard.down) {
         input->velocity[1] = -1.0f;
+        input->controller = false;
     }
 
     if (keyboard.space && !keyboard.lastSpace) {
         input->shoot = true;
+        input->controller = false;
     }
 
     keyboard.lastSpace = keyboard.space;
