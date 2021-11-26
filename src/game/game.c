@@ -135,16 +135,29 @@ static struct {
     DataBuffer enemyHit;
 } sounds;
 
-static Player player = { .sprite = &sprites_player, .lives = PLAYER_NUM_LIVES };
-static EntitiesList smallEnemies = { .sprite = &sprites_smallEnemy };
-static EntitiesList mediumEnemies = { .sprite = &sprites_mediumEnemy };
-static EntitiesList largeEnemies = { .sprite = &sprites_largeEnemy };
-static EntitiesList playerBullets = { .sprite = &sprites_playerBullet };
-static EntitiesList enemyBullets = { .sprite = &sprites_enemyBullet };
-static EntitiesList explosions = { .sprite = &sprites_explosion };
-static EntitiesList stars = { .sprite = &sprites_whitePixel };
-static EntitiesList textEntities = { .sprite = &sprites_text };
-static EntitiesList livesEntities = { .sprite = &sprites_player };
+static struct {
+    Player player;
+    EntitiesList smallEnemies;
+    EntitiesList mediumEnemies;
+    EntitiesList largeEnemies;
+    EntitiesList playerBullets;
+    EntitiesList enemyBullets;
+    EntitiesList explosions;
+    EntitiesList stars;
+    EntitiesList text;
+    EntitiesList lives;
+} entities = {
+    .player = { .sprite = &sprites_player, .lives = PLAYER_NUM_LIVES },
+    .smallEnemies = { .sprite = &sprites_smallEnemy },
+    .mediumEnemies = { .sprite = &sprites_mediumEnemy },
+    .largeEnemies = { .sprite = &sprites_largeEnemy },
+    .playerBullets = { .sprite = &sprites_playerBullet },
+    .enemyBullets = { .sprite = &sprites_enemyBullet },
+    .explosions = { .sprite = &sprites_explosion },
+    .stars = { .sprite = &sprites_whitePixel },
+    .text = { .sprite = &sprites_text },
+    .lives = { .sprite = &sprites_player }
+};
 
 #define SCORE_BUFFER_LENGTH 5 
 static char scoreString[SCORE_BUFFER_LENGTH];
@@ -208,7 +221,7 @@ static void transitionLevel(void) {
         levelWarpVy = LEVEL_WARP;
         starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
     }
-    playerBullets.count = 0;
+    entities.playerBullets.count = 0;
     updateLevelText();
     events_start(&events_levelTransitionSequence);
 }
@@ -219,19 +232,19 @@ static void transitionLevel(void) {
 
 static void firePlayerBullet(float x, float y) {
     if (
-        player.bulletThrottle > 0.0f || 
-        player.deadTimer > 0.0f
+        entities.player.bulletThrottle > 0.0f || 
+        entities.player.deadTimer > 0.0f
     ) {
         return;
     }
 
-    entities_spawn(&playerBullets, &(EntitiesInitOptions) {
+    entities_spawn(&entities.playerBullets, &(EntitiesInitOptions) {
         .x = x, 
         .y = y, 
         .vy = PLAYER_BULLET_VELOCITY
     });
     platform_playSound(&sounds.playerBullet, false);
-    player.bulletThrottle = PLAYER_BULLET_THROTTLE;
+    entities.player.bulletThrottle = PLAYER_BULLET_THROTTLE;
 }
 
 static bool checkPlayerBulletCollision(
@@ -259,13 +272,13 @@ static bool checkPlayerBulletCollision(
             hit = true;
             --enemies->health[i];
             if (enemies->health[i] == 0) {
-                entities_spawn(&explosions, &(EntitiesInitOptions) {
+                entities_spawn(&entities.explosions, &(EntitiesInitOptions) {
                     .x = position[0] + explosionXOffset, 
                     .y = position[1] + explosionYOffset
                 });
                 platform_playSound(&sounds.explosion, false);
                 enemies->dead[i] = true;
-                player.score += points;
+                entities.player.score += points;
             } else {
                 platform_playSound(&sounds.enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
@@ -292,7 +305,7 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
         if (utils_boxCollision(playerMin, playerMax, entityMin, entityMax, COLLISION_SCALE)) {
             playerHit = true;
             if (opts) {
-                entities_spawn(&explosions, &(EntitiesInitOptions) {
+                entities_spawn(&entities.explosions, &(EntitiesInitOptions) {
                     .x = position[0] + opts->xOffset,
                     .y = position[1] + opts->yOffset 
                 });     
@@ -305,11 +318,11 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
 }
 
 static void fireEnemyBullet(float x, float y) {
-    float dx = player.position[0] - x;
-    float dy = player.position[1] - y;
+    float dx = entities.player.position[0] - x;
+    float dy = entities.player.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
-    entities_spawn(&enemyBullets, &(EntitiesInitOptions) {
+    entities_spawn(&entities.enemyBullets, &(EntitiesInitOptions) {
         .x = x,
         .y = y,
         .vx = (dx / d) * ENEMY_BULLET_SPEED,
@@ -347,32 +360,32 @@ static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
 
 static void updateAnimations(void) {
     if (animationTime > TIME_PER_ANIMATION) {
-        entities_updateAnimations(&player.entity);  
-        entities_updateAnimations(&playerBullets);  
-        entities_updateAnimations(&smallEnemies);
-        entities_updateAnimations(&mediumEnemies);
-        entities_updateAnimations(&largeEnemies);
-        entities_updateAnimations(&enemyBullets);  
-        entities_updateAnimations(&explosions);
+        entities_updateAnimations(&entities.player.entity);  
+        entities_updateAnimations(&entities.playerBullets);  
+        entities_updateAnimations(&entities.smallEnemies);
+        entities_updateAnimations(&entities.mediumEnemies);
+        entities_updateAnimations(&entities.largeEnemies);
+        entities_updateAnimations(&entities.enemyBullets);  
+        entities_updateAnimations(&entities.explosions);
 
         animationTime = 0.0f;
     }
 }
 
 static void filterDeadEntities(void) {
-    entities_filterDead(&playerBullets);  
-    entities_filterDead(&smallEnemies);
-    entities_filterDead(&mediumEnemies);
-    entities_filterDead(&largeEnemies);
-    entities_filterDead(&enemyBullets);  
-    entities_filterDead(&explosions);
-    entities_filterDead(&stars);
+    entities_filterDead(&entities.playerBullets);  
+    entities_filterDead(&entities.smallEnemies);
+    entities_filterDead(&entities.mediumEnemies);
+    entities_filterDead(&entities.largeEnemies);
+    entities_filterDead(&entities.enemyBullets);  
+    entities_filterDead(&entities.explosions);
+    entities_filterDead(&entities.stars);
 }
 
 static void updateStars(float dt) {
     if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * starProbabilityMultiplier * dt) {
         float t = utils_randomRange(0.0f, 1.0f);
-        entities_spawn(&stars, &(EntitiesInitOptions) {
+        entities_spawn(&entities.stars, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
             .y = -sprites_whitePixel.panelDims[1], 
             .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
@@ -380,7 +393,7 @@ static void updateStars(float dt) {
         }); 
     }
 
-    updateEntities(&stars, dt, 0.0f);
+    updateEntities(&entities.stars, dt, 0.0f);
 }
 
 //////////////////////////////////
@@ -388,10 +401,10 @@ static void updateStars(float dt) {
 //////////////////////////////////
 
 static void livesToEntities(void) {
-    livesEntities.count = 0;
-    for (int32_t i = 0; i < player.lives; ++i) {
-        entities_spawn(&livesEntities, &(EntitiesInitOptions) { 
-            .x = 12.5f + i * (player.sprite->panelDims[0] * 0.55f + 0.5f),
+    entities.lives.count = 0;
+    for (int32_t i = 0; i < entities.player.lives; ++i) {
+        entities_spawn(&entities.lives, &(EntitiesInitOptions) { 
+            .x = 12.5f + i * (entities.player.sprite->panelDims[0] * 0.55f + 0.5f),
             .y = GAME_HEIGHT - 32.0f, 
             .scale = 0.45f
         });
@@ -399,8 +412,8 @@ static void livesToEntities(void) {
 }
 
 static void updateScoreDisplay() {
-    utils_uintToString(player.score, scoreString, SCORE_BUFFER_LENGTH);
-    entities_fromText(&textEntities, scoreString, &(EntitiesFromTextOptions) {
+    utils_uintToString(entities.player.score, scoreString, SCORE_BUFFER_LENGTH);
+    entities_fromText(&entities.text, scoreString, &(EntitiesFromTextOptions) {
         .x = 10.0f,
         .y = GAME_HEIGHT - 20.0f, 
         .scale = 0.4f
@@ -413,7 +426,7 @@ static void updateScoreDisplay() {
 
 static void simEnemies(float dt) {
     if (utils_randomRange(0.0f, 1.0f) < smallEnemySpawnProbability * dt) {
-        entities_spawn(&smallEnemies, &(EntitiesInitOptions) {
+        entities_spawn(&entities.smallEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
             .vy = SMALL_ENEMY_VELOCITY,
@@ -422,7 +435,7 @@ static void simEnemies(float dt) {
     }
 
     if (utils_randomRange(0.0f, 1.0f) < mediumEnemySpawnProbability * dt) {
-        entities_spawn(&mediumEnemies, &(EntitiesInitOptions) {
+        entities_spawn(&entities.mediumEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
             .vy = MEDIUM_ENEMY_VELOCITY,
@@ -431,7 +444,7 @@ static void simEnemies(float dt) {
     }
 
     if (utils_randomRange(0.0f, 1.0f) < largeEnemySpawnProbability * dt) {
-        entities_spawn(&largeEnemies, &(EntitiesInitOptions) {
+        entities_spawn(&entities.largeEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
             .vy = LARGE_ENEMY_VELOCITY,
@@ -439,15 +452,15 @@ static void simEnemies(float dt) {
         });
     }
 
-    updateEntities(&smallEnemies, dt, 0.0f);
-    updateEntities(&mediumEnemies, dt, 0.0f);
-    updateEntities(&largeEnemies, dt, 0.0f);
-    updateEntities(&playerBullets, dt, 32.0f);
-    updateEntities(&enemyBullets, dt, 32.0f);
+    updateEntities(&entities.smallEnemies, dt, 0.0f);
+    updateEntities(&entities.mediumEnemies, dt, 0.0f);
+    updateEntities(&entities.largeEnemies, dt, 0.0f);
+    updateEntities(&entities.playerBullets, dt, 32.0f);
+    updateEntities(&entities.enemyBullets, dt, 32.0f);
 
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBullet.collisionBox;
-    for (int32_t i = 0; i < playerBullets.count; ++i) {
-        float* position = playerBullets.position + i * 2;
+    for (int32_t i = 0; i < entities.playerBullets.count; ++i) {
+        float* position = entities.playerBullets.position + i * 2;
         float bulletMin[] = {
             position[0] + playerBulletCollisionBox->min[0],
             position[1] + playerBulletCollisionBox->min[1]
@@ -457,10 +470,10 @@ static void simEnemies(float dt) {
             position[1] + playerBulletCollisionBox->max[1]
         };
         
-        if (checkPlayerBulletCollision(bulletMin, bulletMax, &smallEnemies, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET, SMALL_ENEMY_POINTS) ||
-            checkPlayerBulletCollision(bulletMin, bulletMax, &mediumEnemies, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET, MEDIUM_ENEMY_POINTS) ||
-            checkPlayerBulletCollision(bulletMin, bulletMax, &largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET, LARGE_ENEMY_POINTS)) {
-            playerBullets.dead[i] = true;
+        if (checkPlayerBulletCollision(bulletMin, bulletMax, &entities.smallEnemies, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET, SMALL_ENEMY_POINTS) ||
+            checkPlayerBulletCollision(bulletMin, bulletMax, &entities.mediumEnemies, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET, MEDIUM_ENEMY_POINTS) ||
+            checkPlayerBulletCollision(bulletMin, bulletMax, &entities.largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET, LARGE_ENEMY_POINTS)) {
+            entities.playerBullets.dead[i] = true;
         }  
     }
 }
@@ -468,106 +481,108 @@ static void simEnemies(float dt) {
 static void simPlayer(float dt) {
     platform_getInput(&input);
 
-    player.velocity[0] = PLAYER_VELOCITY * input.velocity[0];
-    player.velocity[1] = -PLAYER_VELOCITY * input.velocity[1];
+    Player* player = &entities.player;
+
+    player->velocity[0] = PLAYER_VELOCITY * input.velocity[0];
+    player->velocity[1] = -PLAYER_VELOCITY * input.velocity[1];
 
     if (input.shoot && !input.lastShoot) {
-        firePlayerBullet(player.position[0] + SPRITES_PLAYER_BULLET_X_OFFSET, player.position[1] + SPRITES_PLAYER_BULLET_Y_OFFSET);
+        firePlayerBullet(player->position[0] + SPRITES_PLAYER_BULLET_X_OFFSET, player->position[1] + SPRITES_PLAYER_BULLET_Y_OFFSET);
     }
 
-    if (player.velocity[0] < -1.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_PLAYER_LEFT);
-    } else if (player.velocity[0] < 0.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_PLAYER_CENTER_LEFT);
-    } else if (player.velocity[0] > 1.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_PLAYER_RIGHT);
-    } else if (player.velocity[0] > 0.0f) {
-        entities_setAnimation(&player.entity, 0, SPRITES_PLAYER_CENTER_RIGHT);
+    if (player->velocity[0] < -1.0f) {
+        entities_setAnimation(&player->entity, 0, SPRITES_PLAYER_LEFT);
+    } else if (player->velocity[0] < 0.0f) {
+        entities_setAnimation(&player->entity, 0, SPRITES_PLAYER_CENTER_LEFT);
+    } else if (player->velocity[0] > 1.0f) {
+        entities_setAnimation(&player->entity, 0, SPRITES_PLAYER_RIGHT);
+    } else if (player->velocity[0] > 0.0f) {
+        entities_setAnimation(&player->entity, 0, SPRITES_PLAYER_CENTER_RIGHT);
     } else {
-        entities_setAnimation(&player.entity, 0, SPRITES_PLAYER_CENTER);
+        entities_setAnimation(&player->entity, 0, SPRITES_PLAYER_CENTER);
     }
 
-    player.position[0] += player.velocity[0] * dt;
-    player.position[1] += player.velocity[1] * dt;
+    player->position[0] += player->velocity[0] * dt;
+    player->position[1] += player->velocity[1] * dt;
 
-    if (player.position[0] < 0.0f) {
-        player.position[0] = 0.0f;
+    if (player->position[0] < 0.0f) {
+        player->position[0] = 0.0f;
     }
 
-    if (player.position[0] + player.sprite->panelDims[0] > GAME_WIDTH) {
-        player.position[0] = GAME_WIDTH - player.sprite->panelDims[0];
+    if (player->position[0] + player->sprite->panelDims[0] > GAME_WIDTH) {
+        player->position[0] = GAME_WIDTH - player->sprite->panelDims[0];
     }
 
-    if (player.position[1] < 0.0f) {
-        player.position[1] = 0.0f;
+    if (player->position[1] < 0.0f) {
+        player->position[1] = 0.0f;
     }
 
-    if (player.position[1] + player.sprite->panelDims[1] > GAME_HEIGHT) {
-        player.position[1] = GAME_HEIGHT - player.sprite->panelDims[1];
+    if (player->position[1] + player->sprite->panelDims[1] > GAME_HEIGHT) {
+        player->position[1] = GAME_HEIGHT - player->sprite->panelDims[1];
     }
 
-    for (int32_t i = 0; i < smallEnemies.count; ++i) {
+    for (int32_t i = 0; i < entities.smallEnemies.count; ++i) {
         if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
-            float* position = smallEnemies.position + i * 2;
+            float* position = entities.smallEnemies.position + i * 2;
             fireEnemyBullet(position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
         }
     }
 
-    for (int32_t i = 0; i < mediumEnemies.count; ++i) {
+    for (int32_t i = 0; i < entities.mediumEnemies.count; ++i) {
         if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
-            float* position = mediumEnemies.position + i * 2;
+            float* position = entities.mediumEnemies.position + i * 2;
             fireEnemyBullet(position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
         }
     }
 
-    for (int32_t i = 0; i < largeEnemies.count; ++i) {
+    for (int32_t i = 0; i < entities.largeEnemies.count; ++i) {
         if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
-            float* position = largeEnemies.position + i * 2;
+            float* position = entities.largeEnemies.position + i * 2;
             fireEnemyBullet(position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
         }
     }
 
-    if (player.invincibleTimer > 0.0f) {
-        player.invincibleTimer -= dt;
-        player.alpha[0] = PLAYER_INVINCIBLE_ALPHA;
+    if (player->invincibleTimer > 0.0f) {
+        player->invincibleTimer -= dt;
+        player->alpha[0] = PLAYER_INVINCIBLE_ALPHA;
     } else {
-        player.alpha[0] = 1.0f;
+        player->alpha[0] = 1.0f;
         Sprites_CollisionBox* playerCollisionBox = &sprites_player.collisionBox;
         float playerMin[] = {
-            player.position[0] + playerCollisionBox->min[0],
-            player.position[1] + playerCollisionBox->min[1]
+            player->position[0] + playerCollisionBox->min[0],
+            player->position[1] + playerCollisionBox->min[1]
         };
         float playerMax[] = {
-            player.position[0] + playerCollisionBox->max[0],
-            player.position[1] + playerCollisionBox->max[1]
+            player->position[0] + playerCollisionBox->max[0],
+            player->position[1] + playerCollisionBox->max[1]
         };
 
 
-        bool bulletHit = checkPlayerCollision(playerMin, playerMax, &enemyBullets, NULL);
-        bool smallEnemyHit = checkPlayerCollision(playerMin, playerMax, &smallEnemies, &(PlayerCollisionExplosionOptions) {
+        bool bulletHit = checkPlayerCollision(playerMin, playerMax, &entities.enemyBullets, NULL);
+        bool smallEnemyHit = checkPlayerCollision(playerMin, playerMax, &entities.smallEnemies, &(PlayerCollisionExplosionOptions) {
             .xOffset = SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET,
             .yOffset = SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET
         });
-        bool mediumEnemyHit = checkPlayerCollision(playerMin, playerMax, &mediumEnemies, &(PlayerCollisionExplosionOptions) {
+        bool mediumEnemyHit = checkPlayerCollision(playerMin, playerMax, &entities.mediumEnemies, &(PlayerCollisionExplosionOptions) {
             .xOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET,
             .yOffset = SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET
         });
-        bool largeEnemyHit = checkPlayerCollision(playerMin, playerMax, &largeEnemies, &(PlayerCollisionExplosionOptions) {
+        bool largeEnemyHit = checkPlayerCollision(playerMin, playerMax, &entities.largeEnemies, &(PlayerCollisionExplosionOptions) {
             .xOffset = SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET,
             .yOffset = SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET
         });
 
         if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
-            entities_spawn(&explosions, &(EntitiesInitOptions) {
-                .x = player.position[0] + SPRITES_PLAYER_EXPLOSION_X_OFFSET,
-                .y = player.position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
+            entities_spawn(&entities.explosions, &(EntitiesInitOptions) {
+                .x = player->position[0] + SPRITES_PLAYER_EXPLOSION_X_OFFSET,
+                .y = player->position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
             });
 
             platform_playSound(&sounds.explosion, false);
-            player.position[0] = GAME_WIDTH / 2 - player.sprite->panelDims[0] / 2;
-            player.position[1] = GAME_HEIGHT - player.sprite->panelDims[0] * 3.0f;
-            player.deadTimer = PLAYER_DEAD_TIME;
-            --player.lives;
+            player->position[0] = GAME_WIDTH / 2 - player->sprite->panelDims[0] / 2;
+            player->position[1] = GAME_HEIGHT - player->sprite->panelDims[0] * 3.0f;
+            player->deadTimer = PLAYER_DEAD_TIME;
+            --player->lives;
         } 
     }
 
@@ -588,7 +603,7 @@ static void titleScreen(float dt) {
     
     updateStars(dt);
 
-    textEntities.count = 0;
+    entities.text.count = 0;
 
     if (events_on(&events_titleControlSequence, EVENTS_TITLE)) {
         events_start(&events_titleSequence);
@@ -599,7 +614,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_titleSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
             .scale = 0.75f
@@ -607,7 +622,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_titleSequence, EVENTS_FADE)) {
-        entities_fromText(&textEntities, "space-shooter.c", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "space-shooter.c", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
             .scale = 0.75f,
@@ -616,7 +631,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_subtitleSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "by Tarek Sherif", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
             .scale = 0.4f
@@ -624,7 +639,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_subtitleSequence, EVENTS_FADE)) {
-        entities_fromText(&textEntities, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "by Tarek Sherif", &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
             .scale = 0.4f,
@@ -637,7 +652,7 @@ static void titleScreen(float dt) {
 
         const char* movementText = input.keyboard ? "Arrow keys to move" : "Left stick to move";
         float movementXOffset = input.keyboard ? 62.0f : 62.0f;
-        entities_fromText(&textEntities, movementText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, movementText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - movementXOffset,
             .y = yBase, 
             .scale = 0.3f
@@ -645,7 +660,7 @@ static void titleScreen(float dt) {
 
         const char* shootText = input.keyboard ? "'Space' to shoot" : "'A' to shoot";
         float shootXOffset = input.keyboard ? 58.0f : 42.0f;
-        entities_fromText(&textEntities, shootText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, shootText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - shootXOffset,
             .y = yBase + 13.0f, 
             .scale = 0.3f
@@ -653,7 +668,7 @@ static void titleScreen(float dt) {
 
         const char* fullscreenText = input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
         float fullscreenXOffset = input.keyboard ? 82.0f : 97.0f;
-        entities_fromText(&textEntities, fullscreenText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, fullscreenText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
             .y = yBase + 26.0f, 
             .scale = 0.3f
@@ -661,7 +676,7 @@ static void titleScreen(float dt) {
 
         const char* quitText = input.keyboard ? "'ESC' to quit" : "'Back' to quit";
         float quitXOffset = input.keyboard ? 47.0f : 50.0f;
-        entities_fromText(&textEntities, quitText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, quitText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - quitXOffset,
             .y = yBase + 39.0f, 
             .scale = 0.3f
@@ -675,7 +690,7 @@ static void titleScreen(float dt) {
     }
 
     if (input.shoot || events_instructionSequence.complete) {
-        textEntities.count = 0;
+        entities.text.count = 0;
         transitionLevel();
     }
 
@@ -685,11 +700,11 @@ static void titleScreen(float dt) {
 
 static void levelTransition(float dt) {
     events_beforeFrame(&events_levelTransitionSequence, dt);
-    textEntities.count = 0;
+    entities.text.count = 0;
 
 
     if (events_on(&events_levelTransitionSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&textEntities, levelString, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, levelString, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 62.0f,
             .y = 72.0f, 
             .scale = 0.75f
@@ -698,15 +713,15 @@ static void levelTransition(float dt) {
 
     livesToEntities();
     updateStars(dt);
-    updateEntities(&smallEnemies, dt, 0.0f);
-    updateEntities(&mediumEnemies, dt, 0.0f);
-    updateEntities(&largeEnemies, dt, 0.0f);
-    updateEntities(&playerBullets, dt, 32.0f);
-    updateEntities(&enemyBullets, dt, 32.0f);
-    updateEntities(&explosions, dt, 32.0f);
+    updateEntities(&entities.smallEnemies, dt, 0.0f);
+    updateEntities(&entities.mediumEnemies, dt, 0.0f);
+    updateEntities(&entities.largeEnemies, dt, 0.0f);
+    updateEntities(&entities.playerBullets, dt, 32.0f);
+    updateEntities(&entities.enemyBullets, dt, 32.0f);
+    updateEntities(&entities.explosions, dt, 32.0f);
 
     if (events_levelTransitionSequence.complete) {
-        textEntities.count = 0;
+        entities.text.count = 0;
         levelWarpVy = 0.0f;
         starProbabilityMultiplier = 1.0f;
         gameState = MAIN_GAME;
@@ -718,29 +733,31 @@ static void levelTransition(float dt) {
 }
 
 static void mainGame(float dt) {
-    textEntities.count = 0;
+    entities.text.count = 0;
     
     updateStars(dt);
     simEnemies(dt);
 
     livesToEntities();
 
-    if (player.bulletThrottle > 0.0f) {
-        player.bulletThrottle -= dt; 
+    Player* player = &entities.player;
+
+    if (player->bulletThrottle > 0.0f) {
+        player->bulletThrottle -= dt; 
     }
 
-    if (player.lives > 0) {
-        if (player.deadTimer > 0.0f) {
-            player.deadTimer -= dt;
-            if (player.deadTimer < 0.0f) {
-                player.invincibleTimer = PLAYER_INVINCIBLE_TIME;
-                player.alpha[0] = PLAYER_INVINCIBLE_ALPHA;
+    if (player->lives > 0) {
+        if (player->deadTimer > 0.0f) {
+            player->deadTimer -= dt;
+            if (player->deadTimer < 0.0f) {
+                player->invincibleTimer = PLAYER_INVINCIBLE_TIME;
+                player->alpha[0] = PLAYER_INVINCIBLE_ALPHA;
             }
         } else {
             simPlayer(dt);           
         }
 
-        if (player.score >= levelScoreThreshold) {
+        if (player->score >= levelScoreThreshold) {
             ++level;
             levelScoreThreshold *= 2;
             smallEnemySpawnProbability *= LEVEL_SPAWN_PROBABILITY_MULTIPLIER;
@@ -761,7 +778,7 @@ static void mainGame(float dt) {
 static void gameOver(float dt) {
     events_beforeFrame(&events_gameOverSequence, dt);
     events_beforeFrame(&events_gameOverRestartSequence, dt);
-    textEntities.count = 0;
+    entities.text.count = 0;
 
     platform_getInput(&input);
 
@@ -769,7 +786,7 @@ static void gameOver(float dt) {
     simEnemies(dt);
 
 
-    entities_fromText(&textEntities, "Game Over", &(EntitiesFromTextOptions) {
+    entities_fromText(&entities.text, "Game Over", &(EntitiesFromTextOptions) {
         .x = GAME_WIDTH / 2.0f - 127.0f,
         .y = 68.0f,
         .scale = 1.2f
@@ -782,7 +799,7 @@ static void gameOver(float dt) {
     if (events_on(&events_gameOverRestartSequence, EVENTS_DISPLAY)) {
         const char* text = input.keyboard ? "Press 'Space' to Restart" : "Press 'A' to Restart";
         float xOffset = input.keyboard ? 107.0f : 91.0f;
-        entities_fromText(&textEntities, text, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, text, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 104.0f,
             .scale = 0.4f
@@ -794,13 +811,13 @@ static void gameOver(float dt) {
     filterDeadEntities();
 
     if (events_gameOverRestartSequence.running && input.shoot) {
-        player.lives = PLAYER_NUM_LIVES;
-        player.score = 0;
-        player.deadTimer = 0.0f;
-        smallEnemies.count = 0;
-        mediumEnemies.count = 0;
-        largeEnemies.count = 0;
-        enemyBullets.count = 0;
+        entities.player.lives = PLAYER_NUM_LIVES;
+        entities.player.score = 0;
+        entities.player.deadTimer = 0.0f;
+        entities.smallEnemies.count = 0;
+        entities.mediumEnemies.count = 0;
+        entities.largeEnemies.count = 0;
+        entities.enemyBullets.count = 0;
         level = 1;
         levelScoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD;
         smallEnemySpawnProbability = SMALL_ENEMY_INITIAL_SPAWN_PROBABILITY;
@@ -847,13 +864,13 @@ bool game_init(void) {
 
     // Load assets
     if (
-        !loadTexture("assets/sprites/ship.bmp", &player.texture) ||
-        !loadTexture("assets/sprites/enemy-small.bmp", &smallEnemies.texture) ||
-        !loadTexture("assets/sprites/enemy-medium.bmp", &mediumEnemies.texture) ||
-        !loadTexture("assets/sprites/enemy-big.bmp", &largeEnemies.texture) ||
-        !loadTexture("assets/sprites/explosion.bmp", &explosions.texture) ||
-        !loadTexture("assets/sprites/pixelspritefont32.bmp", &textEntities.texture) ||
-        !loadTexture("assets/sprites/laser-bolts.bmp", &playerBullets.texture)
+        !loadTexture("assets/sprites/ship.bmp", &entities.player.texture) ||
+        !loadTexture("assets/sprites/enemy-small.bmp", &entities.smallEnemies.texture) ||
+        !loadTexture("assets/sprites/enemy-medium.bmp", &entities.mediumEnemies.texture) ||
+        !loadTexture("assets/sprites/enemy-big.bmp", &entities.largeEnemies.texture) ||
+        !loadTexture("assets/sprites/explosion.bmp", &entities.explosions.texture) ||
+        !loadTexture("assets/sprites/pixelspritefont32.bmp", &entities.text.texture) ||
+        !loadTexture("assets/sprites/laser-bolts.bmp", &entities.playerBullets.texture)
     ) {
         platform_userMessage("FATAL ERROR: Unable to load textures.");
         return false;
@@ -870,24 +887,24 @@ bool game_init(void) {
     }
 
     // Shared textures    
-    livesEntities.texture = player.texture;
-    enemyBullets.texture = playerBullets.texture;
+    entities.lives.texture = entities.player.texture;
+    entities.enemyBullets.texture = entities.playerBullets.texture;
 
-    renderer_initTexture(&stars.texture, whitePixelData, 1, 1);
+    renderer_initTexture(&entities.stars.texture, whitePixelData, 1, 1);
 
     // Init game
     platform_playSound(&sounds.music, true);
 
-    entities_spawn(&player.entity, & (EntitiesInitOptions) {
-        .x = (GAME_WIDTH - player.sprite->panelDims[0]) / 2,
-        .y = GAME_HEIGHT - player.sprite->panelDims[1] * 2.0f
+    entities_spawn(&entities.player.entity, & (EntitiesInitOptions) {
+        .x = (GAME_WIDTH - entities.player.sprite->panelDims[0]) / 2,
+        .y = GAME_HEIGHT - entities.player.sprite->panelDims[1] * 2.0f
     });
 
-    entities_setAnimation(&player.entity, 0, SPRITES_PLAYER_CENTER);
+    entities_setAnimation(&entities.player.entity, 0, SPRITES_PLAYER_CENTER);
 
     for (int32_t i = 0; i < 40; ++i) {
         float t = utils_randomRange(0.0f, 1.0f);
-        entities_spawn(&stars, &(EntitiesInitOptions) {
+        entities_spawn(&entities.stars, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
             .y = utils_randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]), 
             .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
@@ -939,18 +956,18 @@ void game_resize(int width, int height) {
 void game_draw(void) {
     renderer_beforeFrame();
 
-    renderer_draw(&stars.renderList);
+    renderer_draw(&entities.stars.renderList);
 
-    if (player.deadTimer <= 0.0f) {
-        renderer_draw(&player.renderList);
+    if (entities.player.deadTimer <= 0.0f) {
+        renderer_draw(&entities.player.renderList);
     }
 
-    renderer_draw(&explosions.renderList);
-    renderer_draw(&smallEnemies.renderList);
-    renderer_draw(&mediumEnemies.renderList);
-    renderer_draw(&largeEnemies.renderList);
-    renderer_draw(&enemyBullets.renderList);
-    renderer_draw(&playerBullets.renderList);
-    renderer_draw(&textEntities.renderList);
-    renderer_draw(&livesEntities.renderList);
+    renderer_draw(&entities.explosions.renderList);
+    renderer_draw(&entities.smallEnemies.renderList);
+    renderer_draw(&entities.mediumEnemies.renderList);
+    renderer_draw(&entities.largeEnemies.renderList);
+    renderer_draw(&entities.enemyBullets.renderList);
+    renderer_draw(&entities.playerBullets.renderList);
+    renderer_draw(&entities.text.renderList);
+    renderer_draw(&entities.lives.renderList);
 }
