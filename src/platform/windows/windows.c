@@ -49,20 +49,12 @@
 #define INITIAL_WINDOW_HEIGHT 600
 
 static struct {
-    bool left;
-    bool right;
-    bool up;
-    bool down;
-    bool space;
-    bool ctrl;
-} keyboard;
-
-static struct {
-    int16_t stickX;
-    int16_t stickY;
+    float stickX;
+    float stickY;
     bool aButton;
     bool startButton;
     bool backButton;
+    bool keyboard;
 } gamepad;
 
 static struct {
@@ -169,28 +161,33 @@ LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
         case WM_KEYUP: {
             bool isDown = (lParam & (1 << 31)) == 0;
             switch (wParam) {
-                case VK_LEFT:    {
-                    keyboard.left  = isDown;
-                } break;
+                case VK_LEFT:
                 case VK_RIGHT:   {
-                    keyboard.right = isDown;
+                    if (isDown) {
+                        gamepad.stickX = wParam == VK_LEFT ? -1.0f : 1.0f;
+                    } else {
+                        gamepad.stickX = 0.0f;
+                    }
                 } break;
-                case VK_UP:      {
-                    keyboard.up    = isDown;
+                case VK_UP:
+                case VK_DOWN: {
+                    if (isDown) {
+                        gamepad.stickX = wParam == VK_UP ? -1.0f : 1.0f;
+                    } else {
+                        gamepad.stickX = 0.0f;
+                    }
                 } break;
-                case VK_DOWN:    {
-                    keyboard.down  = isDown;
-                } break;
-                case VK_SPACE:   {
-                    keyboard.space = isDown;
+                case VK_SPACE: {
+                    gamepad.aButton = isDown;
                 } break;
                 case VK_ESCAPE: {
-                    menuButtons.quit = isDown;
+                    gamepad.backButton = isDown;
                 } break;
                 case 'F': {
-                    menuButtons.toggleFullscreen = isDown;
+                    gamepad.startButton = isDown;
                 } break;
             }
+            gamepad.keyboard = true;
             return 0;
         } break;
         case WM_CLOSE: {
@@ -290,20 +287,60 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         }
 
         if (controllerIndex > -1 && XInputGetState(controllerIndex, &xinputState) == ERROR_SUCCESS) {
-            gamepad.stickX = xinputState.Gamepad.sThumbLX;
-            gamepad.stickY = xinputState.Gamepad.sThumbLY;
-            gamepad.aButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
-            menuButtons.toggleFullscreen = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
-            menuButtons.quit = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+            bool gamepadHasInput = false;
+            float stickX = 0.0f;
+            float stickY = 0.0f;
+            bool aButton = false;
+            bool startButton = false;
+            bool backButton = false;
+
+            float x = xinputState.Gamepad.sThumbLX;
+            float y = xinputState.Gamepad.sThumbLY;
+
+            float mag = (float) sqrt(x * x + y * y);
+            x /= mag;
+            y /= mag;
+
+            if (mag > 32767.0f) {
+                mag = 32767.0f;
+            }
+
+            if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
+                mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+                mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+                stickX = x * mag;
+                stickY = y * mag;
+                gamepadHasInput = true;
+            }
+            
+            aButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
+            startButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_START;
+            backButton = xinputState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+
+            if (aButton || startButton || backButton) {
+                gamepadHasInput = true;
+            }
+
+            if (gamepadHasInput || !gamepad.keyboard) {
+                gamepad.stickX = stickX;
+                gamepad.stickY = stickY;
+                gamepad.aButton = aButton;
+                gamepad.startButton = startButton;
+                gamepad.backButton = backButton;
+                gamepad.keyboard = false;
+            }
         } else {
             controllerIndex = -1;
+            gamepad.keyboard = false;
         }
 
+        menuButtons.toggleFullscreen = gamepad.startButton;
         if (menuButtons.toggleFullscreen && !menuButtons.lastToggleFullscreen) {
             toggleFullscreen(window);
         }
         menuButtons.lastToggleFullscreen = menuButtons.toggleFullscreen;
 
+        menuButtons.quit = gamepad.backButton;
         if (menuButtons.quit && !menuButtons.lastQuit) {
             running = false;
         }
@@ -329,60 +366,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
 void platform_getInput(GameInput* input) {
     input->lastShoot = input->shoot;
-    input->velocity[0] = 0.0f;
-    input->velocity[1] = 0.0f;
-    input->shoot = false;
-
-    if (controllerIndex > -1) {
-        float x = gamepad.stickX;
-        float y = gamepad.stickY;
-
-        float mag = (float) sqrt(x * x + y * y);
-        x /= mag;
-        y /= mag;
-
-        if (mag > 32767.0f) {
-            mag = 32767.0f;
-        }
-
-        if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
-            mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-            mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-            input->velocity[0] = x * mag;
-            input->velocity[1] = y * mag;
-            input->controller = true;
-        } else {
-            input->velocity[0] = 0.0f;
-            input->velocity[1] = 0.0f;
-        }
-        if (gamepad.aButton) {
-            input->shoot = true;
-            input->controller = true;
-        }
-    } else {
-        input->controller = false;
-    }
-
-    if (keyboard.left) {
-        input->velocity[0] = -1.0f;
-        input->controller = false;
-    } else if (keyboard.right) {
-        input->velocity[0] = 1.0f;
-        input->controller = false;
-    }
-
-    if (keyboard.up) {
-        input->velocity[1] = 1.0f;
-        input->controller = false;
-    } else if (keyboard.down) {
-        input->velocity[1] = -1.0f;
-        input->controller = false;
-    }
-
-    if (keyboard.space) {
-        input->shoot = true;
-        input->controller = false;
-    }
+    input->velocity[0] = gamepad.stickX;
+    input->velocity[1] = gamepad.stickY;
+    input->shoot = gamepad.aButton;
+    input->keyboard = gamepad.keyboard;
 }
 
 void platform_debugLog(const char* message) {

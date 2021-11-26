@@ -32,7 +32,7 @@ typedef struct {
 	float velocity[2];
 	bool shoot;
 	bool lastShoot;
-	bool controller;
+	bool keyboard;
 } GameInput;
 
 bool game_init(void);

@@ -125,9 +125,7 @@ static enum {
     GAME_OVER
 } gameState = TITLE;
 
-static GameInput input = {
-    .controller = true
-};
+static GameInput input;
 
 static struct {
     DataBuffer music;
@@ -635,16 +633,16 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_instructionSequence, EVENTS_DISPLAY)) {
-        const char* fullscreenText = input.controller ? "'Start' to toggle fullscreen" : "'F' to toggle fullscreen";
-        float fullscreenXOffset = input.controller ? 97.0f : 82.0f;
+        const char* fullscreenText = input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
+        float fullscreenXOffset = input.keyboard ? 82.0f : 97.0f;
         entities_fromText(&textEntities, fullscreenText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
             .y = 78.0f, 
             .scale = 0.3f
         });
 
-        const char* quitText = input.controller ? "'Back' to quit" : "'ESC' to quit";
-        float quitXOffset = input.controller ? 50.0f : 47.0f;
+        const char* quitText = input.keyboard ? "'ESC' to quit" : "'Back' to quit";
+        float quitXOffset = input.keyboard ? 47.0f : 50.0f;
         entities_fromText(&textEntities, quitText, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - quitXOffset,
             .y = 91.0f, 
@@ -762,8 +760,8 @@ static void gameOver(float dt) {
     }
 
     if (events_on(&events_gameOverRestartSequence, EVENTS_DISPLAY)) {
-        const char* text = input.controller ? "Press 'A' to Restart" : "Press 'Space' to Restart";
-        float xOffset = input.controller ? 91.0f : 107.0f;
+        const char* text = input.keyboard ? "Press 'Space' to Restart" : "Press 'A' to Restart";
+        float xOffset = input.keyboard ? 107.0f : 91.0f;
         entities_fromText(&textEntities, text, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 104.0f,
