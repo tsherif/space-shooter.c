@@ -28,8 +28,8 @@
 #include "../../shared/platform-interface.h"
 
 typedef struct {
-    int16_t stickX;
-    int16_t stickY;
+    float stickX;
+    float stickY;
     bool aButton;
     bool startButton;
     bool backButton;
