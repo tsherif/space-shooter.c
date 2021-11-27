@@ -42,7 +42,6 @@
 
 #define PATH_MAX 512
 #define INPUT_DIR "/dev/input/by-id"
-#define GAMEPAD_LEFT_THUMB_DEADZONE  7849
 
 static struct {
     int32_t fd;
@@ -182,9 +181,9 @@ void linux_updateGamepad(LinuxGamepad* gamepad) {
                     x /= mag;
                     y /= mag;
 
-                    if (mag > GAMEPAD_LEFT_THUMB_DEADZONE) {
-                        mag -= GAMEPAD_LEFT_THUMB_DEADZONE;
-                        mag /= 32767.0f - GAMEPAD_LEFT_THUMB_DEADZONE;
+                    if (mag > SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE) {
+                        mag -= SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE;
+                        mag /= 32767.0f - SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE;
                         gamepad->stickX = x * mag;
                         gamepad->stickY = -y * mag;
                     } else {

@@ -40,13 +40,11 @@
 #include <profileapi.h>
 #include "../../../lib/create-opengl-window.h"
 #include "../../../lib/simple-opengl-loader.h"
+#include "../../shared/constants.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "../../shared/debug.h"
 #include "windows-audio.h"
-
-#define INITIAL_WINDOW_WIDTH 1200
-#define INITIAL_WINDOW_HEIGHT 600
 
 static struct {
     int32_t width;
@@ -56,10 +54,8 @@ static struct {
     bool fullscreen;
     bool mouseHovering;
 } windowState = {
-    .width = INITIAL_WINDOW_WIDTH,
-    .height = INITIAL_WINDOW_HEIGHT,
-    .preFullscreenWidth = INITIAL_WINDOW_WIDTH,
-    .preFullscreenHeight = INITIAL_WINDOW_HEIGHT,
+    .preFullscreenWidth = SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH,
+    .preFullscreenHeight = SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT,
     .fullscreen = true,
     .mouseHovering = false
 };
@@ -134,9 +130,9 @@ static void processXinputState(XINPUT_STATE* xinputState) {
         mag = 32767.0f;
     }
 
-    if (mag > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) {
-        mag -= XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-        mag /= 32767.0f - XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
+    if (mag > SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE) {
+        mag -= SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE;
+        mag /= 32767.0f - SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE;
         stickX = x * mag;
         stickY = y * mag;
         gamepadHasInput = true;

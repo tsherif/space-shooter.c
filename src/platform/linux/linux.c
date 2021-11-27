@@ -29,6 +29,7 @@
 
 #define SOGL_IMPLEMENTATION_X11
 #include "../../../lib/simple-opengl-loader.h"
+#include "../../shared/constants.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "../../shared/debug.h"
@@ -41,9 +42,6 @@
 #include <unistd.h>
 #include "linux-audio.h"
 #include "linux-gamepad.h"
-
-#define INITIAL_WINDOW_WIDTH 1200
-#define INITIAL_WINDOW_HEIGHT 600
 
 #define _NET_WM_STATE_REMOVE 0
 #define _NET_WM_STATE_ADD    1
@@ -76,7 +74,7 @@ int main(int argc, char const *argv[]) {
         display,
         rootWindow,
         20, 20, 
-        INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT,
+        SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH, SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT,
         0,
         CopyFromParent,
         CopyFromParent,
@@ -236,7 +234,7 @@ int main(int argc, char const *argv[]) {
         return 1;
     }
 
-    game_resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT);
+    game_resize(SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH, SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT);
     linux_detectGamepad();
 
     struct {
