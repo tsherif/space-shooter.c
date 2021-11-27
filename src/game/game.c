@@ -435,7 +435,10 @@ static void updateScoreDisplay() {
 //  Entitity simulation functions
 //////////////////////////////////
 
-static void simEnemies(float dt) {
+static void simWorld(float dt) {
+    updateStars(dt);
+
+    // Spawn new enemies
     if (utils_randomRange(0.0f, 1.0f) < levelState.smallEnemySpawnProbability * dt) {
         entities_spawn(&entities.smallEnemies, &(EntitiesInitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
@@ -463,12 +466,14 @@ static void simEnemies(float dt) {
         });
     }
 
+    // Sim enemies and bullets
     updateEntities(&entities.smallEnemies, dt, 0.0f);
     updateEntities(&entities.mediumEnemies, dt, 0.0f);
     updateEntities(&entities.largeEnemies, dt, 0.0f);
     updateEntities(&entities.playerBullets, dt, 32.0f);
     updateEntities(&entities.enemyBullets, dt, 32.0f);
 
+    // Check for player bullets hitting enemies
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBullet.collisionBox;
     for (int32_t i = 0; i < entities.playerBullets.count; ++i) {
         float* position = entities.playerBullets.position + i * 2;
@@ -492,8 +497,8 @@ static void simEnemies(float dt) {
 static void simPlayer(float dt) {
     platform_getInput(&gameState.input);
 
+    // Process player input
     Player* player = &entities.player;
-
     player->velocity[0] = PLAYER_VELOCITY * gameState.input.velocity[0];
     player->velocity[1] = -PLAYER_VELOCITY * gameState.input.velocity[1];
 
@@ -532,6 +537,9 @@ static void simPlayer(float dt) {
         player->position[1] = GAME_HEIGHT - player->sprite->panelDims[1];
     }
 
+    // Fire enemy bullets
+    // NOTE(Tarek): This logic is in simPlayer because bullets
+    //   should only fire if player is alive
     for (int32_t i = 0; i < entities.smallEnemies.count; ++i) {
         if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
             float* position = entities.smallEnemies.position + i * 2;
@@ -554,9 +562,12 @@ static void simPlayer(float dt) {
     }
 
     if (player->invincibleTimer > 0.0f) {
+        // Player is invincible (grace period after dying)
         player->invincibleTimer -= dt;
         player->alpha[0] = PLAYER_INVINCIBLE_ALPHA;
     } else {
+        // Player is alive and not invincible.
+        // Check collisions with bullets/enemies.
         player->alpha[0] = 1.0f;
         Sprites_CollisionBox* playerCollisionBox = &sprites_player.collisionBox;
         float playerMin[] = {
@@ -567,7 +578,6 @@ static void simPlayer(float dt) {
             player->position[0] + playerCollisionBox->max[0],
             player->position[1] + playerCollisionBox->max[1]
         };
-
 
         bool bulletHit = checkPlayerCollision(playerMin, playerMax, &entities.enemyBullets, NULL);
         bool smallEnemyHit = checkPlayerCollision(playerMin, playerMax, &entities.smallEnemies, &(PlayerCollisionExplosionOptions) {
@@ -746,9 +756,7 @@ static void levelTransition(float dt) {
 static void mainGame(float dt) {
     entities.text.count = 0;
     
-    updateStars(dt);
-    simEnemies(dt);
-
+    simWorld(dt);
     livesToEntities();
 
     Player* player = &entities.player;
@@ -793,9 +801,7 @@ static void gameOver(float dt) {
 
     platform_getInput(&gameState.input);
 
-    updateStars(dt);
-    simEnemies(dt);
-
+    simWorld(dt);
 
     entities_fromText(&entities.text, "Game Over", &(EntitiesFromTextOptions) {
         .x = GAME_WIDTH / 2.0f - 127.0f,

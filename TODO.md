@@ -1,4 +1,11 @@
-- [ ] See if game loop can be tightened up
+- [ ] Update readme
+- [ ] Document design
+- [ ] New GIF
+- [ ] Linux: Set cursor in XCreateWindow
+- [ ] More comments
+- [ ] Display score for next level
+- [x] See if game loop can be tightened up
+- [x] Assert events don't overlap
 - [x] Clean up globals 
 - [x] Fix keyboard input so pressing two direction keys at the same time works
 - [x] Switch instruction text based on whether keyboard or controller was last used

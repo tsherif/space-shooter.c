@@ -22,7 +22,11 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 #include "events.h"
+#include "../shared/debug.h"
 
+#define MIN_EVENT_TIME 50
+
+// Initialize sequence to "running"
 void events_start(EventsSequence* sequence) {
     if (sequence->running) {
         return;
@@ -35,6 +39,7 @@ void events_start(EventsSequence* sequence) {
     sequence->alpha = 0.0f;
 }
 
+// Stop and reset a sequence
 void events_stop(EventsSequence* sequence) {
     sequence->running = false;
     sequence->time = 0;
@@ -43,6 +48,8 @@ void events_stop(EventsSequence* sequence) {
     sequence->alpha = 0.0f;
 }
 
+// Move a sequence forward by dt milliseconds.
+// (Should be called at beginning of frame).
 void events_beforeFrame(EventsSequence* sequence, float dt) {
     if (!sequence->running) {
         return;
@@ -57,6 +64,7 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
     float end = 0.0f;
     for (int32_t i = 0; i < sequence->count; ++i) {
         EventsEvent* event = sequence->events + i;
+        DEBUG_ASSERT(event->delay > MIN_EVENT_TIME || event->duration > MIN_EVENT_TIME, "events_beforeFrame: Events must have a duration or delay of at least 50ms.");
         start = end + event->delay;
         end = start + event->duration;
         if (start <= sequence->time && end >= lastTime) {
@@ -84,6 +92,7 @@ void events_beforeFrame(EventsSequence* sequence, float dt) {
 
 }
 
+// Check the currently active event
 bool events_on(EventsSequence* sequence, int32_t id) {
     if (!sequence->running || sequence->triggeredEvent == EVENTS_NONE) {
         return false;
@@ -91,6 +100,10 @@ bool events_on(EventsSequence* sequence, int32_t id) {
 
     return sequence->triggeredEvent == id;
 }
+
+//////////////////////////////////////////////////////////
+// Events to sequence display of main title and subtitle
+//////////////////////////////////////////////////////////
 
 static EventsEvent titleControlEvents[] = {
     { 
@@ -107,6 +120,10 @@ EventsSequence events_titleControlSequence = {
     .events = titleControlEvents,
     .count = sizeof(titleControlEvents) / sizeof(titleControlEvents[0])
 };
+
+//////////////////////////////////////////////////////////
+// Title display and fadeout events
+//////////////////////////////////////////////////////////
 
 static EventsEvent titleEvents[] = {
     { 
@@ -129,6 +146,10 @@ EventsSequence events_subtitleSequence = {
     .count = sizeof(titleEvents) / sizeof(titleEvents[0])
 };
 
+//////////////////////////////////////////////////////////
+// Display of control instructions after opening title
+//////////////////////////////////////////////////////////
+
 static EventsEvent instructionEvents[] = {
     { 
         .delay = 500.0f,
@@ -144,6 +165,10 @@ EventsSequence events_instructionSequence = {
     .events = instructionEvents,
     .count = sizeof(instructionEvents) / sizeof(instructionEvents[0])
 };
+
+//////////////////////////////////
+// Display game over screen
+//////////////////////////////////
 
 static EventsEvent gameOverEvents[] = {
     { 
@@ -172,6 +197,10 @@ EventsSequence events_gameOverRestartSequence = {
     .count = sizeof(gameOverRestartEvents) / sizeof(gameOverRestartEvents[0]),
     .loop = true
 };
+
+//////////////////////////////////
+// Level transition text display
+//////////////////////////////////
 
 static EventsEvent levelTransitionEvents[] = {
     { 
