@@ -3,7 +3,7 @@
 - [ ] New GIF
 - [ ] Linux: Set cursor in XCreateWindow
 - [ ] More comments
-- [ ] Display score for next level
+- [x] Display score for next level
 - [x] See if game loop can be tightened up
 - [x] Assert events don't overlap
 - [x] Clean up globals 

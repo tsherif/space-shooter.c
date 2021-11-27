@@ -43,6 +43,7 @@
 #define TICK_DURATION 16.6667f
 #define COLLISION_SCALE 0.7f   // Scale factor on collision boxes when detecting collisions
 #define TIME_PER_ANIMATION 100.0f // Time per frame of a sprite animation
+#define SCORE_TEXT_LENGTH 5 
 
 //////////////////////////////////
 //  Player constants
@@ -99,6 +100,9 @@
 #define INITIAL_LEVEL_SCORE_THRESHOLD 50
 #define LEVEL_WARP 0.2f
 #define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
+#define LEVEL_TITLE_BUFFER_SIZE 32 
+#define BASE_TITLE_LENGTH 7
+#define BASE_NEXT_LEVEL_TEXT_LENGTH 20
 
 //////////////////////////////////
 //  Game state
@@ -118,7 +122,6 @@ typedef struct {
     float yOffset;
 } PlayerCollisionExplosionOptions;
 
-#define SCORE_TEXT_LENGTH 5 
 static struct {
     enum {
         TITLE_SCREEN,
@@ -171,7 +174,6 @@ static struct {
     .whitePixel = {255, 255, 255, 255}
 };
 
-#define LEVEL_TITLE_LENGTH 32 
 static struct {
     int32_t level;
     int32_t scoreThreshold;
@@ -182,7 +184,9 @@ static struct {
     // For level transitions
     float starProbabilityMultiplier;
     float warpVy;
-    char title[LEVEL_TITLE_LENGTH];
+    int32_t nextLevelTextLength;
+    char title[LEVEL_TITLE_BUFFER_SIZE];
+    char nextLevelText[LEVEL_TITLE_BUFFER_SIZE];
 } levelState = {
     .level = 1,
     .scoreThreshold = INITIAL_LEVEL_SCORE_THRESHOLD,
@@ -223,7 +227,8 @@ static bool loadTexture(const char* fileName, GLuint *texture) {
 //////////////////////////////////
 
 static void updateLevelTitle(void) {
-    snprintf(levelState.title, LEVEL_TITLE_LENGTH, "Level %d", levelState.level);
+    snprintf(levelState.title, LEVEL_TITLE_BUFFER_SIZE, "Level %d", levelState.level);
+    levelState.nextLevelTextLength = snprintf(levelState.nextLevelText, LEVEL_TITLE_BUFFER_SIZE, "Level %d at %d points", levelState.level + 1, levelState.scoreThreshold);
 }
 
 static void transitionLevel(void) {
@@ -723,12 +728,20 @@ static void levelTransition(float dt) {
     events_beforeFrame(&events_levelTransitionSequence, dt);
     entities.text.count = 0;
 
-
+    // NOTE(Tarek): Not offsetting level because people probably won't get past level 9?
     if (events_on(&events_levelTransitionSequence, EVENTS_DISPLAY)) {
         entities_fromText(&entities.text, levelState.title, &(EntitiesFromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 62.0f,
-            .y = 72.0f, 
+            .y = 64.0f, 
             .scale = 0.75f
+        });
+
+        float xOffset = levelState.level == 1 ? 58.0f : 56.0f; // Thinner '1' needs to be further left ot look good
+        xOffset += (levelState.nextLevelTextLength - BASE_NEXT_LEVEL_TEXT_LENGTH) * 3.0f;
+        entities_fromText(&entities.text, levelState.nextLevelText, &(EntitiesFromTextOptions) {
+            .x = GAME_WIDTH / 2.0f - xOffset,
+            .y = 88.0f, 
+            .scale = 0.25f
         });
     }
 
