@@ -1,7 +1,6 @@
 - [ ] Update readme
 - [ ] Document design
 - [ ] New GIF
-- [ ] Linux: Set cursor in XCreateWindow
 - [ ] More comments
 - [x] Display score for next level
 - [x] See if game loop can be tightened up
