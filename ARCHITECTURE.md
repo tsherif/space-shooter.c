@@ -3,6 +3,15 @@ The Architecture of space-shooter.c [WIP]
 
 This document outlines the high-level architecture of `space-shooter.c`. More detailed implementation details can be found in the source code.
 
+Memory Model
+------------
+
+All memory for game objects in `space-shooter.c` is statically allocated in the arrays in `Renderer_List` and `Entities_List`, which are managed as an object pool. 
+
+**TODO: DESCRIBE OBJECT POOL**
+
+The only use of dynamic memory is in loading image and sound assets when the game initializes. This lead to a nice "dev ex" benefit that once the game initializes, errors related to memory allocation were no long a concern.
+
 Data Model
 ----------
 
@@ -39,8 +48,8 @@ This allows the properties of the mixin struct to be used directly, or the mixin
 
 **Sprite**
 
-The `SpritesSprite` struct ([sprites.h](./src/game/sprites.h)) represents a single spritesheet, and contains data about dimensions, number of panels, panel dimensions, etc. This data is used by the renderer layer for drawing and the game layer for positioning/collision logic.
+The `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single spritesheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the spritesheet. This data is used by the renderer layer for drawing and the game layer for positioning/collision logic.
 
-**RendererList**
+**Renderer_List**
 
-The `RendererList` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attibute data that will drawn with a particular spritesheet, such as position and current sprite panel.
+The `RendererList` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attibute data that will drawn with a particular spritesheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify uploading it to the GPU buffer data for instanced draw calls.
