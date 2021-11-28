@@ -25,11 +25,17 @@ The platform layer implements the following functions used by the game layer:
 
 ### Game
 
-The game layer is implemented in [game.c](./src/game/game.c) and contains all the game logic, including capturing input from the platform layer, simulating the player and the world, checking for collisions, tracking and displaying the player's score and number of lives, etc. Most of this is done in operations on `Entities_List` structs. Once entities have been updated, the `Renderer_List` mixin for each `Entities_List` is passed to the rendering layer for drawing.
+The game layer is implemented in [game.c](./src/game/game.c) and contains all the game logic, including capturing input from the platform layer, simulating the player and the world, checking for collisions, tracking and displaying the player's score and number of lives, etc. Assets are loaded and game entities are initialized in `game_init()`. Per-frame simulation is done in `game_update()` and the behavior will depend on the current "game state", which can take on the following values:
+- `TITLE_SCREEN`: Display title text and instructions.
+- `MAIN_GAME`: Actual gameplay. Gather player input and simulate player and world.
+- `LEVEL_TRANSITION`: Display level transition animation.
+- `GAME_OVER`: Player has lost all lives. Display game over text and restart instructions.
+
+Most `game_update()` logic involves manipulating `Entities_List` structs. Once entities have been updated, the `Renderer_List` mixin for each `Entities_List` is passed to the rendering layer in `game_draw()`.
 
 ### Rendering
 
-The rendering layer is implemented in [renderer.c](./src/game/renderer.c) and contains all OpenGL drawing logic. Each `Renderer_List` drawn in an instanced draw call.
+The rendering layer is implemented in [renderer.c](./src/game/renderer.c) and contains all OpenGL drawing logic. Each `Renderer_List` is drawn in an instanced draw call.
 
 
 Memory Model
