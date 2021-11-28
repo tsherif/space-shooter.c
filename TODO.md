@@ -1,7 +1,7 @@
 - [ ] Update readme
 - [ ] Document design
-- [ ] New GIF
 - [ ] More comments
+- [x] New GIF
 - [x] Display score for next level
 - [x] See if game loop can be tightened up
 - [x] Assert events don't overlap
