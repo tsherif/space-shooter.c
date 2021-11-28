@@ -33,7 +33,7 @@ typedef struct {
 	bool shoot;
 	bool lastShoot;
 	bool keyboard;
-} GameInput;
+} Game_Input;
 
 bool game_init(void);
 void game_update(float elapsedTime); // In milliseconds
@@ -41,10 +41,10 @@ void game_draw(void);
 void game_resize(int width, int height);
 
 // Must be implemented by platform layer, to be used by game.
-void platform_getInput(GameInput* input);
-void platform_playSound(DataBuffer* sound, bool loop);
+void platform_getInput(Game_Input* input);
+void platform_playSound(Data_Buffer* sound, bool loop);
 void platform_debugLog(const char* message);
 void platform_userMessage(const char* message);
-bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate);
+bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate);
 
 #endif

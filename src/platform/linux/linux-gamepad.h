@@ -34,10 +34,10 @@ typedef struct {
     bool startButton;
     bool backButton;
     bool keyboard;
-} LinuxGamepad;
+} Linux_Gamepad;
 
 void linux_detectGamepad(void);
-void linux_updateGamepad(LinuxGamepad* gamepad);
+void linux_updateGamepad(Linux_Gamepad* gamepad);
 void linux_pingGamepad(void);
 void linux_closeGamepad(void);
 

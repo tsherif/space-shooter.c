@@ -47,7 +47,7 @@
 #define _NET_WM_STATE_ADD    1
 #define _NET_WM_STATE_TOGGLE 2
 
-static LinuxGamepad gamepad;
+static Linux_Gamepad gamepad;
 
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
@@ -351,7 +351,7 @@ int main(int argc, char const *argv[]) {
     XCloseDisplay(display);
 }
 
-void platform_getInput(GameInput* input) {
+void platform_getInput(Game_Input* input) {
     input->lastShoot = input->shoot;
     input->velocity[0] = gamepad.stickX;
     input->velocity[1] = gamepad.stickY;
@@ -374,7 +374,7 @@ void platform_userMessage(const char* message) {
 }
 
 
-bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
+bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
     uint8_t* data = 0;
 

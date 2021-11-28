@@ -376,7 +376,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     return (int) message.wParam;
 }
 
-void platform_getInput(GameInput* input) {
+void platform_getInput(Game_Input* input) {
     input->lastShoot = input->shoot;
     input->velocity[0] = gamepad.stickX;
     input->velocity[1] = gamepad.stickY;
@@ -393,7 +393,7 @@ void platform_userMessage(const char* message) {
     MessageBoxA(NULL, message, "space-shooter.c (Windows)", MB_OK);
 }
 
-bool platform_loadFile(const char* fileName, DataBuffer* buffer, bool nullTerminate) {
+bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate) {
     HANDLE file = CreateFileA(
       fileName,
       GENERIC_READ,

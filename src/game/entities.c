@@ -23,7 +23,7 @@
 
 #include "entities.h"
 
-void entities_updateAnimationPanel(EntitiesList* list, int32_t i) {
+void entities_updateAnimationPanel(Entities_List* list, int32_t i) {
     float* panel = list->sprite->animations[list->currentAnimation[i]].frames[list->animationTick[i]];
     float* currentSpritePanel = list->currentSpritePanel + i * 2;
 
@@ -31,7 +31,7 @@ void entities_updateAnimationPanel(EntitiesList* list, int32_t i) {
     currentSpritePanel[1] = panel[1];
 }
 
-void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation) {
+void entities_setAnimation(Entities_List* list, int32_t i, int32_t animation) {
     if (list->currentAnimation[i] == animation) {
         return;
     }
@@ -41,7 +41,7 @@ void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation) {
     entities_updateAnimationPanel(list, i);
 }
 
-void entities_updateAnimations(EntitiesList* list) {
+void entities_updateAnimations(Entities_List* list) {
     for (int32_t i = 0; i < list->count; ++i) {
         int32_t numFrames = list->sprite->animations[list->currentAnimation[i]].numFrames;
         ++list->animationTick[i];
@@ -60,7 +60,7 @@ void entities_updateAnimations(EntitiesList* list) {
     }
 }
 
-void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
+void entities_spawn(Entities_List* list, Entities_InitOptions* opts) {
     if (list->count == RENDERER_DRAWLIST_MAX) {
         return;
     }
@@ -88,7 +88,7 @@ void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts) {
     ++list->count;
 }
 
-void entities_filterDead(EntitiesList* list) {
+void entities_filterDead(Entities_List* list) {
 
     for (int32_t i = list->count - 1; i >= 0; --i) {
         if (list->dead[i]) {
@@ -115,7 +115,7 @@ void entities_filterDead(EntitiesList* list) {
     }
 }
 
-void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts) {
+void entities_fromText(Entities_List* list, const char* text, Entities_FromTextOptions* opts) {
     int32_t i = 0;
 
     if (opts->reset) {
@@ -132,7 +132,7 @@ void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOpt
             continue;
         }
 
-        entities_spawn(list, &(EntitiesInitOptions) { 
+        entities_spawn(list, &(Entities_InitOptions) { 
             .x = opts->x + i * list->sprite->panelDims[0] * scale * SPRITES_TEXT_SPACING_SCALE,
             .y = opts->y,
             .scale = scale,

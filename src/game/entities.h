@@ -34,9 +34,9 @@
     bool dead[RENDERER_DRAWLIST_MAX];\
 }
 
-typedef struct ENTITIES_LIST_BODY EntitiesList;
+typedef struct ENTITIES_LIST_BODY Entities_List;
 
-#define ENTITIES_LIST_MIXIN(name) union { struct ENTITIES_LIST_BODY; EntitiesList name; }
+#define ENTITIES_LIST_MIXIN(name) union { struct ENTITIES_LIST_BODY; Entities_List name; }
 
 typedef struct {
     float x;
@@ -48,7 +48,7 @@ typedef struct {
     float scale;
     float transparency;
     float whiteOut;
-} EntitiesInitOptions;
+} Entities_InitOptions;
 
 typedef struct {
     float x;
@@ -56,14 +56,14 @@ typedef struct {
     float scale;
     float transparency;
     bool reset;
-} EntitiesFromTextOptions;
+} Entities_FromTextOptions;
 
-void entities_updateAnimationPanel(EntitiesList* list, int32_t i);
-void entities_setAnimation(EntitiesList* list, int32_t i, int32_t animation);
-void entities_updateAnimations(EntitiesList* list);
-void entities_spawn(EntitiesList* list, EntitiesInitOptions* opts);
-void entities_init(EntitiesList* list, int32_t i, EntitiesInitOptions* opts);
-void entities_filterDead(EntitiesList* list);
-void entities_fromText(EntitiesList* list, const char* text, EntitiesFromTextOptions* opts);
+void entities_updateAnimationPanel(Entities_List* list, int32_t i);
+void entities_setAnimation(Entities_List* list, int32_t i, int32_t animation);
+void entities_updateAnimations(Entities_List* list);
+void entities_spawn(Entities_List* list, Entities_InitOptions* opts);
+void entities_init(Entities_List* list, int32_t i, Entities_InitOptions* opts);
+void entities_filterDead(Entities_List* list);
+void entities_fromText(Entities_List* list, const char* text, Entities_FromTextOptions* opts);
 
 #endif

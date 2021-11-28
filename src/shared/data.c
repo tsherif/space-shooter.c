@@ -24,7 +24,7 @@
 #include <malloc.h>
 #include "data.h"
 
-void data_freeBuffer(DataBuffer* buffer) {
+void data_freeBuffer(Data_Buffer* buffer) {
 	if (!buffer->data) {
 		return;
 	}
@@ -34,7 +34,7 @@ void data_freeBuffer(DataBuffer* buffer) {
 	buffer->size = 0;
 }
 
-void data_freeImage(DataImage* image) {
+void data_freeImage(Data_Image* image) {
 	if (!image->data) {
 		return;
 	}

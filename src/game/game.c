@@ -129,7 +129,7 @@ static struct {
         MAIN_GAME,
         GAME_OVER
     } state;
-    GameInput input;
+    Game_Input input;
     float tickTime;
     float animationTime;
     char scoreText[SCORE_TEXT_LENGTH];
@@ -139,15 +139,15 @@ static struct {
 
 static struct {
     Player player;
-    EntitiesList smallEnemies;
-    EntitiesList mediumEnemies;
-    EntitiesList largeEnemies;
-    EntitiesList playerBullets;
-    EntitiesList enemyBullets;
-    EntitiesList explosions;
-    EntitiesList stars;
-    EntitiesList text;
-    EntitiesList lives;
+    Entities_List smallEnemies;
+    Entities_List mediumEnemies;
+    Entities_List largeEnemies;
+    Entities_List playerBullets;
+    Entities_List enemyBullets;
+    Entities_List explosions;
+    Entities_List stars;
+    Entities_List text;
+    Entities_List lives;
 } entities = {
     .player = { .sprite = &sprites_player, .lives = PLAYER_NUM_LIVES },
     .smallEnemies = { .sprite = &sprites_smallEnemy },
@@ -163,11 +163,11 @@ static struct {
 
 static struct {
     struct {
-        DataBuffer music;
-        DataBuffer playerBullet;
-        DataBuffer enemyBullet;
-        DataBuffer explosion;
-        DataBuffer enemyHit;
+        Data_Buffer music;
+        Data_Buffer playerBullet;
+        Data_Buffer enemyBullet;
+        Data_Buffer explosion;
+        Data_Buffer enemyHit;
     } sounds;
     uint8_t whitePixel[4];
 } gameData = {
@@ -202,16 +202,16 @@ static struct {
 //  Data load helpers
 //////////////////////////////////
 
-static bool loadSound(const char* fileName, DataBuffer* sound) {
-    DataBuffer soundData = { 0 };
+static bool loadSound(const char* fileName, Data_Buffer* sound) {
+    Data_Buffer soundData = { 0 };
     bool result = platform_loadFile(fileName, &soundData, false) && utils_wavToSound(&soundData, sound);
     data_freeBuffer(&soundData);
     return result;
 }
 
 static bool loadTexture(const char* fileName, uint32_t *texture) {
-    DataBuffer imageData = { 0 };
-    DataImage image = { 0 };
+    Data_Buffer imageData = { 0 };
+    Data_Image image = { 0 };
 
     bool result = platform_loadFile(fileName, &imageData, false) && utils_bmpToImage(&imageData, &image);
     
@@ -254,7 +254,7 @@ static void firePlayerBullet(float x, float y) {
         return;
     }
 
-    entities_spawn(&entities.playerBullets, &(EntitiesInitOptions) {
+    entities_spawn(&entities.playerBullets, &(Entities_InitOptions) {
         .x = x, 
         .y = y, 
         .vy = PLAYER_BULLET_VELOCITY
@@ -266,7 +266,7 @@ static void firePlayerBullet(float x, float y) {
 static bool checkPlayerBulletCollision(
     float bulletMin[2],
     float bulletMax[2],
-    EntitiesList* enemies,
+    Entities_List* enemies,
     float explosionXOffset,
     float explosionYOffset,
     int32_t points
@@ -288,7 +288,7 @@ static bool checkPlayerBulletCollision(
             hit = true;
             --enemies->health[i];
             if (enemies->health[i] == 0) {
-                entities_spawn(&entities.explosions, &(EntitiesInitOptions) {
+                entities_spawn(&entities.explosions, &(Entities_InitOptions) {
                     .x = position[0] + explosionXOffset, 
                     .y = position[1] + explosionYOffset
                 });
@@ -305,7 +305,7 @@ static bool checkPlayerBulletCollision(
     return hit;
 }
 
-static bool checkPlayerCollision(float playerMin[2], float playerMax[2], EntitiesList* list, PlayerCollisionExplosionOptions* opts) {
+static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entities_List* list, PlayerCollisionExplosionOptions* opts) {
     bool playerHit = false;
     Sprites_CollisionBox* collisionBox = &list->sprite->collisionBox;
     for (int32_t i = 0; i < list->count; ++i) {
@@ -321,7 +321,7 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
         if (utils_boxCollision(playerMin, playerMax, entityMin, entityMax, COLLISION_SCALE)) {
             playerHit = true;
             if (opts) {
-                entities_spawn(&entities.explosions, &(EntitiesInitOptions) {
+                entities_spawn(&entities.explosions, &(Entities_InitOptions) {
                     .x = position[0] + opts->xOffset,
                     .y = position[1] + opts->yOffset 
                 });     
@@ -338,7 +338,7 @@ static void fireEnemyBullet(float x, float y) {
     float dy = entities.player.position[1] - y;
     float d = sqrtf(dx * dx + dy * dy);
 
-    entities_spawn(&entities.enemyBullets, &(EntitiesInitOptions) {
+    entities_spawn(&entities.enemyBullets, &(Entities_InitOptions) {
         .x = x,
         .y = y,
         .vx = (dx / d) * ENEMY_BULLET_SPEED,
@@ -352,7 +352,7 @@ static void fireEnemyBullet(float x, float y) {
 //  General entity helpers
 //////////////////////////////////
 
-static void updateEntities(EntitiesList* list, float dt, float killBuffer) {
+static void updateEntities(Entities_List* list, float dt, float killBuffer) {
     for (int32_t i = 0; i < list->count; ++i) {
         float* position = list->position + i * 2;
         float* velocity = list->velocity + i * 2;
@@ -401,7 +401,7 @@ static void filterDeadEntities(void) {
 static void updateStars(float dt) {
     if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * levelState.starProbabilityMultiplier * dt) {
         float t = utils_randomRange(0.0f, 1.0f);
-        entities_spawn(&entities.stars, &(EntitiesInitOptions) {
+        entities_spawn(&entities.stars, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
             .y = -sprites_whitePixel.panelDims[1], 
             .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
@@ -419,7 +419,7 @@ static void updateStars(float dt) {
 static void livesToEntities(void) {
     entities.lives.count = 0;
     for (int32_t i = 0; i < entities.player.lives; ++i) {
-        entities_spawn(&entities.lives, &(EntitiesInitOptions) { 
+        entities_spawn(&entities.lives, &(Entities_InitOptions) { 
             .x = 12.5f + i * (entities.player.sprite->panelDims[0] * 0.55f + 0.5f),
             .y = GAME_HEIGHT - 32.0f, 
             .scale = 0.45f
@@ -429,7 +429,7 @@ static void livesToEntities(void) {
 
 static void updateScoreDisplay() {
     utils_uintToString(entities.player.score, gameState.scoreText, SCORE_TEXT_LENGTH);
-    entities_fromText(&entities.text, gameState.scoreText, &(EntitiesFromTextOptions) {
+    entities_fromText(&entities.text, gameState.scoreText, &(Entities_FromTextOptions) {
         .x = 10.0f,
         .y = GAME_HEIGHT - 20.0f, 
         .scale = 0.4f
@@ -445,7 +445,7 @@ static void simWorld(float dt) {
 
     // Spawn new enemies
     if (utils_randomRange(0.0f, 1.0f) < levelState.smallEnemySpawnProbability * dt) {
-        entities_spawn(&entities.smallEnemies, &(EntitiesInitOptions) {
+        entities_spawn(&entities.smallEnemies, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
             .vy = SMALL_ENEMY_VELOCITY,
@@ -454,7 +454,7 @@ static void simWorld(float dt) {
     }
 
     if (utils_randomRange(0.0f, 1.0f) < levelState.mediumEnemySpawnProbability * dt) {
-        entities_spawn(&entities.mediumEnemies, &(EntitiesInitOptions) {
+        entities_spawn(&entities.mediumEnemies, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
             .vy = MEDIUM_ENEMY_VELOCITY,
@@ -463,7 +463,7 @@ static void simWorld(float dt) {
     }
 
     if (utils_randomRange(0.0f, 1.0f) < levelState.largeEnemySpawnProbability * dt) {
-        entities_spawn(&entities.largeEnemies, &(EntitiesInitOptions) {
+        entities_spawn(&entities.largeEnemies, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
             .vy = LARGE_ENEMY_VELOCITY,
@@ -599,7 +599,7 @@ static void simPlayer(float dt) {
         });
 
         if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
-            entities_spawn(&entities.explosions, &(EntitiesInitOptions) {
+            entities_spawn(&entities.explosions, &(Entities_InitOptions) {
                 .x = player->position[0] + SPRITES_PLAYER_EXPLOSION_X_OFFSET,
                 .y = player->position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
             });
@@ -640,7 +640,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_titleSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&entities.text, "space-shooter.c", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "space-shooter.c", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
             .scale = 0.75f
@@ -648,7 +648,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_titleSequence, EVENTS_FADE)) {
-        entities_fromText(&entities.text, "space-shooter.c", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "space-shooter.c", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
             .y = 62.0f, 
             .scale = 0.75f,
@@ -657,7 +657,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_subtitleSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&entities.text, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "by Tarek Sherif", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
             .scale = 0.4f
@@ -665,7 +665,7 @@ static void titleScreen(float dt) {
     }
 
     if (events_on(&events_subtitleSequence, EVENTS_FADE)) {
-        entities_fromText(&entities.text, "by Tarek Sherif", &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, "by Tarek Sherif", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
             .y = 85.0f, 
             .scale = 0.4f,
@@ -678,7 +678,7 @@ static void titleScreen(float dt) {
 
         const char* movementText = gameState.input.keyboard ? "Arrow keys to move" : "Left stick to move";
         float movementXOffset = gameState.input.keyboard ? 62.0f : 62.0f;
-        entities_fromText(&entities.text, movementText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, movementText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - movementXOffset,
             .y = yBase, 
             .scale = 0.3f
@@ -686,7 +686,7 @@ static void titleScreen(float dt) {
 
         const char* shootText = gameState.input.keyboard ? "'Space' to shoot" : "'A' to shoot";
         float shootXOffset = gameState.input.keyboard ? 58.0f : 42.0f;
-        entities_fromText(&entities.text, shootText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, shootText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - shootXOffset,
             .y = yBase + 13.0f, 
             .scale = 0.3f
@@ -694,7 +694,7 @@ static void titleScreen(float dt) {
 
         const char* fullscreenText = gameState.input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
         float fullscreenXOffset = gameState.input.keyboard ? 82.0f : 97.0f;
-        entities_fromText(&entities.text, fullscreenText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, fullscreenText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
             .y = yBase + 26.0f, 
             .scale = 0.3f
@@ -702,7 +702,7 @@ static void titleScreen(float dt) {
 
         const char* quitText = gameState.input.keyboard ? "'ESC' to quit" : "'Back' to quit";
         float quitXOffset = gameState.input.keyboard ? 47.0f : 50.0f;
-        entities_fromText(&entities.text, quitText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, quitText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - quitXOffset,
             .y = yBase + 39.0f, 
             .scale = 0.3f
@@ -730,7 +730,7 @@ static void levelTransition(float dt) {
 
     // NOTE(Tarek): Not offsetting level because people probably won't get past level 9?
     if (events_on(&events_levelTransitionSequence, EVENTS_DISPLAY)) {
-        entities_fromText(&entities.text, levelState.title, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, levelState.title, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 62.0f,
             .y = 64.0f, 
             .scale = 0.75f
@@ -738,7 +738,7 @@ static void levelTransition(float dt) {
 
         float xOffset = levelState.level == 1 ? 58.0f : 56.0f; // Thinner '1' needs to be further left ot look good
         xOffset += (levelState.nextLevelTextLength - BASE_NEXT_LEVEL_TEXT_LENGTH) * 3.0f;
-        entities_fromText(&entities.text, levelState.nextLevelText, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, levelState.nextLevelText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 88.0f, 
             .scale = 0.25f
@@ -816,7 +816,7 @@ static void gameOver(float dt) {
 
     simWorld(dt);
 
-    entities_fromText(&entities.text, "Game Over", &(EntitiesFromTextOptions) {
+    entities_fromText(&entities.text, "Game Over", &(Entities_FromTextOptions) {
         .x = GAME_WIDTH / 2.0f - 127.0f,
         .y = 68.0f,
         .scale = 1.2f
@@ -829,7 +829,7 @@ static void gameOver(float dt) {
     if (events_on(&events_gameOverRestartSequence, EVENTS_DISPLAY)) {
         const char* text = gameState.input.keyboard ? "Press 'Space' to Restart" : "Press 'A' to Restart";
         float xOffset = gameState.input.keyboard ? 107.0f : 91.0f;
-        entities_fromText(&entities.text, text, &(EntitiesFromTextOptions) {
+        entities_fromText(&entities.text, text, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 104.0f,
             .scale = 0.4f
@@ -924,7 +924,7 @@ bool game_init(void) {
     // Init game
     platform_playSound(&gameData.sounds.music, true);
 
-    entities_spawn(&entities.player.entity, & (EntitiesInitOptions) {
+    entities_spawn(&entities.player.entity, & (Entities_InitOptions) {
         .x = (GAME_WIDTH - entities.player.sprite->panelDims[0]) / 2,
         .y = GAME_HEIGHT - entities.player.sprite->panelDims[1] * 2.0f
     });
@@ -933,7 +933,7 @@ bool game_init(void) {
 
     for (int32_t i = 0; i < 40; ++i) {
         float t = utils_randomRange(0.0f, 1.0f);
-        entities_spawn(&entities.stars, &(EntitiesInitOptions) {
+        entities_spawn(&entities.stars, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
             .y = utils_randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]), 
             .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),

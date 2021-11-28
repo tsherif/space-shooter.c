@@ -28,16 +28,16 @@
 typedef struct {
     uint8_t* data;
     uint32_t size;
-} DataBuffer;
+} Data_Buffer;
 
 
 typedef struct {
     uint8_t* data;
     int32_t width;
     int32_t height;
-} DataImage;
+} Data_Image;
 
-void data_freeBuffer(DataBuffer* buffer);
-void data_freeImage(DataImage* image);
+void data_freeBuffer(Data_Buffer* buffer);
+void data_freeImage(Data_Image* image);
 
 #endif

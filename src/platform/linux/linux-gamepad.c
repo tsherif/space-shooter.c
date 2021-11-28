@@ -154,7 +154,7 @@ void linux_pingGamepad(void) {
         linux_detectGamepad();
     }
 }
-void linux_updateGamepad(LinuxGamepad* gamepad) {
+void linux_updateGamepad(Linux_Gamepad* gamepad) {
     if (gamepadData.fd == -1) {
         gamepad->keyboard = true;
         return;

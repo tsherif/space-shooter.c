@@ -33,36 +33,36 @@ typedef enum {
     EVENTS_DISPLAY,
     EVENTS_FADE,
     EVENTS_RESTART
-} EventsId;
+} Events_Id;
 
 typedef struct {
     float delay;
     float duration;
     int32_t id;
-} EventsEvent;
+} Events_Event;
 
 typedef struct {
-    EventsEvent* events;
+    Events_Event* events;
     int32_t count;
     float time;
-    EventsId triggeredEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
+    Events_Id triggeredEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
     float alpha; // "Factor" between 0-1 of how far into the the current triggered event we are. Can be used for blending.
     bool running;
     bool complete;
     bool loop;
-} EventsSequence;
+} Events_Sequence;
 
-void events_start(EventsSequence* sequence);
-void events_stop(EventsSequence* sequence);
-void events_beforeFrame(EventsSequence* sequence, float dt);
-bool events_on(EventsSequence* sequence, int32_t id);
+void events_start(Events_Sequence* sequence);
+void events_stop(Events_Sequence* sequence);
+void events_beforeFrame(Events_Sequence* sequence, float dt);
+bool events_on(Events_Sequence* sequence, int32_t id);
 
-EventsSequence events_titleControlSequence;
-EventsSequence events_titleSequence;
-EventsSequence events_subtitleSequence;
-EventsSequence events_instructionSequence;
-EventsSequence events_gameOverSequence;
-EventsSequence events_gameOverRestartSequence;
-EventsSequence events_levelTransitionSequence;
+Events_Sequence events_titleControlSequence;
+Events_Sequence events_titleSequence;
+Events_Sequence events_subtitleSequence;
+Events_Sequence events_instructionSequence;
+Events_Sequence events_gameOverSequence;
+Events_Sequence events_gameOverRestartSequence;
+Events_Sequence events_levelTransitionSequence;
 
 #endif

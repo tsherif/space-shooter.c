@@ -66,8 +66,8 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glActiveTexture(GL_TEXTURE0);
 
-    DataBuffer vsSource = { 0 };
-    DataBuffer fsSource = { 0 };
+    Data_Buffer vsSource = { 0 };
+    Data_Buffer fsSource = { 0 };
 
     if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true)) {
         DEBUG_LOG("renderer_init: Unable to vertex shader.");
@@ -229,7 +229,7 @@ void renderer_beforeFrame(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void renderer_draw(RendererList* list) {
+void renderer_draw(Renderer_List* list) {
     if (list->count == 0) {
         return;
     }

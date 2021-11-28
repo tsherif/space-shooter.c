@@ -78,7 +78,7 @@ void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
 }
 
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
-bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
+bool utils_bmpToImage(Data_Buffer* imageBuffer, Data_Image* image) {
     uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
     int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
     int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
@@ -140,7 +140,7 @@ bool utils_bmpToImage(DataBuffer* imageBuffer, DataImage* image) {
 }
 
 // NOTE(Tarek): Hardcoded to load 2-channel 44.1kHz 16-bit data, with RIFF, fmt and data chunks sequential.
-bool utils_wavToSound(DataBuffer* soundData, DataBuffer* sound) {
+bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
     uint32_t fmtSize = *(uint32_t *) (soundData->data + 16);
     int32_t dataOffset = fmtSize + 20;
         

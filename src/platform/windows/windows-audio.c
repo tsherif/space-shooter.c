@@ -137,7 +137,7 @@ bool windows_initAudio(void) {
     return true;
 }
 
-void platform_playSound(DataBuffer* sound, bool loop) {
+void platform_playSound(Data_Buffer* sound, bool loop) {
     if (!audio.xaudio) {
         return;
     }
