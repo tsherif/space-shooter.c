@@ -6,11 +6,30 @@ This document outlines the high-level architecture of `space-shooter.c`. More de
 Architectural Layers
 --------------------
 
-**Platform**
+### Platform
 
-**Game**
+The platform layer is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and abstracted in a manner inspired by [Handmade Hero](https://handmadehero.org/). The platform layer opens a window, starts the game loop and communicates with the game layer using the interface defined in [platform-interface.h](./src/shared/platform-interface.h).
 
-**Rendering**
+The game layer implements the following functions used by the platform layer:
+- `game_init(void)`: Initialize game resources.
+- `game_update(float elapsedTime)`: Update game state based on time elapsed since last call.
+- `game_draw(void)`: Draw current frame.
+- `game_resize(int width, int height)`: Update rendering state to match current window size.
+
+The platform layer implements the following functions used by the game layer:
+- `platform_getInput(Game_Input* input)`: Get current input state from the platform.
+- `platform_playSound(Data_Buffer* sound, bool loop)`: Output sound to an audio device.
+- `platform_debugLog(const char* message)`: Output a message intended for the developer while debugging.
+- `platform_userMessage(const char* message)`: Output a message intended for the end user.
+- `platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate)`: Load contents of a file into memory. Optionally, null-terminate if the data will be used as a string.
+
+### Game
+
+The game layer is implemented in [game.c](./src/game/game.c) and contains all the game logic, including capturing input from the platform layer, simulating the player and the world, checking for collisions, tracking and displaying the player's score and number of lives, etc. Most of this is done in operations on `Entities_List` structs. Once entities have been updated, the `Renderer_List` mixin for each `Entities_List` is passed to the rendering layer for drawing.
+
+### Rendering
+
+The rendering layer is implemented in [renderer.c](./src/game/renderer.c) and contains all OpenGL drawing logic. Each `Renderer_List` drawn in an instanced draw call.
 
 
 Memory Model
@@ -54,9 +73,9 @@ The only use of dynamic memory is in loading image and sound assets when the gam
 Data Model
 ----------
 
-**Mixin Structs**
+### Mixin Structs
 
-To simplify passing of game data between the different modules, a struct "mixin" model was implemented using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
+To simplify passing of game data between the different layers, a struct "mixin" model was implemented using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
 
 ```c
 #define MY_STRUCT_BODY { int32_t x; int32_t y }
@@ -85,14 +104,14 @@ This allows the properties of the mixin struct to be used directly, or the mixin
 	myStructFunction(ms.myStruct);
 ```
 
-**Sprite**
+### Sprite
 
 A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the renderer layer for drawing and the game layer for positioning/collision logic.
 
-**Renderer_List**
+### Renderer_List
 
 A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will drawn with a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify uploading it to the GPU buffer data for instanced draw calls.
 
-**Entities_List**
+### Entities_List
 
 An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all per-entity data used by the game. It contains a mixin of `Renderer_List`, which allows both the game and rendering layers to manipulate data, such as positions, that is relevant to both.
