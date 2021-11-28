@@ -94,6 +94,7 @@ typedef struct {
     float sheetDims[2];
     float panelDims[2];
     int32_t numAnimations;
+    uint32_t texture;
 } Sprites_Sprite;
 
 int32_t sprites_charToAnimationIndex(char c);

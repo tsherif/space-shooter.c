@@ -23,6 +23,7 @@
 
 #include <malloc.h>
 #include "renderer.h"
+#include "../../lib/simple-opengl-loader.h"
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
 #include "../shared/debug.h"
@@ -188,7 +189,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     return true;
 }
 
-void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t height) {
+void renderer_initTexture(uint32_t* texture, uint8_t* data, int32_t width, int32_t height) {
     glGenTextures(1, texture);
     glBindTexture(GL_TEXTURE_2D, *texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -233,7 +234,7 @@ void renderer_draw(RendererList* list) {
         return;
     }
 
-    glBindTexture(GL_TEXTURE_2D, list->texture);
+    glBindTexture(GL_TEXTURE_2D, list->sprite->texture);
     glUniform2fv(uniforms.panelPixelSize, 1, list->sprite->panelDims);
     glUniform2fv(uniforms.spriteSheetDimensions, 1, list->sprite->sheetDims);
 

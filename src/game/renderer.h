@@ -24,7 +24,6 @@
 #ifndef _GAME_RENDERER_H_
 #define _GAME_RENDERER_H_
 #include <stdbool.h>
-#include "../../lib/simple-opengl-loader.h"
 #include "sprites.h"
 
 #define RENDERER_DRAWLIST_MAX 256
@@ -36,7 +35,6 @@
     float alpha[RENDERER_DRAWLIST_MAX];\
     float whiteOut[RENDERER_DRAWLIST_MAX];\
     Sprites_Sprite* sprite;\
-    GLuint texture;\
     int32_t count;\
 }
 
@@ -45,7 +43,7 @@ typedef struct RENDERER_LIST_BODY RendererList;
 #define RENDERER_LIST_MIXIN(name) union { struct RENDERER_LIST_BODY; RendererList name; }
 
 bool renderer_init(int width, int height);
-void renderer_initTexture(GLuint* texture, uint8_t* data, int32_t width, int32_t height);
+void renderer_initTexture(uint32_t* texture, uint8_t* data, int32_t width, int32_t height);
 void renderer_resize(int width, int height);
 void renderer_beforeFrame(void);
 void renderer_draw(RendererList* list);

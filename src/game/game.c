@@ -209,7 +209,7 @@ static bool loadSound(const char* fileName, DataBuffer* sound) {
     return result;
 }
 
-static bool loadTexture(const char* fileName, GLuint *texture) {
+static bool loadTexture(const char* fileName, uint32_t *texture) {
     DataBuffer imageData = { 0 };
     DataImage image = { 0 };
 
@@ -894,17 +894,22 @@ bool game_init(void) {
 
     // Load assets
     if (
-        !loadTexture("assets/sprites/ship.bmp", &entities.player.texture) ||
-        !loadTexture("assets/sprites/enemy-small.bmp", &entities.smallEnemies.texture) ||
-        !loadTexture("assets/sprites/enemy-medium.bmp", &entities.mediumEnemies.texture) ||
-        !loadTexture("assets/sprites/enemy-big.bmp", &entities.largeEnemies.texture) ||
-        !loadTexture("assets/sprites/explosion.bmp", &entities.explosions.texture) ||
-        !loadTexture("assets/sprites/pixelspritefont32.bmp", &entities.text.texture) ||
-        !loadTexture("assets/sprites/laser-bolts.bmp", &entities.playerBullets.texture)
+        !loadTexture("assets/sprites/ship.bmp", &sprites_player.texture) ||
+        !loadTexture("assets/sprites/enemy-small.bmp", &sprites_smallEnemy.texture) ||
+        !loadTexture("assets/sprites/enemy-medium.bmp", &sprites_mediumEnemy.texture) ||
+        !loadTexture("assets/sprites/enemy-big.bmp", &sprites_largeEnemy.texture) ||
+        !loadTexture("assets/sprites/explosion.bmp", &sprites_explosion.texture) ||
+        !loadTexture("assets/sprites/pixelspritefont32.bmp", &sprites_text.texture) ||
+        !loadTexture("assets/sprites/laser-bolts.bmp", &sprites_playerBullet.texture)
     ) {
         platform_userMessage("FATAL ERROR: Unable to load textures.");
         return false;
     }
+
+    renderer_initTexture(&sprites_whitePixel.texture, gameData.whitePixel, 1, 1);
+
+    // Shared texture    
+    sprites_enemyBullet.texture = sprites_playerBullet.texture;
 
     if (
         !loadSound("assets/audio/music.wav", &gameData.sounds.music) ||
@@ -915,12 +920,6 @@ bool game_init(void) {
     ) {
         platform_userMessage("Unable to load all audio.");
     }
-
-    // Shared textures    
-    entities.lives.texture = entities.player.texture;
-    entities.enemyBullets.texture = entities.playerBullets.texture;
-
-    renderer_initTexture(&entities.stars.texture, gameData.whitePixel, 1, 1);
 
     // Init game
     platform_playSound(&gameData.sounds.music, true);
