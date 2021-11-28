@@ -121,3 +121,6 @@ A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all pe
 ### Entities_List
 
 An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all per-entity data used by the game. It contains a mixin of `Renderer_List`, which allows both the game and rendering layers to manipulate data, such as positions, that is relevant to both.
+
+[Under Construction]
+--------------------
