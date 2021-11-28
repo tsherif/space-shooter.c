@@ -25,7 +25,7 @@ Windows
 - Run `space-shooter.exe` from the `build/` directory.
 
 Linux
-- Run `make` for a debug build or `build.bat release` for an optimized build.
+- Run `make` for a debug build or `make release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
 
 Asset Credits
