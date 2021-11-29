@@ -133,6 +133,11 @@ The Platform Layer
 
 #### Linux
 
+### Initializing OpenGL
+
+#### Windows
+
+#### Linux
 
 ### Audio
 
