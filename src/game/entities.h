@@ -21,9 +21,32 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+//
+// Entities represent game objects as used by the game layer,
+// including the player, enemies, bullets, explosions, text, etc.
+//
+//////////////////////////////////////////////////////////////////////
+
 #ifndef _GAME_ENTITIES_H_
 #define _GAME_ENTITIES_H_
 #include "renderer.h"
+
+///////////////////////////////////////////////////////////////////////
+// The `Entities_List` struct contains a mixin of `Renderer_List` 
+// (required for access to `position`, `scale`, `sprite` data
+// manipulated in the simulation). It also contains the following 
+// game-specific data:
+// 
+// Members:
+// - velocity: current velocity of the entity
+// - currentSpritePanel: current sprite panel to draw
+// - currentAnimation: index of the current animation in the sprite 
+//      animations array.
+// - health: enemy hit point
+// - dead: whether the entity should be removed from the list 
+//      (performed by entities_filterDead() at the end of a frame)
+///////////////////////////////////////////////////////////////////////
 
 #define ENTITIES_LIST_BODY {\
     RENDERER_LIST_MIXIN(renderList);\

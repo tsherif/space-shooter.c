@@ -21,11 +21,31 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+// The Renderer manages all OpenGL state and handles drawing.
+//////////////////////////////////////////////////////////////////////
+
 #ifndef _GAME_RENDERER_H_
 #define _GAME_RENDERER_H_
 #include <stdbool.h>
 #include "sprites.h"
 
+///////////////////////////////////////////////////////////////////////
+// The `Renderer_List` struct contains data required for drawing. Data
+// is stored in statically allocated parallel arrays to simplify 
+// uploading them to the GPU as instance attribute data. It is 
+// implemented as a mixin to be used by `Entites_List` and `Player`.
+// 
+// Members:
+// - position: pixel position of top-left corner of the entity
+// - currentSpritePanel: 2D index of current sprite panel
+// - scale: multiplicative scaling factor for entity sprite
+// - alpha: blending alpha
+// - whiteOut: boolean indicating entitiy should be drawn all white 
+//      (used to indicate damage on enemies)
+// - sprite: sprite sheet used to draw these entities
+// - count: number of currently active entities
+///////////////////////////////////////////////////////////////////////
 #define RENDERER_DRAWLIST_MAX 256
 
 #define RENDERER_LIST_BODY {\
