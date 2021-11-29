@@ -85,7 +85,7 @@ objects[deletedIndex].y = objects[lastIndex].y;
 
 All operations on game objects are run in batches on `objects[0 .. count - 1]`. The actual implementation is slightly more involved in that game object attributes are stored in parallel arrays to simplify their use as buffer data in the rendering layer.
 
-The only use of dynamic memory is in loading image and sound assets when the game initializes. This leads to a nice "dev ex" benefit that once the game initializes, errors related to memory allocation are no long a concern.
+The only use of dynamic memory is in loading image and sound assets when the game initializes. This leads to a nice "dev ex" benefit that once the game initializes, errors related to memory allocation are no longer possible.
 
 ### Mixin Structs
 
@@ -106,7 +106,7 @@ typedef {
 } MixedStruct;
 ```
 
-This allows the properties of the mixin struct to be used directly, or the mixin struct can be referenced as a whole by name:
+This allows the members of the mixin struct to be used directly, or the mixin struct can be referenced as a whole by name:
 
 ```c
 	void myStructFunction(MyStruct ms) {
@@ -115,7 +115,7 @@ This allows the properties of the mixin struct to be used directly, or the mixin
 
 	MixedStruct mixedStruct = { .y = 2, .z = 3 };
 	mixedStruct.x = mixedStruct.y + mixedStruct.z;
-	myStructFunction(ms.myStruct);
+	myStructFunction(mixedStruct.myStruct);
 ```
 
 ### Sprite
