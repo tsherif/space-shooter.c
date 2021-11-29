@@ -1,14 +1,20 @@
 The Architecture of space-shooter.c [WIP]
 =========================================
 
-This document outlines the high-level architecture of `space-shooter.c`. More detailed implementation details can be found in the source code.
+This document outlines the architecture of `space-shooter.c` and is spit into the following sections:
+- [Architectural Overview](#architectural-overview)
+- [Data Model](#architectural-overview)
+- [The Platform Layer](#the-platform-layer)
+- [The Game Layer](#the-game-layer)
 
-Architectural Layers
---------------------
+Architectural Overview
+----------------------
 
-### Platform
+`space-shooter.c` is split into 3 relatively independant layers.
 
-The platform layer is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and abstracted in a manner inspired by [Handmade Hero](https://handmadehero.org/). The platform layer opens a window, starts the game loop and communicates with the game layer using the interface defined in [platform-interface.h](./src/shared/platform-interface.h).
+### Platform Layer
+
+The platform layer is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and abstracted in a manner inspired by [Handmade Hero](https://handmadehero.org/). The platform layer opens a window, initializes OpenGL, starts the game loop and communicates with the game layer using the interface defined in [platform-interface.h](./src/shared/platform-interface.h).
 
 The game layer implements the following functions used by the platform layer:
 - `game_init(void)`: Initialize game resources.
@@ -23,23 +29,19 @@ The platform layer implements the following functions used by the game layer:
 - `platform_userMessage(const char* message)`: Output a message intended for the end user.
 - `platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate)`: Load contents of a file into memory. Optionally, null-terminate if the data will be used as a string.
 
-### Game
+### Game Layer
 
-The game layer is implemented in [game.c](./src/game/game.c) and contains all the game logic, including capturing input from the platform layer, simulating the player and the world, checking for collisions, tracking and displaying the player's score and number of lives, etc. Assets are loaded and game entities are initialized in `game_init()`. Per-frame simulation is done in `game_update()` and the behavior will depend on the current "game state", which can take on the following values:
-- `TITLE_SCREEN`: Display title text and instructions.
-- `MAIN_GAME`: Actual gameplay. Gather player input and simulate player and world.
-- `LEVEL_TRANSITION`: Display level transition animation.
-- `GAME_OVER`: Player has lost all lives. Display game over text and restart instructions.
+The game layer is implemented in [game.c](./src/game/game.c) and contains all the game logic, including capturing input from the platform layer, simulating the player and the world, checking for collisions, tracking and displaying the player's score and number of lives, etc. Most simulation logic involves manipulating `Entities_List` structs. Once entities have been updated, the `Renderer_List` mixin for each `Entities_List` is passed to the rendering layer in `game_draw()`.
 
-Most `game_update()` logic involves manipulating `Entities_List` structs. Once entities have been updated, the `Renderer_List` mixin for each `Entities_List` is passed to the rendering layer in `game_draw()`.
-
-### Rendering
+### Rendering Layer
 
 The rendering layer is implemented in [renderer.c](./src/game/renderer.c) and contains all OpenGL drawing logic. Each `Renderer_List` is drawn in an instanced draw call.
 
 
-Memory Model
-------------
+Data Model
+----------
+
+### Memory Management
 
 All memory for game objects in `space-shooter.c` is statically allocated in the arrays in `Renderer_List` and `Entities_List`, which are managed as an object pool. Conceptually, the object pool can be thought of as a static array of game objects and a `count` that tracks how many objects are currently active.
 
@@ -75,9 +77,6 @@ objects[deletedIndex].y = objects[lastIndex].y;
 All operations on game objects are run in batches on `objects[0 .. count - 1]`. The actual implementation is slightly more involved in that game object attributes are stored in parallel arrays to simplify their use as buffer data in the rendering layer.
 
 The only use of dynamic memory is in loading image and sound assets when the game initializes. This leads to a nice "dev ex" benefit that once the game initializes, errors related to memory allocation are no long a concern.
-
-Data Model
-----------
 
 ### Mixin Structs
 
@@ -122,5 +121,40 @@ A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all pe
 
 An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all per-entity data used by the game. It contains a mixin of `Renderer_List`, which allows both the game and rendering layers to manipulate data, such as positions, that is relevant to both.
 
-[Under Construction]
---------------------
+### Events
+
+
+The Platform Layer
+------------------
+
+### Windowing
+
+#### Windows
+
+#### Linux
+
+
+### Audio
+
+#### Windows
+
+#### Linux
+
+
+### Gamepad Support
+
+#### Windows
+
+#### Linux
+
+
+The Game Layer
+--------------
+
+### Initialization
+
+### Update Loop
+
+### Framerate Independance
+
+### Events
