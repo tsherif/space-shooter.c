@@ -245,7 +245,7 @@ static LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM
     return DefWindowProc(window, message, wParam, lParam);
 }
 
-int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int showWindow) {
+int32_t CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int32_t showWindow) {
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
         .title = "space-shooter.c (Windows)", 
         .majorVersion = SOGL_MAJOR_VERSION, 
@@ -272,7 +272,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
     XINPUT_STATE xinputState;
     int32_t controllerIndex = -1;
 
-    for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
+    for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
         if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
             controllerIndex = i;
             break;
@@ -331,7 +331,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
         }
 
         if (controllerIndex == -1 && ticks % 200 == 0) {
-            for (int i = 0; i < XUSER_MAX_COUNT; ++i) {
+            for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
                 if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
                     controllerIndex = i;
                     break;
@@ -373,7 +373,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, 
 
     windows_closeAudio();
 
-    return (int) message.wParam;
+    return (int32_t) message.wParam;
 }
 
 void platform_getInput(Game_Input* input) {
