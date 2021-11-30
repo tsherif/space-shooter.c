@@ -95,6 +95,10 @@ static bool endsWith(const char* s, const char* suffix) {
 }
 
 void linux_detectGamepad(void) {
+    if (gamepadData.fd != -1) {
+        return;
+    }
+    
     DIR* inputDir = opendir(INPUT_DIR);
 
     if (!inputDir) {
@@ -149,11 +153,6 @@ void linux_detectGamepad(void) {
     closedir(inputDir);
 }
 
-void linux_pingGamepad(void) {
-    if (gamepadData.fd == -1) {
-        linux_detectGamepad();
-    }
-}
 void linux_updateGamepad(Linux_Gamepad* gamepad) {
     if (gamepadData.fd == -1) {
         gamepad->keyboard = true;

@@ -33,7 +33,7 @@ void events_start(Events_Sequence* sequence) {
     }
 
     sequence->running = true;
-    sequence->time = 0;
+    sequence->time = 0.0f;
     sequence->triggeredEvent = EVENTS_NONE;
     sequence->complete = false;
     sequence->alpha = 0.0f;
@@ -42,7 +42,7 @@ void events_start(Events_Sequence* sequence) {
 // Stop and reset a sequence
 void events_stop(Events_Sequence* sequence) {
     sequence->running = false;
-    sequence->time = 0;
+    sequence->time = 0.0f;
     sequence->triggeredEvent = EVENTS_NONE;
     sequence->complete = false;
     sequence->alpha = 0.0f;

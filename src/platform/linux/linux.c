@@ -306,7 +306,7 @@ int main(int argc, char const *argv[]) {
         }
 
         if (ticks % 200 == 0) {
-            linux_pingGamepad();
+            linux_detectGamepad();
         }
 
         linux_updateGamepad(&gamepad);
