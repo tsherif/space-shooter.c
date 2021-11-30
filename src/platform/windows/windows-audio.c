@@ -36,6 +36,7 @@
 
 #define AUDIO_SAMPLE_RATE 44100
 #define AUDIO_CHANNELS 2
+#define MAX_CHANNELS 32
 
 static WAVEFORMATEX AUDIO_SOURCE_FORMAT = {
   .wFormatTag = WAVE_FORMAT_PCM,
@@ -52,8 +53,6 @@ typedef struct {
     XAUDIO2_BUFFER buffer;
     bool inUse;
 } Channel;
-
-#define MAX_CHANNELS 32
 
 void OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
     Channel* channel = (Channel*) pBufferContext;
@@ -114,7 +113,7 @@ bool windows_initAudio(void) {
         return false;
     }
 
-    for (int i = 0; i < MAX_CHANNELS; ++i) {
+    for (int32_t i = 0; i < MAX_CHANNELS; ++i) {
         audio.channels[i].buffer.Flags = XAUDIO2_END_OF_STREAM;
         audio.channels[i].buffer.pContext = audio.channels + i;
 
@@ -142,7 +141,7 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
         return;
     }
 
-    for (int i = 0; i < MAX_CHANNELS; ++i) {
+    for (int32_t i = 0; i < MAX_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audio.channels[i].buffer;
             buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
