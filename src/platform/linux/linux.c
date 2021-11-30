@@ -102,7 +102,7 @@ int main(int argc, char const *argv[]) {
     ///////////////////////////
 
     int numFBC = 0;
-    GLint visualAtt[] = {
+    int32_t visualAtt[] = {
         GLX_RENDER_TYPE, GLX_RGBA_BIT, 
         GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
         GLX_DOUBLEBUFFER, True, 
@@ -132,7 +132,7 @@ int main(int argc, char const *argv[]) {
         return 1; 
     }
 
-    static int contextAttribs[] = {
+    int32_t contextAttribs[] = {
         GLX_CONTEXT_MAJOR_VERSION_ARB, SOGL_MAJOR_VERSION,
         GLX_CONTEXT_MINOR_VERSION_ARB, SOGL_MINOR_VERSION,
         GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,

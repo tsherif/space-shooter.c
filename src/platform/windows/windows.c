@@ -80,11 +80,11 @@ static bool running = false;
 
 static void toggleFullscreen(HWND window) {
     windowState.fullscreen = !windowState.fullscreen;
-    int  x = 100;
-    int  y = 100;
-    int  width = windowState.preFullscreenWidth;
-    int  height = windowState.preFullscreenHeight;
-    UINT flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
+    int32_t  x = 100;
+    int32_t  y = 100;
+    int32_t  width = windowState.preFullscreenWidth;
+    int32_t  height = windowState.preFullscreenHeight;
+    uint32_t flags = SWP_NOCOPYBITS | SWP_FRAMECHANGED;
     DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     if (windowState.fullscreen) {
         windowState.preFullscreenWidth = windowState.width;

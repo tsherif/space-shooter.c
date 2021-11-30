@@ -2,8 +2,8 @@ The Architecture of space-shooter.c [WIP]
 =========================================
 
 - [Architectural Overview](#architectural-overview)
-- [Data Model](#architectural-overview)
 - [The Platform Layer](#the-platform-layer)
+- [Data Model](#architectural-overview)
 - [The Game Layer](#the-game-layer)
 
 Architectural Overview
@@ -36,16 +36,134 @@ The platform layer interacts with the game and rendering layersusing an API insp
 
 Once the platform layer initializes system resources, it calls into the game layer using the following lifecycle functions:
 - `game_init(void)`: Initialize game resources.
-- `game_update(float elapsedTime)`: Update game state based on time elapsed since last call.
+- `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw(void)`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match current window size.
 
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
-- `renderer_init(int width, int height)`: Initialize OpenGL resources
-- `renderer_initTexture(uint32_t* texture, uint8_t* data, int32_t width, int32_t height)`: Initialize a texture
-- `renderer_resize(int width, int height)`: Resize the drawing surface
-- `renderer_beforeFrame(void)`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary)
-- `renderer_draw(Renderer_List* list)`: Draw to the screen
+- `renderer_init(int width, int height)`: Initialize OpenGL resources.
+- `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the given data.
+- `renderer_resize(int width, int height)`: Resize the drawing surface.
+- `renderer_beforeFrame(void)`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
+- `renderer_draw(Renderer_List* list)`: Draw to the screen.
+
+
+The Platform Layer
+------------------
+
+### Window Management
+
+Window management involved straightforward usage of [Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/) with the only tricky parts on one or both platforms being hiding the mouse cursor and displaying a fullscreen window.
+
+#### Windows
+
+Hiding the cursor was straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. Opening a fullscreen window was done using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
+
+```c
+HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+GetMonitorInfo(monitor, &monitorInfo);
+int32_t x = monitorInfo.rcMonitor.left;
+int32_t y = monitorInfo.rcMonitor.top;
+int32_t width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+int32_t height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+SetWindowLong(window, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECHANGED);
+```
+
+#### Linux
+
+Hiding the cursor in Xlib requires creating a "blank" cursor:
+
+```c
+char hiddenCursorData = 0;
+XColor hiddenCursorColor = { 0 };
+Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, &hiddenCursorData, 1, 1, 1, 0, 1);
+Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCursorPixmap, &hiddenCursorColor, &hiddenCursorColor, 0, 0);
+XDefineCursor(display, window, hiddenCursor);
+```
+
+Opening a fullscreen window requires sending [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
+
+```c
+XEvent fullscreenEvent = {
+    .xclient = {
+    	// ...
+        .message_type = NET_WM_STATE,
+        .data = {
+            .l = {
+                _NET_WM_STATE_ADD,
+                NET_WM_STATE_FULLSCREEN,
+                // ...
+            }
+        }
+    }
+};
+
+XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
+```
+
+### Initializing OpenGL
+
+#### Windows
+
+Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps involve:
+1. Create a dummy window
+2. Create a dummy OpenGL context
+3. Get pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
+4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks))
+5. Create the real window and context using the extension functions.
+
+This functionality was extracted out into [create-opengl.window.h](./lib/create-opengl.window.h) and is used as a single-header library.
+
+Once the context is created, OpenGL functions were loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
+
+```c
+void *fn = (void *)wglGetProcAddress(openGLFunctionName);
+if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3) || (fn == (void *) -1)) {
+    fn = (void *) GetProcAddress(sogl_libHandle, openGLFunctionName);
+}
+```
+
+#### Linux
+
+OpenGL context creation in Linux is a little simpler and doesn't require dummy context creation:
+
+```c
+glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const uint8_t *) "glXCreateContextAttribsARB");
+glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const uint8_t *) "glXSwapIntervalEXT");
+
+int32_t visualAtt[] = { ... };
+GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
+
+int32_t contextAttribs[] = { ... };
+GLXContext ctx = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
+
+glXMakeCurrent(display, window, ctx);
+```
+
+A more complete example of the process can be found [here](https://apoorvaj.io/creating-a-modern-opengl-context/).
+
+Again, once the context is created, loading functions was straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
+
+```c
+
+void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
+void *fn = dlsym(sogl_libHandle, openGLFunctionName);
+```
+
+### Audio
+
+#### Windows
+
+#### Linux
+
+
+### Gamepad Support
+
+#### Windows
+
+#### Linux
 
 Data Model
 ----------
@@ -137,69 +255,6 @@ The `Player` struct ([game.h](./src/game/game.h)) is singleton that represent th
 ### Event and Sequence
 
 `space-shooter.c` implements a relatively simple event system inspired by [pacman.c](https://github.com/floooh/pacman.c). The `Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Event`s and metadata to manage them. See [#events] for more details.
-
-
-The Platform Layer
-------------------
-
-### Windowing
-
-#### Windows
-
-The Windows layer uses [Win32](https://docs.microsoft.com/en-us/windows/win32/) in a fairly straightforward way. Opening a fullscreen window uses [this technique described by Raymond Chen](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353).
-
-#### Linux
-
-Linux window management was more involved because it requires interacting with different APIs to get everything done. Opening a window and keyboard input was done with [Xlib](https://tronche.com/gui/x/xlib/), though one tricky part was hiding the cursor, which involves creating a "blank" cursor:
-
-```c
-char hiddenCursorData = 0;
-XColor hiddenCursorColor = { 0 };
-Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, &hiddenCursorData, 1, 1, 1, 0, 1);
-Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCursorPixmap, &hiddenCursorColor, &hiddenCursorColor, 0, 0);
-XDefineCursor(display, window, hiddenCursor);
-XFreeCursor(display, hiddenCursor);
-XFreePixmap(display, hiddenCursorPixmap);
-```
-
-Opening a fullscreen window requires sending [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
-
-```c
-XEvent fullscreenEvent = {
-    .xclient = {
-    	// ...
-        .message_type = NET_WM_STATE,
-        .data = {
-            .l = {
-                _NET_WM_STATE_ADD,
-                NET_WM_STATE_FULLSCREEN,
-                // ...
-            }
-        }
-    }
-};
-
-XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
-```
-
-### Initializing OpenGL
-
-#### Windows
-
-#### Linux
-
-### Audio
-
-#### Windows
-
-#### Linux
-
-
-### Gamepad Support
-
-#### Windows
-
-#### Linux
 
 
 The Game Layer

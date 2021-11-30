@@ -6,7 +6,7 @@ A cross-platform, top-down 2D space shooter written in C using only system libra
 
 Dependencies
 ------------
-- Windowing: Win32 (Windows), Xlib (Linux)
+- Window management: Win32 (Windows), Xlib (Linux)
 - Rendering: OpenGL
 - Audio: XAudio2 (Windows), ALSA/pthread (Linux)
 - Gamepad: Xinput (Windows), evdev (Linux)
