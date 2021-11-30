@@ -215,7 +215,7 @@ static bool loadTexture(const char* fileName, uint32_t *texture) {
 
     bool result = platform_loadFile(fileName, &imageData, false) && utils_bmpToImage(&imageData, &image);
     
-    renderer_initTexture(texture, image.data, image.width, image.height);
+    *texture = renderer_createTexture(image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
 
@@ -906,7 +906,7 @@ bool game_init(void) {
         return false;
     }
 
-    renderer_initTexture(&sprites_whitePixel.texture, gameData.whitePixel, 1, 1);
+    sprites_whitePixel.texture = renderer_createTexture(gameData.whitePixel, 1, 1);
 
     // Shared texture    
     sprites_enemyBullet.texture = sprites_playerBullet.texture;
