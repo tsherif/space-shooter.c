@@ -21,18 +21,30 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+// Sprites represent the sprite sheets used to draw game objects.
+//////////////////////////////////////////////////////////////////////
+
 #ifndef _GAME_SPRITES_H_
 #define _GAME_SPRITES_H_
 
 #include <stdbool.h>
 #include <stdint.h>
 
+//////////////////
 // Animations
+//////////////////
+
 #define SPRITES_PLAYER_CENTER       0
 #define SPRITES_PLAYER_CENTER_LEFT  1
 #define SPRITES_PLAYER_LEFT         2
 #define SPRITES_PLAYER_CENTER_RIGHT 3
 #define SPRITES_PLAYER_RIGHT        4
+
+
+//////////////////////////////////
+// Sprite sheet panel dimensions
+//////////////////////////////////
 
 #define SPRITES_PLAYER_PANEL_WIDTH          16.0f
 #define SPRITES_PLAYER_PANEL_HEIGHT         24.0f
@@ -48,6 +60,12 @@
 #define SPRITES_EXPLOSION_PANEL_HEIGHT      16.0f
 #define SPRITES_TEXT_PANEL_WIDTH            32.0f
 #define SPRITES_TEXT_PANEL_HEIGHT           32.0f
+
+
+///////////////////////////////////////////////////
+// Offsets for positioning bullets and explosions
+// relative to game characters.
+///////////////////////////////////////////////////
 
 #define SPRITES_PLAYER_BULLET_X_OFFSET ((SPRITES_PLAYER_PANEL_WIDTH - SPRITES_BULLET_PANEL_WIDTH) / 2)
 #define SPRITES_PLAYER_BULLET_Y_OFFSET (-SPRITES_BULLET_PANEL_HEIGHT)
@@ -69,8 +87,30 @@
 #define SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET ((SPRITES_LARGE_ENEMY_PANEL_WIDTH - SPRITES_EXPLOSION_PANEL_WIDTH) / 2)
 #define SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET ((SPRITES_LARGE_ENEMY_PANEL_HEIGHT - SPRITES_EXPLOSION_PANEL_HEIGHT) / 2)
 
-// Text sprite
+/////////////////////////////////////////////
+// Font spaced the characters too far apart
+// so this multiplier is used to scale that 
+// spacing.
+/////////////////////////////////////////////
+
 #define SPRITES_TEXT_SPACING_SCALE 0.7f
+
+
+//////////////////////////////////////////////////////////////////////////
+// The `Sprites_Sprite` struct contains data relevant to the 
+// sprite sheet used for drawing a game object
+// 
+// Members:
+// - collisionBox: bounds of the actual image with the sprite panel.
+//      Used in collision detection.
+// - animations: array of animations available in the sprite sheet. 
+//      Each animation is an array of 2D indices into the sprite
+//      sheet indicating the frames of the animation.
+// - sheetDims: dimensions of the sprite sheet in panels.
+// - panelDims: dimensions of each panel in pixels.
+// - numAnimations: length of the animations array.
+// - texture: handle to the OpenGL texture containing the sprite sheet.
+//////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     float min[2];
@@ -97,7 +137,18 @@ typedef struct {
     uint32_t texture;
 } Sprites_Sprite;
 
+
+///////////////////////////////////////////////
+// Utility function to convert a char to 
+// an animation index in the font sprite
+// sheet (which represents a single letter).
+///////////////////////////////////////////////
+
 int32_t sprites_charToAnimationIndex(char c);
+
+/////////////////////////////////////////////
+// Sprites used in the game
+/////////////////////////////////////////////
 
 Sprites_Sprite sprites_player;
 Sprites_Sprite sprites_smallEnemy;
@@ -108,14 +159,5 @@ Sprites_Sprite sprites_enemyBullet;
 Sprites_Sprite sprites_explosion;
 Sprites_Sprite sprites_text;
 Sprites_Sprite sprites_whitePixel;
-
-float sprites_playerBulletOffset[2];
-float sprites_playerExplosionOffset[2];
-float sprites_smallEnemyBulletOffset[2];
-float sprites_smallEnemyExplosionOffset[2];
-float sprites_mediumEnemyBulletOffset[2];
-float sprites_mediumEnemyExplosionOffset[2];
-float sprites_largeEnemyBulletOffset[2];
-float sprites_largeEnemyExplosionOffset[2];
 
 #endif

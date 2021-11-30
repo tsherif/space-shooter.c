@@ -78,37 +78,37 @@ void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
 }
 
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
-bool utils_bmpToImage(Data_Buffer* imageBuffer, Data_Image* image) {
-    uint32_t imageOffset   = *(uint32_t *) (imageBuffer->data + 10);
-    int32_t width          = *(int32_t *)  (imageBuffer->data + 18);
-    int32_t height         = *(int32_t *)  (imageBuffer->data + 22);
+bool utils_bmpToImage(Data_Buffer* imageData, Data_Image* image) {
+    uint32_t imageOffset   = *(uint32_t *) (imageData->data + 10);
+    int32_t width          = *(int32_t *)  (imageData->data + 18);
+    int32_t height         = *(int32_t *)  (imageData->data + 22);
 
 #ifdef SPACE_SHOOTER_DEBUG
-    uint16_t type = *(uint16_t *) imageBuffer->data;
+    uint16_t type = *(uint16_t *) imageData->data;
     DEBUG_ASSERT(type == 0x4d42, "utils_bmpToRgba: Invalid BMP data.");
 
-    uint32_t dibHeaderSize = *(uint32_t *) (imageBuffer->data + 14);
+    uint32_t dibHeaderSize = *(uint32_t *) (imageData->data + 14);
     DEBUG_ASSERT(dibHeaderSize >= 70, "utils_bmpToRgba: Unsupported DIB header.");
 
-    uint16_t bpp           = *(uint16_t *) (imageBuffer->data + 28);
+    uint16_t bpp           = *(uint16_t *) (imageData->data + 28);
     DEBUG_ASSERT(bpp == 32, "utils_bmpToRgba: Unsupported bpp, must be 32.");
 
-    uint32_t compression   = *(uint32_t *) (imageBuffer->data + 30);
+    uint32_t compression   = *(uint32_t *) (imageData->data + 30);
     DEBUG_ASSERT(compression == 3, "utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
 
-    uint32_t redMask       = *(uint32_t *) (imageBuffer->data + 54);
-    uint32_t greenMask     = *(uint32_t *) (imageBuffer->data + 58);
-    uint32_t blueMask      = *(uint32_t *) (imageBuffer->data + 62);
-    uint32_t alphaMask     = *(uint32_t *) (imageBuffer->data + 66);
+    uint32_t redMask       = *(uint32_t *) (imageData->data + 54);
+    uint32_t greenMask     = *(uint32_t *) (imageData->data + 58);
+    uint32_t blueMask      = *(uint32_t *) (imageData->data + 62);
+    uint32_t alphaMask     = *(uint32_t *) (imageData->data + 66);
     DEBUG_ASSERT(redMask == 0x00ff0000 && greenMask == 0x0000ff00 && blueMask == 0x000000ff && alphaMask == 0xff000000, "utils_bmpToRgba: Unsupported pixel layout, must be BGRA.");
 #endif
 
-    uint8_t* bmpImage = imageBuffer->data + imageOffset;
+    uint8_t* bmpImage = imageData->data + imageOffset;
     
     int32_t numPixels = width * height;
-    uint8_t* imageData = (uint8_t *) malloc(numPixels * 4);
+    uint8_t* data = (uint8_t *) malloc(numPixels * 4);
 
-    if (!imageData) {
+    if (!data) {
         DEBUG_LOG("utils_bmpToRgba: Unable to allocate image data.");
         return false; 
     }
@@ -126,13 +126,13 @@ bool utils_bmpToImage(Data_Buffer* imageBuffer, Data_Image* image) {
         uint8_t a = bmpImage[byteI + 3];
 
         int32_t mirrorByteI = mirrorI * 4;
-        imageData[mirrorByteI]     = r;
-        imageData[mirrorByteI + 1] = g;
-        imageData[mirrorByteI + 2] = b;
-        imageData[mirrorByteI + 3] = a;
+        data[mirrorByteI]     = r;
+        data[mirrorByteI + 1] = g;
+        data[mirrorByteI + 2] = b;
+        data[mirrorByteI + 3] = a;
     }
 
-    image->data = imageData;
+    image->data = data;
     image->width = width;
     image->height = height;
 
