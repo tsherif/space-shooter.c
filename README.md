@@ -13,7 +13,7 @@ Dependencies
 
 Description
 -----------
-`space-shooter.c` is a cross-platform, top-down 2D space shooter game written in standard C11 using only system libraries (with system libraries defined as anything included in the C standard library or supported operating systems). `space-shooter.c` has been tested on Windows 10 and Ubuntu Linux 16.04. This project drew heavy inspiration from [Handmade Hero](https://handmadehero.org/) and [pacman.c](https://github.com/floooh/pacman.c).
+`space-shooter.c` is a cross-platform, top-down 2D space shooter written in standard C11 using only system libraries (with system libraries defined as anything included in the C standard library or supported operating systems). `space-shooter.c` has been tested on Windows 10 and Ubuntu Linux 16.04. This project drew heavy inspiration from [Handmade Hero](https://handmadehero.org/) and [pacman.c](https://github.com/floooh/pacman.c).
 
 ### Caveat
 I am not a professional game developer, nor a professional C programmer, so the code may be unconventional or sub-optimal in many ways. Happy to take feedback from any pros out there!
@@ -25,6 +25,7 @@ Windows
 - Run `space-shooter.exe` from the `build/` directory.
 
 Linux
+- **TODO:** What are the dev dependencies to install?
 - Run `make` for a debug build or `make release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
 
