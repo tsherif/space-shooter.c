@@ -43,16 +43,15 @@
 #include "linux-audio.h"
 #include "linux-gamepad.h"
 
-#define _NET_WM_STATE_REMOVE 0
-#define _NET_WM_STATE_ADD    1
-#define _NET_WM_STATE_TOGGLE 2
+#define NET_WM_STATE_REMOVE 0
+#define NET_WM_STATE_ADD    1
 
 static Linux_Gamepad gamepad;
 
-typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
-typedef void (*glXSwapIntervalEXTFUNC)(Display*, GLXDrawable, int);
+typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConfig fbc, GLXContext shareContext, Bool direct, const int32_t* contextAttribs);
+typedef void (*glXSwapIntervalEXTFUNC)(Display* display, GLXDrawable window, int32_t interval);
 
-int main(int argc, char const *argv[]) {
+int32_t main(int32_t argc, char const *argv[]) {
 
     ////////////////////////////////
     // Create window
@@ -68,7 +67,7 @@ int main(int argc, char const *argv[]) {
     XSetWindowAttributes windowAttributes = { 0 };
     windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask;
 
-    int screen = XDefaultScreen(display);
+    int32_t screen = XDefaultScreen(display);
     Window rootWindow = XRootWindow(display, screen);
     Window window = XCreateWindow(
         display,
@@ -101,7 +100,7 @@ int main(int argc, char const *argv[]) {
     // Create OpenGL context
     ///////////////////////////
 
-    int numFBC = 0;
+    int32_t numFBC = 0;
     int32_t visualAtt[] = {
         GLX_RENDER_TYPE, GLX_RGBA_BIT, 
         GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
@@ -180,7 +179,7 @@ int main(int argc, char const *argv[]) {
             .format = 32,
             .data = {
                 .l = {
-                    _NET_WM_STATE_ADD,
+                    NET_WM_STATE_ADD,
                     NET_WM_STATE_FULLSCREEN,
                     0,
                     1,
@@ -198,7 +197,7 @@ int main(int argc, char const *argv[]) {
             .format = 32,
             .data = {
                 .l = {
-                    _NET_WM_STATE_REMOVE,
+                    NET_WM_STATE_REMOVE,
                     NET_WM_STATE_FULLSCREEN,
                     0,
                     1,

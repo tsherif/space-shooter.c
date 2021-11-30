@@ -51,6 +51,8 @@ The rendering layer implements the following functions used by the game layer to
 The Platform Layer
 ------------------
 
+Many of the techniques described here were built using open-source projects like [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) as invaluable references.
+
 ### Window Management
 
 Window management involved straightforward usage of [Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/) with the only tricky parts on one or both platforms being hiding the mouse cursor and displaying a fullscreen window.
@@ -86,13 +88,17 @@ XDefineCursor(display, window, hiddenCursor);
 Opening a fullscreen window requires sending [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
 
 ```c
+#define NET_WM_STATE_ADD    1
+Atom NET_WM_STATE = XInternAtom(display, "_NET_WM_STATE", False);
+Atom NET_WM_STATE_FULLSCREEN = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
+
 XEvent fullscreenEvent = {
     .xclient = {
     	// ...
         .message_type = NET_WM_STATE,
         .data = {
             .l = {
-                _NET_WM_STATE_ADD,
+                NET_WM_STATE_ADD,
                 NET_WM_STATE_FULLSCREEN,
                 // ...
             }
@@ -168,6 +174,8 @@ void *fn = dlsym(sogl_libHandle, openGLFunctionName);
 Data Model
 ----------
 
+### Loading Assets
+
 ### Memory Management
 
 All memory for game objects in `space-shooter.c` is statically allocated in the arrays in `Renderer_List` and `Entities_List`, which are managed as an object pool. Conceptually, the object pool can be thought of as a static array of game objects and a `count` that tracks how many objects are currently active.
@@ -192,7 +200,7 @@ objects[newIndex].y = 2;
 ++count;
 ```
 
-"Deleting" involves swapping the deleted object with the `objects[count - 1]` and decrementing `count`.
+"Deleting" and object involves swapping the deleted object with the `objects[count - 1]` and decrementing `count`.
 ```c
 // NOTE: This is not the actual implementation!
 int32_t lastIndex = count - 1;
@@ -235,24 +243,25 @@ This allows the members of the mixin struct to be used directly, or the mixin st
 	mixedStruct.x = mixedStruct.y + mixedStruct.z;
 	myStructFunction(mixedStruct.myStruct);
 ```
+### Data Structures
 
-### Sprite
+#### Sprite
 
 A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the renderer layer for drawing and the game layer for positioning/collision logic.
 
-### Renderer_List
+#### Renderer_List
 
 A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will drawn with a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify uploading it to the GPU buffer data for instanced draw calls.
 
-### Entities_List
+#### Entities_List
 
 An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all per-entity data used by the game. It contains a mixin of `Renderer_List`, which allows both the game and rendering layers to manipulate data, such as positions, that is relevant to both.
 
-### Player
+#### Player
 
 The `Player` struct ([game.h](./src/game/game.h)) is singleton that represent the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
 
-### Event and Sequence
+#### Event and Sequence
 
 `space-shooter.c` implements a relatively simple event system inspired by [pacman.c](https://github.com/floooh/pacman.c). The `Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Event`s and metadata to manage them. See [#events] for more details.
 
@@ -263,7 +272,5 @@ The Game Layer
 ### Initialization
 
 ### Update Loop
-
-### Framerate Independance
 
 ### Events
