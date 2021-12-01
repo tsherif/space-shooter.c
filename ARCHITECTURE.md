@@ -28,7 +28,7 @@ At a high level, the architecture of `space-shooter.c` involves 3 layers:
 	- Managing OpenGL state and drawing to the screen
 
 The platform layer interacts with the game and rendering layersusing an API insprired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
-- `platform_getInput(Game_Input* input)`: Get current input state from the platform.
+- `platform_getInput(Game_Input* input)`: Get current input state.
 - `platform_playSound(Data_Buffer* sound, bool loop)`: Output sound to an audio device.
 - `platform_debugLog(const char* message)`: Output a message intended for the developer while debugging.
 - `platform_userMessage(const char* message)`: Output a message intended for the end user.

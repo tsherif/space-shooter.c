@@ -28,7 +28,7 @@
 #include "../shared/data.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// Collection of smaller utility functions
+// Collection of smaller utility functions.
 //
 // - utils_init(): initialization (for random number generator).
 // - utils_lerp(): linear interpolation between min and max

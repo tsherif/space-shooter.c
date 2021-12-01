@@ -1,6 +1,6 @@
 - [ ] Update readme
 - [ ] Document design
-- [ ] More comments
+- [x] More comments
 - [x] New GIF
 - [x] Display score for next level
 - [x] See if game loop can be tightened up

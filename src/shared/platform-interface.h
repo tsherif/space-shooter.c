@@ -21,13 +21,29 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////
+// Platform-game abstraction interface
+/////////////////////////////////////////
+
+
 #ifndef _PLATFORM_INTERFACE_H_
 #define _PLATFORM_INTERFACE_H_
 #include <stdbool.h>
 #include <stdint.h>
 #include "data.h"
 
-// Must be implemented by game, to be used by platform layer.
+////////////////////////////////////////////////////////////////////////
+// Game_Input represents input from the platform layer into the game.
+//
+// Members:
+// - velocity: Horizontal and vertical movement, normalized to
+//      values between -1.0 and 1.0.
+// - shoot: Whether a shoot input was received on this frame.
+// - lastShoot:Whether a shoot input was received on the last frame.
+// - keyboard: Whether this frame's input was from a keyboard. (Used
+// 		to modify input instructions for the player).
+////////////////////////////////////////////////////////////////////////
+
 typedef struct {
 	float velocity[2];
 	bool shoot;
@@ -35,12 +51,38 @@ typedef struct {
 	bool keyboard;
 } Game_Input;
 
+//////////////////////////////////////////////////////////////////////
+// Game lifecycle functions called by the platform layer and
+// implemented by the game layer.
+//
+// - game_init(): Initialize game resources.
+// - game_update(): Update game state based on time elapsed since
+//		last frame.
+// - game_draw(): Draw current frame.
+// - game_resize(): Update rendering state to match current window 
+//		size.
+//////////////////////////////////////////////////////////////////////
+
 bool game_init(void);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
 
-// Must be implemented by platform layer, to be used by game.
+//////////////////////////////////////////////////////////////////////
+// Platform utilities called by the game layer and implemented by
+// each platform layer.
+//
+// - platform_getInput(): Get current input state.
+// - platform_playSound(): Output sound to an audio device.
+// - platform_debugLog(): Output a message intended for the developer 
+//		while debugging.
+// - platform_userMessage(): Output a message intended for the end
+//		user.
+// - platform_loadFile(): Load contents of a file into memory. 
+//		Optionally, null-terminate if the data will be used as a 
+//		string.
+//////////////////////////////////////////////////////////////////////
+
 void platform_getInput(Game_Input* input);
 void platform_playSound(Data_Buffer* sound, bool loop);
 void platform_debugLog(const char* message);

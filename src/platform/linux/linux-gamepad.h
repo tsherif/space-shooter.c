@@ -56,6 +56,14 @@ typedef struct {
     bool keyboard;
 } Linux_Gamepad;
 
+//////////////////////////////////////////////////////////////////
+// Linux gamepad controls functions.
+//
+// - linux_detectGamepad(): Attempt to connect to a gamepad.
+// - linux_updateGamepad(): Capture current gamepad state.
+// - linux_closeGamepad(): Release gamepad resources.
+//////////////////////////////////////////////////////////////////
+
 void linux_detectGamepad(void);
 void linux_updateGamepad(Linux_Gamepad* gamepad);
 void linux_closeGamepad(void);

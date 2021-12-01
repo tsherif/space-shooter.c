@@ -63,7 +63,8 @@ typedef struct RENDERER_LIST_BODY Renderer_List;
 #define RENDERER_LIST_MIXIN(name) union { struct RENDERER_LIST_BODY; Renderer_List name; }
 
 /////////////////////////////////////////////////////////////////////////
-// Renderer lifecycle functions:
+// Renderer lifecycle functions.
+//
 // - renderer_init(): Initialize OpenGL resources.
 // - renderer_createTexture(): Create a texture from the provided data.
 // - renderer_resize(): Resize the viewport.

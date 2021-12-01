@@ -114,6 +114,10 @@ static void *audioThread(void* args) {
             mixer.buffer[i] = 0;
         }    
  
+        //////////////////////////////////////
+        // Copy queued audio into mixer
+        //////////////////////////////////////
+
         pthread_mutex_lock(&threadInterface.queue.lock);
 
         if (threadInterface.queue.count > 0) {
@@ -130,7 +134,7 @@ static void *audioThread(void* args) {
 
 
         //////////////////////////////////////
-        // Simple additive mix with clipping.
+        // Simple additive mix with clipping
         //////////////////////////////////////
 
         for (int32_t i = 0; i < mixer.count; ++i) {
@@ -185,6 +189,7 @@ static void *audioThread(void* args) {
             }
         }
         
+        // This blocks until the device needs more data
         if (snd_pcm_writei(device, mixer.buffer, MIX_BUFFER_FRAMES) < 0) {
             snd_pcm_prepare(device);
         }
@@ -232,6 +237,10 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
     if (!sound->data) {
         return;
     }
+
+    ////////////////////////
+    // Add sound to queue
+    ////////////////////////
 
     pthread_mutex_lock(&threadInterface.queue.lock);
 

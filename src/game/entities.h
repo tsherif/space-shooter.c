@@ -82,7 +82,8 @@ typedef struct {
 } Entities_FromTextOptions;
 
 ///////////////////////////////////////////////////////////////////////
-// Entity manipulation functions:
+// Entity manipulation functions.
+//
 // - entities_spawn(): Spawn a new entity at the end of the list.
 // - entities_init(): Initialize the entity at the given index in
 //      the list.

@@ -26,6 +26,14 @@
 
 #include "platform-interface.h"
 
+//////////////////////////////////////////////////////////////////
+// Debug helpers that only run in a debug build.
+//
+// - DEBUG_LOG(): Print a debug message.
+// - DEBUG_ASSERT(): If `condition` evaluates to false, print
+// 		a debug message and crash the program.
+//////////////////////////////////////////////////////////////////
+
 #ifdef SPACE_SHOOTER_DEBUG
 #define DEBUG_LOG(message) platform_debugLog(message)
 #define DEBUG_ASSERT(condition, message) if (!(condition)) { DEBUG_LOG(message); *(int *)0 = 0;}
