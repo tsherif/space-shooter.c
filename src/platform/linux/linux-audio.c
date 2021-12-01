@@ -45,42 +45,88 @@ typedef struct {
 } AudioStream;
 
 static struct {
-    snd_pcm_t* device;
-    pthread_t thread;
+    pthread_t handle;
     struct {
         AudioStream sounds[MIX_CHANNELS];
         int32_t count;
         pthread_mutex_t lock;
-    } queue; // Queue is shared between main and audio threads.
-} audio;
+    } queue;
+    struct {
+        pthread_mutex_t lock;
+        bool signalled;
+    } shutdown;
+    bool initialized;
+} threadInterface;
 
 static void *audioThread(void* args) {
+    snd_pcm_t* device = NULL;
     struct {
         AudioStream channels[MIX_CHANNELS];
         int32_t count;
         int16_t buffer[MIX_BUFFER_FRAMES * 2];
-    } mixer;    
+    } mixer = { 0 };
 
-    while (true) {
+    /////////////////////////////////////
+    // Open audio device and set to:
+    // - 16-bit
+    // - 44.1k
+    // - stereo
+    // - 2k sample (~50ms) buffer size
+    /////////////////////////////////////
+
+    if (snd_pcm_open(&device, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+        return NULL;
+    }
+
+    snd_pcm_hw_params_t *deviceParams = NULL;
+    snd_pcm_hw_params_alloca(&deviceParams);
+    snd_pcm_hw_params_any(device, deviceParams);
+
+    if (snd_pcm_hw_params_set_access(device, deviceParams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
+        return NULL;   
+    }
+
+    if (snd_pcm_hw_params_set_format(device, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
+        return NULL;   
+    }
+
+    if (snd_pcm_hw_params_set_rate(device, deviceParams, 44100, 0) < 0) {
+        return NULL;   
+    }
+
+    if (snd_pcm_hw_params_set_channels(device, deviceParams, 2) < 0) {
+        return NULL;   
+    }
+
+    if (snd_pcm_hw_params_set_buffer_size(device, deviceParams, MIX_BUFFER_FRAMES) < 0) {
+        return NULL;   
+    }
+
+    if (snd_pcm_hw_params(device, deviceParams) < 0) {
+        return NULL;   
+    }
+
+    bool running = true;
+    while (running) {
         int32_t numSamples = MIX_BUFFER_FRAMES * 2;
 
         for (int32_t i = 0; i < numSamples; ++i) {
             mixer.buffer[i] = 0;
         }    
  
-        pthread_mutex_lock(&audio.queue.lock);
+        pthread_mutex_lock(&threadInterface.queue.lock);
 
-        if (audio.queue.count > 0) {
+        if (threadInterface.queue.count > 0) {
             int32_t channelsAvailable = MIX_CHANNELS - mixer.count;
-            int32_t copyCount = channelsAvailable < audio.queue.count ? channelsAvailable : audio.queue.count;
+            int32_t copyCount = channelsAvailable < threadInterface.queue.count ? channelsAvailable : threadInterface.queue.count;
             for (int32_t i = 0; i < copyCount; ++i) {
-                mixer.channels[mixer.count] = audio.queue.sounds[i];
+                mixer.channels[mixer.count] = threadInterface.queue.sounds[i];
                 ++mixer.count;
             }
-            audio.queue.count = 0;  
+            threadInterface.queue.count = 0;  
         }
 
-        pthread_mutex_unlock(&audio.queue.lock);
+        pthread_mutex_unlock(&threadInterface.queue.lock);
 
         if (mixer.count > 0) {
 
@@ -142,93 +188,73 @@ static void *audioThread(void* args) {
         }
 
         
-        if (snd_pcm_writei(audio.device, mixer.buffer, MIX_BUFFER_FRAMES) < 0) {
-            snd_pcm_prepare(audio.device);
+        if (snd_pcm_writei(device, mixer.buffer, MIX_BUFFER_FRAMES) < 0) {
+            snd_pcm_prepare(device);
         }
+
+        pthread_mutex_lock(&threadInterface.shutdown.lock);
+        if (threadInterface.shutdown.signalled) {
+            running = false;
+        }
+        pthread_mutex_unlock(&threadInterface.shutdown.lock);
     }
 
-    return 0;
+    snd_pcm_close(device);
+
+    return NULL;
 }
 
 bool linux_initAudio(void) {
 
-    /////////////////////////////////////
-    // Open audio device and set to:
-    // - 16-bit
-    // - 44.1k
-    // - stereo
-    // - 2k sample (~50ms) buffer size
-    /////////////////////////////////////
-
-    if (snd_pcm_open(&audio.device, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        return false;
-    }
-
-    snd_pcm_hw_params_t *deviceParams = 0;
-    snd_pcm_hw_params_alloca(&deviceParams);
-    snd_pcm_hw_params_any(audio.device, deviceParams);
-
-    if (snd_pcm_hw_params_set_access(audio.device, deviceParams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
-        return false;   
-    }
-
-    if (snd_pcm_hw_params_set_format(audio.device, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
-        return false;   
-    }
-
-    if (snd_pcm_hw_params_set_rate(audio.device, deviceParams, 44100, 0) < 0) {
-        return false;   
-    }
-
-    if (snd_pcm_hw_params_set_channels(audio.device, deviceParams, 2) < 0) {
-        return false;   
-    }
-
-    if (snd_pcm_hw_params_set_buffer_size(audio.device, deviceParams, MIX_BUFFER_FRAMES) < 0) {
-        return false;   
-    }
-
-    if (snd_pcm_hw_params(audio.device, deviceParams) < 0) {
-        return false;   
-    }
-
-    if (pthread_mutex_init(&audio.queue.lock, NULL)) {
-        return false;
-    }
-
     ////////////////////////
     // Create audio thread
     ////////////////////////
-    
-    if (pthread_create(&audio.thread, NULL, audioThread, NULL)) {
+
+    if (pthread_mutex_init(&threadInterface.queue.lock, NULL)) {
         return false;
     }
+
+    if (pthread_mutex_init(&threadInterface.shutdown.lock, NULL)) {
+        return false;
+    }
+    
+    if (pthread_create(&threadInterface.handle, NULL, audioThread, NULL)) {
+        return false;
+    }
+
+    threadInterface.initialized = true;
 
     return true;
 }
 
 void platform_playSound(Data_Buffer* sound, bool loop) {
-    if (!audio.device) {
+    if (!threadInterface.initialized) {
         return;
     }
 
-    pthread_mutex_lock(&audio.queue.lock);
+    pthread_mutex_lock(&threadInterface.queue.lock);
 
-    if (audio.queue.count < MIX_CHANNELS) {
-        int32_t soundIndex = audio.queue.count;
-        audio.queue.sounds[soundIndex].data = (int16_t *) sound->data;
-        audio.queue.sounds[soundIndex].count = sound->size / 2;
-        audio.queue.sounds[soundIndex].cursor = 0;
-        audio.queue.sounds[soundIndex].loop = loop;
+    if (threadInterface.queue.count < MIX_CHANNELS) {
+        int32_t soundIndex = threadInterface.queue.count;
+        threadInterface.queue.sounds[soundIndex].data = (int16_t *) sound->data;
+        threadInterface.queue.sounds[soundIndex].count = sound->size / 2;
+        threadInterface.queue.sounds[soundIndex].cursor = 0;
+        threadInterface.queue.sounds[soundIndex].loop = loop;
 
-        ++audio.queue.count;
+        ++threadInterface.queue.count;
     }
 
-    pthread_mutex_unlock(&audio.queue.lock); 
+    pthread_mutex_unlock(&threadInterface.queue.lock); 
 }
 
 void linux_closeAudio(void) {
-    pthread_cancel(audio.thread);
-    pthread_mutex_destroy(&audio.queue.lock);
-    snd_pcm_close(audio.device);
+    pthread_mutex_lock(&threadInterface.shutdown.lock);
+    threadInterface.shutdown.signalled = true;
+    pthread_mutex_unlock(&threadInterface.shutdown.lock);
+    
+    pthread_join(threadInterface.handle, NULL);
+    pthread_mutex_destroy(&threadInterface.queue.lock);
+    pthread_mutex_destroy(&threadInterface.shutdown.lock);
+    
+    threadInterface.initialized = false;
 }
