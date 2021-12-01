@@ -128,65 +128,62 @@ static void *audioThread(void* args) {
 
         pthread_mutex_unlock(&threadInterface.queue.lock);
 
-        if (mixer.count > 0) {
 
-            //////////////////////////////////////
-            // Simple additive mix with clipping.
-            //////////////////////////////////////
+        //////////////////////////////////////
+        // Simple additive mix with clipping.
+        //////////////////////////////////////
 
-            for (int32_t i = 0; i < mixer.count; ++i) {
-                AudioStream* channel = mixer.channels + i;
-                int32_t samplesToMix = numSamples;
-                int32_t samplesRemaining = channel->count - channel->cursor;
+        for (int32_t i = 0; i < mixer.count; ++i) {
+            AudioStream* channel = mixer.channels + i;
+            int32_t samplesToMix = numSamples;
+            int32_t samplesRemaining = channel->count - channel->cursor;
 
-                if (samplesRemaining < numSamples) {
-                    samplesToMix = samplesRemaining;
-                }
-
-                for (int32_t i = 0; i < samplesToMix; ++i) {
-                    int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
-                    
-                    if (sample < INT16_MIN) {
-                        sample = INT16_MIN;
-                    }
-
-                    if (sample > INT16_MAX) {
-                        sample = INT16_MAX;
-                    }
-
-                    mixer.buffer[i] = sample;
-                    ++channel->cursor;
-                }
+            if (samplesRemaining < numSamples) {
+                samplesToMix = samplesRemaining;
             }
 
-
-            //////////////////////////////////////
-            // Handle streams that have finished.
-            //////////////////////////////////////
-
-            int32_t last = mixer.count - 1;
-            for (int32_t i = mixer.count - 1; i >= 0; --i) {
-                AudioStream* channel = mixer.channels + i;
-                if (channel->cursor == channel->count) {
-                    if (channel->loop) {
-                        channel->cursor = 0;
-                    } else {
-
-                        //////////////////////////////////////////////////////////////
-                        // "Delete" stream by swapping to past the end of the array.
-                        //////////////////////////////////////////////////////////////
-
-                        mixer.channels[i].data = mixer.channels[last].data;
-                        mixer.channels[i].count = mixer.channels[last].count;
-                        mixer.channels[i].cursor = mixer.channels[last].cursor;
-                        mixer.channels[i].loop = mixer.channels[last].loop;
-
-                        --mixer.count;
-                    }
+            for (int32_t i = 0; i < samplesToMix; ++i) {
+                int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
+                
+                if (sample < INT16_MIN) {
+                    sample = INT16_MIN;
                 }
+
+                if (sample > INT16_MAX) {
+                    sample = INT16_MAX;
+                }
+
+                mixer.buffer[i] = sample;
+                ++channel->cursor;
             }
         }
 
+
+        //////////////////////////////////////
+        // Handle streams that have finished.
+        //////////////////////////////////////
+
+        int32_t last = mixer.count - 1;
+        for (int32_t i = mixer.count - 1; i >= 0; --i) {
+            AudioStream* channel = mixer.channels + i;
+            if (channel->cursor == channel->count) {
+                if (channel->loop) {
+                    channel->cursor = 0;
+                } else {
+
+                    //////////////////////////////////////////////////////////////
+                    // "Delete" stream by swapping to past the end of the array.
+                    //////////////////////////////////////////////////////////////
+
+                    mixer.channels[i].data = mixer.channels[last].data;
+                    mixer.channels[i].count = mixer.channels[last].count;
+                    mixer.channels[i].cursor = mixer.channels[last].cursor;
+                    mixer.channels[i].loop = mixer.channels[last].loop;
+
+                    --mixer.count;
+                }
+            }
+        }
         
         if (snd_pcm_writei(device, mixer.buffer, MIX_BUFFER_FRAMES) < 0) {
             snd_pcm_prepare(device);
