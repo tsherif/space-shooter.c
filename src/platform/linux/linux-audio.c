@@ -229,6 +229,10 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
         return;
     }
 
+    if (!sound->data) {
+        return;
+    }
+
     pthread_mutex_lock(&threadInterface.queue.lock);
 
     if (threadInterface.queue.count < MIX_CHANNELS) {
