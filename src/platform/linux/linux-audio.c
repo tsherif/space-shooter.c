@@ -52,44 +52,44 @@ static struct {
         int32_t count;
         pthread_mutex_t lock;
     } queue; // Queue is shared between main and audio threads.
-    struct {
-        AudioStream channels[MIX_CHANNELS];
-        int32_t count;
-    } mixer;
 } audio;
 
 static void *audioThread(void* args) {
-    int16_t mixBuffer[MIX_BUFFER_FRAMES * 2];
+    struct {
+        AudioStream channels[MIX_CHANNELS];
+        int32_t count;
+        int16_t buffer[MIX_BUFFER_FRAMES * 2];
+    } mixer;    
 
     while (true) {
         int32_t numSamples = MIX_BUFFER_FRAMES * 2;
 
         for (int32_t i = 0; i < numSamples; ++i) {
-            mixBuffer[i] = 0;
+            mixer.buffer[i] = 0;
         }    
  
         pthread_mutex_lock(&audio.queue.lock);
 
         if (audio.queue.count > 0) {
-            int32_t channelsAvailable = MIX_CHANNELS - audio.mixer.count;
+            int32_t channelsAvailable = MIX_CHANNELS - mixer.count;
             int32_t copyCount = channelsAvailable < audio.queue.count ? channelsAvailable : audio.queue.count;
             for (int32_t i = 0; i < copyCount; ++i) {
-                audio.mixer.channels[audio.mixer.count] = audio.queue.sounds[i];
-                ++audio.mixer.count;
+                mixer.channels[mixer.count] = audio.queue.sounds[i];
+                ++mixer.count;
             }
             audio.queue.count = 0;  
         }
 
         pthread_mutex_unlock(&audio.queue.lock);
 
-        if (audio.mixer.count > 0) {
+        if (mixer.count > 0) {
 
             //////////////////////////////////////
             // Simple additive mix with clipping.
             //////////////////////////////////////
 
-            for (int32_t i = 0; i < audio.mixer.count; ++i) {
-                AudioStream* channel = audio.mixer.channels + i;
+            for (int32_t i = 0; i < mixer.count; ++i) {
+                AudioStream* channel = mixer.channels + i;
                 int32_t samplesToMix = numSamples;
                 int32_t samplesRemaining = channel->count - channel->cursor;
 
@@ -98,7 +98,7 @@ static void *audioThread(void* args) {
                 }
 
                 for (int32_t i = 0; i < samplesToMix; ++i) {
-                    int32_t sample = mixBuffer[i] + channel->data[channel->cursor];
+                    int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
                     
                     if (sample < INT16_MIN) {
                         sample = INT16_MIN;
@@ -108,7 +108,7 @@ static void *audioThread(void* args) {
                         sample = INT16_MAX;
                     }
 
-                    mixBuffer[i] = sample;
+                    mixer.buffer[i] = sample;
                     ++channel->cursor;
                 }
             }
@@ -118,9 +118,9 @@ static void *audioThread(void* args) {
             // Handle streams that have finished.
             //////////////////////////////////////
 
-            int32_t last = audio.mixer.count - 1;
-            for (int32_t i = audio.mixer.count - 1; i >= 0; --i) {
-                AudioStream* channel = audio.mixer.channels + i;
+            int32_t last = mixer.count - 1;
+            for (int32_t i = mixer.count - 1; i >= 0; --i) {
+                AudioStream* channel = mixer.channels + i;
                 if (channel->cursor == channel->count) {
                     if (channel->loop) {
                         channel->cursor = 0;
@@ -130,19 +130,19 @@ static void *audioThread(void* args) {
                         // "Delete" stream by swapping to past the end of the array.
                         //////////////////////////////////////////////////////////////
 
-                        audio.mixer.channels[i].data = audio.mixer.channels[last].data;
-                        audio.mixer.channels[i].count = audio.mixer.channels[last].count;
-                        audio.mixer.channels[i].cursor = audio.mixer.channels[last].cursor;
-                        audio.mixer.channels[i].loop = audio.mixer.channels[last].loop;
+                        mixer.channels[i].data = mixer.channels[last].data;
+                        mixer.channels[i].count = mixer.channels[last].count;
+                        mixer.channels[i].cursor = mixer.channels[last].cursor;
+                        mixer.channels[i].loop = mixer.channels[last].loop;
 
-                        --audio.mixer.count;
+                        --mixer.count;
                     }
                 }
             }
         }
 
         
-        if (snd_pcm_writei(audio.device, mixBuffer, MIX_BUFFER_FRAMES) < 0) {
+        if (snd_pcm_writei(audio.device, mixer.buffer, MIX_BUFFER_FRAMES) < 0) {
             snd_pcm_prepare(audio.device);
         }
     }
