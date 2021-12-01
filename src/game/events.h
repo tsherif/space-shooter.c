@@ -99,6 +99,14 @@ typedef struct {
 } Events_Sequence;
 
 //////////////////////////////////////////////////////////////////////
+// Event manipulation functions:
+// - events_start(): Mark sequence as running.
+// - events_stop(): Reset sequence and mark as not running.
+// - events_beforeFrame(): Update sequence based on elapsed time
+//      since last frame.
+// - events_on(): Check if the provided event ID is currently 
+//      triggered in the sequence.
+//
 // Basic usage:
 //
 // Events_sequence s = { ... };
@@ -111,9 +119,6 @@ typedef struct {
 //     // ... Display something   
 // }
 //
-// if (s.complete) {
-//     // ... Do something else    
-// }
 //////////////////////////////////////////////////////////////////////
 
 void events_start(Events_Sequence* sequence);

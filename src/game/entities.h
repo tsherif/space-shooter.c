@@ -81,12 +81,29 @@ typedef struct {
     bool reset;
 } Entities_FromTextOptions;
 
-void entities_updateAnimationPanel(Entities_List* list, int32_t i);
-void entities_setAnimation(Entities_List* list, int32_t i, int32_t animation);
-void entities_updateAnimations(Entities_List* list);
+///////////////////////////////////////////////////////////////////////
+// Entity manipulation functions:
+// - entities_spawn(): Spawn a new entity at the end of the list.
+// - entities_init(): Initialize the entity at the given index in
+//      the list.
+// - entities_filterDead(): Remove dead entities from the list (called
+//      at the end of a frame).
+// - entities_setAnimation(): Set the animation sequence for the 
+//      given entity.
+// - entities_updateAnimationPanel(): Set the animation panel for 
+//      the given entity based on the current animation tick.
+// - entities_updateAnimations(): Increment ticks and update
+//      animation panels for all entities in the list.
+// - entities_fromText(): Create and entity representation of the 
+//      provided string.
+///////////////////////////////////////////////////////////////////////
+
 void entities_spawn(Entities_List* list, Entities_InitOptions* opts);
 void entities_init(Entities_List* list, int32_t i, Entities_InitOptions* opts);
 void entities_filterDead(Entities_List* list);
+void entities_setAnimation(Entities_List* list, int32_t i, int32_t animation);
+void entities_updateAnimationPanel(Entities_List* list, int32_t i);
+void entities_updateAnimations(Entities_List* list);
 void entities_fromText(Entities_List* list, const char* text, Entities_FromTextOptions* opts);
 
 #endif
