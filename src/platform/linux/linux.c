@@ -29,10 +29,6 @@
 
 #define SOGL_IMPLEMENTATION_X11
 #include "../../../lib/simple-opengl-loader.h"
-#include "../../shared/constants.h"
-#include "../../shared/data.h"
-#include "../../shared/platform-interface.h"
-#include "../../shared/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
@@ -40,6 +36,10 @@
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "../../shared/constants.h"
+#include "../../shared/data.h"
+#include "../../shared/platform-interface.h"
+#include "../../shared/debug.h"
 #include "linux-audio.h"
 #include "linux-gamepad.h"
 

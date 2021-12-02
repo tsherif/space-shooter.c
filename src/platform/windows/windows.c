@@ -30,6 +30,8 @@
 #define WIN32_LEAN_AND_MEAN
 #define SOGL_IMPLEMENTATION_WIN32
 #define CREATE_OPENGL_WINDOW_IMPLEMENTATION
+#include "../../../lib/create-opengl-window.h"
+#include "../../../lib/simple-opengl-loader.h"
 #include <windows.h>
 #include <windowsx.h>
 #include <xinput.h>
@@ -38,8 +40,6 @@
 #include <malloc.h>
 #include <math.h>
 #include <profileapi.h>
-#include "../../../lib/create-opengl-window.h"
-#include "../../../lib/simple-opengl-loader.h"
 #include "../../shared/constants.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
