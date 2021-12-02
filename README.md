@@ -27,7 +27,7 @@ Windows
 - Run `space-shooter.exe` from the `build/` directory.
 
 Linux
-- Make sure development headers for the following are installed: the Linux kernel, Xlib, glx, ALSA.
+- Make sure development headers for the Linux kernel, Xlib, glx and ALSA are installed.
     - E.g. on Ubuntu, run the following: `sudo apt install linux-libc-dev libx11-dev mesa-common-dev libasound2-dev`  
 - Run `make` for a debug build or `make release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
