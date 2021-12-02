@@ -2,9 +2,10 @@ The Architecture of space-shooter.c [WIP]
 =========================================
 
 - [Architectural Overview](#architectural-overview)
-- [The Platform Layer](#the-platform-layer)
 - [Data Model](#architectural-overview)
+- [The Platform Layer](#the-platform-layer)
 - [The Game Layer](#the-game-layer)
+- [The Rendering Layer](#the-rendering-layer)
 
 Architectural Overview
 ----------------------
@@ -39,6 +40,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw(void)`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match current window size.
+- `game_close()`: Release game resources.
 
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
@@ -47,134 +49,16 @@ The rendering layer implements the following functions used by the game layer to
 - `renderer_beforeFrame(void)`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
 - `renderer_draw(Renderer_List* list)`: Draw to the screen.
 
-
-The Platform Layer
-------------------
-
-Many of the techniques described here were built using open-source projects like [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) as invaluable references.
-
-### Window Management
-
-Window management involved straightforward usage of [Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/) with the only tricky parts on one or both platforms being hiding the mouse cursor and displaying a fullscreen window.
-
-#### Windows
-
-Hiding the cursor was straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. Opening a fullscreen window was done using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
-
-```c
-HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
-GetMonitorInfo(monitor, &monitorInfo);
-int32_t x = monitorInfo.rcMonitor.left;
-int32_t y = monitorInfo.rcMonitor.top;
-int32_t width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-int32_t height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-SetWindowLong(window, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECHANGED);
-```
-
-#### Linux
-
-Hiding the cursor in Xlib requires creating a "blank" cursor:
-
-```c
-char hiddenCursorData = 0;
-XColor hiddenCursorColor = { 0 };
-Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, &hiddenCursorData, 1, 1, 1, 0, 1);
-Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCursorPixmap, &hiddenCursorColor, &hiddenCursorColor, 0, 0);
-XDefineCursor(display, window, hiddenCursor);
-```
-
-Opening a fullscreen window requires sending [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
-
-```c
-#define NET_WM_STATE_ADD    1
-Atom NET_WM_STATE = XInternAtom(display, "_NET_WM_STATE", False);
-Atom NET_WM_STATE_FULLSCREEN = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
-
-XEvent fullscreenEvent = {
-    .xclient = {
-    	// ...
-        .message_type = NET_WM_STATE,
-        .data = {
-            .l = {
-                NET_WM_STATE_ADD,
-                NET_WM_STATE_FULLSCREEN,
-                // ...
-            }
-        }
-    }
-};
-
-XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
-```
-
-### Initializing OpenGL
-
-#### Windows
-
-Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps involve:
-1. Create a dummy window
-2. Create a dummy OpenGL context
-3. Get pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
-4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks))
-5. Create the real window and context using the extension functions.
-
-This functionality was extracted out into [create-opengl.window.h](./lib/create-opengl.window.h) and is used as a single-header library.
-
-Once the context is created, OpenGL functions were loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
-
-```c
-void *fn = (void *)wglGetProcAddress(openGLFunctionName);
-if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3) || (fn == (void *) -1)) {
-    fn = (void *) GetProcAddress(sogl_libHandle, openGLFunctionName);
-}
-```
-
-#### Linux
-
-OpenGL context creation in Linux is a little simpler and doesn't require dummy context creation:
-
-```c
-glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const uint8_t *) "glXCreateContextAttribsARB");
-glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const uint8_t *) "glXSwapIntervalEXT");
-
-int32_t visualAtt[] = { ... };
-GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
-
-int32_t contextAttribs[] = { ... };
-GLXContext ctx = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
-
-glXMakeCurrent(display, window, ctx);
-```
-
-A more complete example of the process can be found [here](https://apoorvaj.io/creating-a-modern-opengl-context/).
-
-Again, once the context is created, loading functions was straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
-
-```c
-
-void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
-void *fn = dlsym(sogl_libHandle, openGLFunctionName);
-```
-
-### Audio
-
-#### Windows
-
-#### Linux
-
-
-### Gamepad Support
-
-#### Windows
-
-#### Linux
-
 Data Model
 ----------
 
 ### Loading Assets
+
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed using the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To simplify parsing, the BMP files are required to be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed using the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To simplify parsing, the WAVE files are required to contain 44.1kHz, 16-bit stereo data, and the chunks must be in the order RIFF, fmt then data.
+
+Failure to load image data will cause the game to abort. Failure to load audio data will still allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
 ### Memory Management
 
@@ -266,6 +150,134 @@ The `Player` struct ([game.h](./src/game/game.h)) is singleton that represent th
 `space-shooter.c` implements a relatively simple event system inspired by [pacman.c](https://github.com/floooh/pacman.c). The `Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Event`s and metadata to manage them. See [Events](#events) for more details.
 
 
+The Platform Layer
+------------------
+
+Many of the techniques described here were built using open-source projects like [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) as invaluable references.
+
+### Window Management
+
+Window management involved straightforward usage of [Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/) with the only tricky parts on one or both platforms being hiding the mouse cursor and displaying a fullscreen window.
+
+#### Windows
+
+Hiding the cursor was straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. Opening a fullscreen window was done using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
+
+```c
+HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+GetMonitorInfo(monitor, &monitorInfo);
+int32_t x = monitorInfo.rcMonitor.left;
+int32_t y = monitorInfo.rcMonitor.top;
+int32_t width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+int32_t height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+SetWindowLong(window, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECHANGED);
+```
+
+#### Linux
+
+Hiding the cursor in Xlib requires creating a "blank" cursor:
+
+```c
+char hiddenCursorData = 0;
+XColor hiddenCursorColor = { 0 };
+Pixmap hiddenCursorPixmap = XCreatePixmapFromBitmapData(display, window, &hiddenCursorData, 1, 1, 1, 0, 1);
+Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCursorPixmap, &hiddenCursorColor, &hiddenCursorColor, 0, 0);
+XDefineCursor(display, window, hiddenCursor);
+```
+
+Opening a fullscreen window requires sending [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
+
+```c
+#define NET_WM_STATE_ADD    1
+Atom NET_WM_STATE = XInternAtom(display, "_NET_WM_STATE", False);
+Atom NET_WM_STATE_FULLSCREEN = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False);
+
+XEvent fullscreenEvent = {
+    .xclient = {
+    	// ...
+        .message_type = NET_WM_STATE,
+        .data = {
+            .l = {
+                NET_WM_STATE_ADD,
+                NET_WM_STATE_FULLSCREEN,
+                // ...
+            }
+        }
+    }
+};
+
+XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
+```
+
+### Initializing OpenGL
+
+#### Windows
+
+Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps involve:
+1. Create a dummy window
+2. Create a dummy OpenGL context
+3. Get pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
+4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks))
+5. Create the real window and context using the extension functions.
+
+This functionality was extracted out into [create-opengl.window.h](./lib/create-opengl.window.h) and is used as a single-header library.
+
+Once the context is created, OpenGL functions were loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
+
+```c
+void *fn = (void *)wglGetProcAddress(openGLFunctionName);
+if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3) || (fn == (void *) -1)) {
+    fn = (void *) GetProcAddress(sogl_libHandle, openGLFunctionName);
+}
+```
+
+The logic for loading OpenGL functions was extracted out into [simple-opengl-loader.h](./lib/simple-opengl-loader.h) and is used as a single-header library.
+
+#### Linux
+
+OpenGL context creation in Linux is a little simpler and doesn't require dummy context creation:
+
+```c
+glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const uint8_t *) "glXCreateContextAttribsARB");
+glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const uint8_t *) "glXSwapIntervalEXT");
+
+int32_t visualAtt[] = { ... };
+GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
+
+int32_t contextAttribs[] = { ... };
+GLXContext ctx = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
+
+glXMakeCurrent(display, window, ctx);
+```
+
+A complete example of the process is provided by Apoorva Joshi [here](https://apoorvaj.io/creating-a-modern-opengl-context/).
+
+Again, once the context is created, loading functions was straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
+
+```c
+
+void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
+void *fn = dlsym(sogl_libHandle, openGLFunctionName);
+```
+
+The logic for loading OpenGL functions was extracted out into [simple-opengl-loader.h](./lib/simple-opengl-loader.h) and is used as a single-header library.
+
+### Audio
+
+#### Windows
+
+#### Linux
+
+
+### Gamepad Support
+
+#### Windows
+
+#### Linux
+
+
 The Game Layer
 --------------
 
@@ -274,3 +286,6 @@ The Game Layer
 ### Update Loop
 
 ### Events
+
+The Rendering Layer
+-------------------

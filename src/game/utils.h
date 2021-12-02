@@ -40,8 +40,8 @@
 // - utils_bmpToImage(): Parse the image data out of a BMP file. Note this function is hardcoded to 
 //		load 32bpp, uncompressed BGRA data (the format output by gimp).
 // - utils_wavToSound(): Parse audio data out of a WAVE file. Note this function is hardcoded
-//		to load 2-channel, 44.1kHz, 16-bit data, with the RIFF, fmt and data chunks in sequential 
-//		order.
+//		to load 2-channel, 44.1kHz, 16-bit data, and the chunks must be in the order RIFF, fmt 
+//		then data.
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void utils_init(void);
