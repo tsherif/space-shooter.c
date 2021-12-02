@@ -1,3 +1,4 @@
+- [ ] Audio format constants should be in constants.h
 - [ ] Document design
 - [x] More comments
 - [x] Update readme
