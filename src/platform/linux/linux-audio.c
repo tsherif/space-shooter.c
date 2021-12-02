@@ -201,6 +201,7 @@ static void *audioThread(void* args) {
         pthread_mutex_unlock(&threadInterface.shutdown.lock);
     }
 
+    snd_pcm_drop(device);
     snd_pcm_close(device);
 
     return NULL;

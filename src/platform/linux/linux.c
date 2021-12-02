@@ -138,16 +138,16 @@ int32_t main(int32_t argc, char const *argv[]) {
         None
     };
 
-    GLXContext ctx = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
+    GLXContext gl = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
 
     XFree(fbc);
 
-    if (!ctx) {
+    if (!gl) {
         platform_userMessage("Unable to load OpenGL.");
         return 1;
     }
 
-    glXMakeCurrent(display, window, ctx);
+    glXMakeCurrent(display, window, gl);
 
     if (glXSwapIntervalEXT) {
         glXSwapIntervalEXT(display, window, 1);
@@ -340,14 +340,13 @@ int32_t main(int32_t argc, char const *argv[]) {
         lastTime = time;
     };
 
-    /////////////////////
-    // Cleanup
-    /////////////////////
-
     linux_closeGamepad();
     linux_closeAudio();
+    glXMakeCurrent(display, None, NULL);
+    glXDestroyContext(display, gl);
     XDestroyWindow(display, window);
     XCloseDisplay(display);
+    game_close();
 }
 
 void platform_getInput(Game_Input* input) {
