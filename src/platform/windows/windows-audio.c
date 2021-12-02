@@ -156,6 +156,14 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 }
 
 void windows_closeAudio(void) {
+    for (int32_t i = 0; i < MAX_CHANNELS; ++i) {
+        if (audio.channels[i].inUse) {
+            IXAudio2SourceVoice_Stop(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
+            audio.channels[i].inUse = false;
+            break;
+        }
+    }
+
     IXAudio2_Release(audio.xaudio);
     CoUninitialize();
 }

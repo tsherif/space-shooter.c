@@ -372,6 +372,8 @@ int32_t CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLi
     }
 
     windows_closeAudio();
+    destroyOpenGLWindow(window);
+    game_close();
 
     return (int32_t) message.wParam;
 }

@@ -61,12 +61,14 @@ typedef struct {
 // - game_draw(): Draw current frame.
 // - game_resize(): Update rendering state to match current window 
 //		size.
+// - game_close(): Release game resources.
 //////////////////////////////////////////////////////////////////////
 
 bool game_init(void);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
+void game_close(void);
 
 //////////////////////////////////////////////////////////////////////
 // Platform utilities called by the game layer and implemented by

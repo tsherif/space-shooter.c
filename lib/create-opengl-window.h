@@ -43,6 +43,7 @@ typedef struct {
 } CreateOpenGLWindowArgs;
 
 HWND createOpenGLWindow(CreateOpenGLWindowArgs* args);
+void destroyOpenGLWindow(HWND window);
 
 #ifdef CREATE_OPENGL_WINDOW_IMPLEMENTATION
 
@@ -248,6 +249,16 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     }
 
     return window;
+}
+
+void destroyOpenGLWindow(HWND window) {
+    HGLRC gl = wglGetCurrentContext();
+    HDC deviceContext = GetDC(window);
+    
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(gl);
+    ReleaseDC(window, deviceContext);
+    DestroyWindow(window);
 }
 
 #endif // CREATE_OPENGL_WINDOW_IMPLEMENTATION

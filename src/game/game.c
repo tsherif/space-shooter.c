@@ -1000,3 +1000,11 @@ void game_draw(void) {
     renderer_draw(&entities.text.renderList);
     renderer_draw(&entities.lives.renderList);
 }
+
+void game_close(void) {
+    data_freeBuffer(&gameData.sounds.music);
+    data_freeBuffer(&gameData.sounds.playerBullet);
+    data_freeBuffer(&gameData.sounds.enemyBullet);
+    data_freeBuffer(&gameData.sounds.explosion);
+    data_freeBuffer(&gameData.sounds.enemyHit);
+}
