@@ -30,21 +30,18 @@
 #include <windows.h>
 #include <xaudio2.h>
 #include <stdbool.h>
+#include "../../shared/constants.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "windows-audio.h"
 
-#define AUDIO_SAMPLE_RATE 44100
-#define AUDIO_CHANNELS 2
-#define MAX_CHANNELS 32
-
 static WAVEFORMATEX AUDIO_SOURCE_FORMAT = {
   .wFormatTag = WAVE_FORMAT_PCM,
-  .nChannels = AUDIO_CHANNELS,
-  .nSamplesPerSec = AUDIO_SAMPLE_RATE,
-  .nAvgBytesPerSec = 176400,
+  .nChannels = SPACE_SHOOTER_AUDIO_CHANNELS,
+  .nSamplesPerSec = SPACE_SHOOTER_AUDIO_SAMPLE_RATE,
+  .nAvgBytesPerSec = SPACE_SHOOTER_AUDIO_SAMPLE_RATE * SPACE_SHOOTER_AUDIO_CHANNELS * (SPACE_SHOOTER_AUDIO_BPS / 8),
   .nBlockAlign = 4,
-  .wBitsPerSample = 16,
+  .wBitsPerSample = SPACE_SHOOTER_AUDIO_BPS,
   .cbSize = 0
 };
 
@@ -69,7 +66,7 @@ void OnVoiceError(IXAudio2VoiceCallback* This, void* pBufferContext, HRESULT Err
 static struct {
     IXAudio2* xaudio;
     IXAudio2MasteringVoice* xaudioMasterVoice;
-    Channel channels[MAX_CHANNELS];
+    Channel channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
     IXAudio2VoiceCallback callbacks;
 } audio = {
     .callbacks = {
@@ -101,8 +98,8 @@ bool windows_initAudio(void) {
     comResult = IXAudio2_CreateMasteringVoice(
         audio.xaudio,
         &audio.xaudioMasterVoice,
-        AUDIO_CHANNELS,
-        AUDIO_SAMPLE_RATE,
+        SPACE_SHOOTER_AUDIO_CHANNELS,
+        SPACE_SHOOTER_AUDIO_SAMPLE_RATE,
         0,
         NULL,
         NULL,
@@ -113,7 +110,7 @@ bool windows_initAudio(void) {
         return false;
     }
 
-    for (int32_t i = 0; i < MAX_CHANNELS; ++i) {
+    for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         audio.channels[i].buffer.Flags = XAUDIO2_END_OF_STREAM;
         audio.channels[i].buffer.pContext = audio.channels + i;
 
@@ -141,7 +138,7 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
         return;
     }
 
-    for (int32_t i = 0; i < MAX_CHANNELS; ++i) {
+    for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audio.channels[i].buffer;
             buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
@@ -156,7 +153,7 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 }
 
 void windows_closeAudio(void) {
-    for (int32_t i = 0; i < MAX_CHANNELS; ++i) {
+    for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (audio.channels[i].inUse) {
             IXAudio2SourceVoice_Stop(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
             audio.channels[i].inUse = false;

@@ -24,6 +24,7 @@
 #include <alloca.h>
 #include <alsa/asoundlib.h>
 #include <pthread.h>
+#include "../../shared/constants.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "linux-audio.h"
@@ -34,7 +35,6 @@
 // - https://en.wikipedia.org/wiki/Pthreads
 //////////////////////////////////////////////////////////////
 
-#define MIX_CHANNELS 32
 #define MIX_BUFFER_FRAMES 2048
 
 typedef struct {
@@ -47,7 +47,7 @@ typedef struct {
 static struct {
     pthread_t handle;
     struct {
-        AudioStream sounds[MIX_CHANNELS];
+        AudioStream sounds[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
         int32_t count;
         pthread_mutex_t lock;
     } queue;
@@ -61,7 +61,7 @@ static struct {
 static void *audioThread(void* args) {
     snd_pcm_t* device = NULL;
     struct {
-        AudioStream channels[MIX_CHANNELS];
+        AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
         int32_t count;
         int16_t buffer[MIX_BUFFER_FRAMES * 2];
     } mixer = { 0 };
@@ -121,7 +121,7 @@ static void *audioThread(void* args) {
         pthread_mutex_lock(&threadInterface.queue.lock);
 
         if (threadInterface.queue.count > 0) {
-            int32_t channelsAvailable = MIX_CHANNELS - mixer.count;
+            int32_t channelsAvailable = SPACE_SHOOTER_AUDIO_MIXER_CHANNELS - mixer.count;
             int32_t copyCount = channelsAvailable < threadInterface.queue.count ? channelsAvailable : threadInterface.queue.count;
             for (int32_t i = 0; i < copyCount; ++i) {
                 mixer.channels[mixer.count] = threadInterface.queue.sounds[i];
@@ -245,7 +245,7 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 
     pthread_mutex_lock(&threadInterface.queue.lock);
 
-    if (threadInterface.queue.count < MIX_CHANNELS) {
+    if (threadInterface.queue.count < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS) {
         int32_t soundIndex = threadInterface.queue.count;
         threadInterface.queue.sounds[soundIndex].data = (int16_t *) sound->data;
         threadInterface.queue.sounds[soundIndex].count = sound->size / 2;

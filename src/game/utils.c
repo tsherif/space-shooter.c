@@ -24,9 +24,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "../shared/constants.h"
 #include "../shared/platform-interface.h"
 #include "../shared/debug.h"
 #include "utils.h"
+
+#define BMP_SIGNATURE 0x4d42
+#define BMP_BPP 32
+#define BMP_BITFIELD_COMPRESSION 3
+
+#define WAVE_RIFF_SIGNATURE 0x46464952
+#define WAVE_TYPE_SIGNATURE 0x45564157
+#define WAVE_FMT_SIGNATURE 0x20746d66
+#define WAVE_DATA_SIGNATURE 0x61746164
+#define WAVE_PCM_FORMAT 1
+
 
 void utils_init(void) {
     srand((uint32_t) time(NULL));
@@ -85,16 +97,16 @@ bool utils_bmpToImage(Data_Buffer* imageData, Data_Image* image) {
 
 #ifdef SPACE_SHOOTER_DEBUG
     uint16_t type = *(uint16_t *) imageData->data;
-    DEBUG_ASSERT(type == 0x4d42, "utils_bmpToRgba: Invalid BMP data.");
+    DEBUG_ASSERT(type == BMP_SIGNATURE, "utils_bmpToRgba: Invalid BMP data.");
 
     uint32_t dibHeaderSize = *(uint32_t *) (imageData->data + 14);
     DEBUG_ASSERT(dibHeaderSize >= 70, "utils_bmpToRgba: Unsupported DIB header.");
 
     uint16_t bpp           = *(uint16_t *) (imageData->data + 28);
-    DEBUG_ASSERT(bpp == 32, "utils_bmpToRgba: Unsupported bpp, must be 32.");
+    DEBUG_ASSERT(bpp == BMP_BPP, "utils_bmpToRgba: Unsupported bpp, must be 32.");
 
     uint32_t compression   = *(uint32_t *) (imageData->data + 30);
-    DEBUG_ASSERT(compression == 3, "utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
+    DEBUG_ASSERT(compression == BMP_BITFIELD_COMPRESSION, "utils_bmpToRgba: Unsupported compression, must be BI_BITFIELDS (3).");
 
     uint32_t redMask       = *(uint32_t *) (imageData->data + 54);
     uint32_t greenMask     = *(uint32_t *) (imageData->data + 58);
@@ -147,7 +159,7 @@ bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
 #ifdef SPACE_SHOOTER_DEBUG
     // "RIFF" little-endian
     uint32_t riffType = *(uint32_t *) soundData->data;
-    DEBUG_ASSERT(riffType == 0x46464952, "utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
+    DEBUG_ASSERT(riffType == WAVE_RIFF_SIGNATURE, "utils_wavToSound: Invalid WAVE file. Missing RIFF chunk.");
     
     // fileSize == size of file - 4 bytes each for this and the previous field.
     uint32_t fileSize = *(uint32_t *) (soundData->data + 4);
@@ -155,22 +167,25 @@ bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
 
     // "WAVE" little-endian
     uint32_t fileFormat = *(uint32_t *) (soundData->data + 8);
-    DEBUG_ASSERT(fileFormat == 0x45564157, "utils_wavToSound: Invalid WAVE file. Missing WAVE chunk.");
+    DEBUG_ASSERT(fileFormat == WAVE_TYPE_SIGNATURE, "utils_wavToSound: Invalid WAVE file. Missing WAVE chunk.");
 
     // "fmt " little-endian
     uint32_t fmtType = *(uint32_t *) (soundData->data + 12);
-    DEBUG_ASSERT(fmtType == 0x20746d66, "utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
+    DEBUG_ASSERT(fmtType == WAVE_FMT_SIGNATURE, "utils_wavToSound: Invalid WAVE file. Missing fmt chunk.");
     
 
     uint16_t formatCode = *(uint16_t *) (soundData->data + 20);            
     uint16_t channels   = *(uint16_t *) (soundData->data + 22);            
     uint32_t rate       = *(uint32_t *) (soundData->data + 24);            
     uint16_t bps        = *(uint16_t *) (soundData->data + 34);
-    DEBUG_ASSERT(formatCode == 1 && channels == 2 && rate == 44100 && bps == 16, "utils_wavToSound: Invalid audio data. PCM, stereo, 44.1k, 16-bit required.");
+    DEBUG_ASSERT(formatCode == 1, "utils_wavToSound: Invalid audio data. Audio must be uncompressed.");
+    DEBUG_ASSERT(channels == SPACE_SHOOTER_AUDIO_CHANNELS, "utils_wavToSound: Invalid audio data. Audio must be stereo.");
+    DEBUG_ASSERT(rate == SPACE_SHOOTER_AUDIO_SAMPLE_RATE, "utils_wavToSound: Invalid audio data. Audio must be 44.1k samples per second.");
+    DEBUG_ASSERT(bps == SPACE_SHOOTER_AUDIO_BPS, "utils_wavToSound: Invalid audio data. Audio must be 16bps.");
 
     // "data" little-endian
     uint32_t dataType = *(uint32_t *) (soundData->data + dataOffset);
-    DEBUG_ASSERT(dataType == 0x61746164, "utils_wavToSound: Invalid WAVE file. Missing data chunk.");
+    DEBUG_ASSERT(dataType == WAVE_DATA_SIGNATURE, "utils_wavToSound: Invalid WAVE file. Missing data chunk.");
 #endif
 
     uint32_t dataSize = *(uint32_t *) (soundData->data + dataOffset + 4);
