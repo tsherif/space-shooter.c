@@ -107,7 +107,7 @@ typedef struct MY_STRUCT_BODY MyStruct;
 #define MY_STRUCT_MIXIN(name) union { struct MY_STRUCT_BODY; MyStruct name; }
 ```
 
-This struct can then be mixed in to another struct:
+This struct can then be mixed into another struct:
 
 ```c
 typedef {
