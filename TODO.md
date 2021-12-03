@@ -1,5 +1,5 @@
-- [ ] Audio format constants should be in constants.h
 - [ ] Document design
+- [x] Audio format constants should be in constants.h
 - [x] More comments
 - [x] Update readme
 - [x] New GIF
