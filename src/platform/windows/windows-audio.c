@@ -49,10 +49,10 @@ typedef struct {
     IXAudio2SourceVoice* voice;
     XAUDIO2_BUFFER buffer;
     bool inUse;
-} Channel;
+} AudioStream;
 
 void OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
-    Channel* channel = (Channel*) pBufferContext;
+    AudioStream* channel = (AudioStream*) pBufferContext;
     channel->inUse = false;
 }
 
@@ -66,7 +66,7 @@ void OnVoiceError(IXAudio2VoiceCallback* This, void* pBufferContext, HRESULT Err
 static struct {
     IXAudio2* xaudio;
     IXAudio2MasteringVoice* xaudioMasterVoice;
-    Channel channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
+    AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
     IXAudio2VoiceCallback callbacks;
 } audio = {
     .callbacks = {

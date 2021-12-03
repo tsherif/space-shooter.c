@@ -24,14 +24,25 @@
 #ifndef _CONSTANTS_H_
 #define _CONSTANTS_H_
 
-// Initial window dimensions on first switch to windowed mode
+////////////
+// Window
+////////////
+
 #define SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH 1200
 #define SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT 600
+
+///////////
+// Audio
+///////////
 
 #define SPACE_SHOOTER_AUDIO_SAMPLE_RATE 44100
 #define SPACE_SHOOTER_AUDIO_CHANNELS 2
 #define SPACE_SHOOTER_AUDIO_BPS 16
 #define SPACE_SHOOTER_AUDIO_MIXER_CHANNELS 32
+
+/////////////
+// Gamepad
+/////////////
 
 // From Xinput: https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput#dead-zone
 #define SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE  7849

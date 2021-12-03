@@ -28,7 +28,7 @@ At a high level, the architecture of `space-shooter.c` involves 3 layers:
 - The **rendering layer** is implemented in [renderer.c](./src/game/renderer.c) and is responsible for:
 	- Managing OpenGL state and drawing to the screen
 
-The platform layer interacts with the game and rendering layersusing an API insprired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
+The platform layer interacts with the game and rendering layers using an API inspired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
 - `platform_getInput(Game_Input* input)`: Get current input state.
 - `platform_playSound(Data_Buffer* sound, bool loop)`: Output sound to an audio device.
 - `platform_debugLog(const char* message)`: Output a message intended for the developer while debugging.
@@ -99,7 +99,7 @@ The only use of dynamic memory is in loading image and sound assets when the gam
 
 ### Mixin Structs
 
-To simplify passing of game data between the different layers, a struct "mixin" model was implemented using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
+To simplify passing of game data between the different layers, I implemented a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
 
 ```c
 #define MY_STRUCT_BODY { int32_t x; int32_t y }
@@ -147,7 +147,7 @@ The `Player` struct ([game.h](./src/game/game.h)) is singleton that represent th
 
 #### Event and Sequence
 
-`space-shooter.c` implements a relatively simple event system inspired by [pacman.c](https://github.com/floooh/pacman.c). The `Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Event`s and metadata to manage them. See [Events](#events) for more details.
+I implemented a relatively simple event system for`space-shooter.c` inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c). The `Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Event`s and metadata to manage them. See [Events](#events) for more details.
 
 
 The Platform Layer
@@ -216,13 +216,13 @@ XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedi
 #### Windows
 
 Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps involve:
-1. Create a dummy window
-2. Create a dummy OpenGL context
-3. Get pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
-4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks))
-5. Create the real window and context using the extension functions.
+1. Creating a dummy window
+2. Creating a dummy OpenGL context
+3. Getting pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
+4. Destroying the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks))
+5. Creating the real window and context using the extension functions.
 
-This functionality was extracted out into [create-opengl.window.h](./lib/create-opengl.window.h) and is used as a single-header library.
+I extracted this functionality into a single-header library, [create-opengl.window.h](./lib/create-opengl.window.h).
 
 Once the context is created, OpenGL functions were loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
 
@@ -233,7 +233,7 @@ if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3
 }
 ```
 
-The logic for loading OpenGL functions was extracted out into [simple-opengl-loader.h](./lib/simple-opengl-loader.h) and is used as a single-header library.
+I also extracted the logic for loading OpenGL functions into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
 
 #### Linux
 
@@ -262,14 +262,81 @@ void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
 void *fn = dlsym(sogl_libHandle, openGLFunctionName);
 ```
 
-The logic for loading OpenGL functions was extracted out into [simple-opengl-loader.h](./lib/simple-opengl-loader.h) and is used as a single-header library.
+As mentioned above, I extracted the logic for loading OpenGL functions into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
 
 ### Audio
 
 #### Windows
 
+Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) is implemented using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
+
+Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that) but is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead of:
+
+```c++
+xaudio->CreateMasteringVoice(xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
+```
+
+you write:
+
+```c
+IXAudio2_CreateMasteringVoice(xaudio, xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
+```
+
+Once trickier subtlety is how to define the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover this requires setting a `lpVtbl` member in the `IXAudio2VoiceCallback` struct:
+
+```c
+IXAudio2VoiceCallback callbacks = {
+	.lpVtbl = &(IXAudio2VoiceCallbackVtbl) {
+	    .OnStreamEnd = OnStreamEnd,
+	    .OnVoiceProcessingPassEnd = OnVoiceProcessingPassEnd,
+	    .OnVoiceProcessingPassStart = OnVoiceProcessingPassStart,
+	    .OnBufferEnd = OnBufferEnd,
+	    .OnBufferStart = OnBufferStart,
+	    .OnLoopEnd = OnLoopEnd,
+	    .OnVoiceError = OnVoiceError
+	}
+};
+```
+
+
 #### Linux
 
+Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) is implemented using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so a 32-channel additive mixer is implemented explicitly on the audio thread:
+
+```c
+for (int32_t i = 0; i < mixer.count; ++i) {
+    AudioStream* channel = mixer.channels + i;
+    int32_t samplesToMix = numSamples;
+    int32_t samplesRemaining = channel->count - channel->cursor;
+
+    if (samplesRemaining < numSamples) {
+        samplesToMix = samplesRemaining;
+    }
+
+    for (int32_t i = 0; i < samplesToMix; ++i) {
+        int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
+        
+        if (sample < INT16_MIN) {
+            sample = INT16_MIN;
+        }
+
+        if (sample > INT16_MAX) {
+            sample = INT16_MAX;
+        }
+
+        mixer.buffer[i] = sample;
+        ++channel->cursor;
+    }
+}
+```
+
+At the end of the audio thread loop, mixed audio is submitted to the device with a buffer size of 2048 frames (~50ms of audio):
+
+```c
+	snd_pcm_writei(device, mixer.buffer, 2048)
+```
+
+`snd_pcm_writei` blocks until the device requires data, so the audio thread will wake up approximately once every 50ms.
 
 ### Gamepad Support
 
