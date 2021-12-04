@@ -11,10 +11,10 @@ The Architecture of space-shooter.c [WIP]
 Introduction
 ------------
 
-In developing `space-shooter.c`, I went through several iterations on the architecture and dug into a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. In turn, I want to call out a few resources that invaluable to me in building `space-shooter.c`:
-- The early episodes of [Handmade Hero](https://handmadehero.org/) are a fantastic intro to programming low-level OS APIs and just make it all seem less scary.
+In developing `space-shooter.c`, I went through several iterations on the overall structure and dug into a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. In turn, I want to call out resources that were invaluable to me in building `space-shooter.c`:
+- [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
 - [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
-- [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were amazing references for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and the documentation tends to be much worse.
+- The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and the documentation tends to be much worse.
 
 Architectural Overview
 ----------------------
@@ -65,13 +65,15 @@ Data Model
 
 Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed using the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed using the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This chunk order was the one I found in all the assets I used (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed using the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This chunk order was the one I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will still allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
 ### Memory Management
 
-All memory for game objects in `space-shooter.c` is statically allocated in the arrays in `Renderer_List` and `Entities_List`, which are managed as an object pool. Conceptually, the object pool can be thought of as a static array of game objects and a `count` that tracks how many objects are currently active.
+Almost all memory allocations in `space-shooter.c` are static, with dynamic allocations only used to load image and sound assets when the game initializes. This leads to a nice "developer peace of mind" benefit that once the game initializes, I no longer have to worry about errors related to allocating or freeing memory.
+
+I implemented objects pools to manage objects that could exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -84,7 +86,7 @@ objects[MAX_OBJECTS];
 int32_t count;
 ```
 
-"Allocating" an object involves initializing the `objects[count]` and then incrementing `count`.
+"Allocating" an object involves initializing `objects[count]` and then incrementing `count`.
 ```c
 // NOTE: This is not the actual implementation!
 int32_t newIndex = count;
@@ -93,7 +95,7 @@ objects[newIndex].y = 2;
 ++count;
 ```
 
-"Deleting" and object involves swapping the deleted object with the `objects[count - 1]` and decrementing `count`.
+"Deleting" an object involves swapping the deleted object with `objects[count - 1]` and decrementing `count`.
 ```c
 // NOTE: This is not the actual implementation!
 int32_t lastIndex = count - 1;
@@ -102,9 +104,9 @@ objects[deletedIndex].y = objects[lastIndex].y;
 --count;
 ```
 
-All operations on game objects are run in batches on `objects[0 .. count - 1]`. The actual implementation is slightly more involved in that game object attributes are stored in parallel arrays to simplify their use as buffer data in the rendering layer.
+All operations on objects are run in batches on `objects[0 .. count - 1]`.
 
-The only use of dynamic memory is in loading image and sound assets when the game initializes. This leads to a nice "dev ex" benefit that once the game initializes, errors related to memory allocation are no longer possible.
+Note that the implementations in most cases don't look exactly like the above depending on how the objects will be consumed by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
 
 ### Mixin Structs
 
@@ -140,11 +142,11 @@ This allows the members of the mixin struct to be used directly, or the mixin st
 
 #### Sprite
 
-A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the renderer layer for drawing and the game layer for positioning/collision logic.
+A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and the game layer for positioning/collision logic.
 
 #### Renderer_List
 
-A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will drawn with a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify uploading it to the GPU buffer data for instanced draw calls.
+A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will be drawn with a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify uploading it to the GPU as buffer data for instanced draw calls.
 
 #### Entities_List
 
@@ -164,15 +166,15 @@ The Platform Layer
 
 ### Window Management
 
-Window management involved straightforward usage of [Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/) with the only tricky parts on one or both platforms being hiding the mouse cursor and displaying a fullscreen window.
+Most window management in `space-shooter.c` involved straightforward usage of the relevant APIS ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality for which the documentation wasn't as clear on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
 
 #### Windows
 
-Hiding the cursor was straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. Opening a fullscreen window was done using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
+Hiding the cursor was straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I implemented a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
 
 ```c
 HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+MONITORINFO monitorInfo = { .cbSize = sizeof(MONITORINFO) };
 GetMonitorInfo(monitor, &monitorInfo);
 int32_t x = monitorInfo.rcMonitor.left;
 int32_t y = monitorInfo.rcMonitor.top;
@@ -184,7 +186,7 @@ SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECH
 
 #### Linux
 
-Hiding the cursor in Xlib requires creating a "blank" cursor:
+I hide the cursor in Xlib by creating a "blank" cursor:
 
 ```c
 char hiddenCursorData = 0;
@@ -194,7 +196,7 @@ Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCur
 XDefineCursor(display, window, hiddenCursor);
 ```
 
-Opening a fullscreen window requires sending [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
+I display a fullscreen window by sending the relevant [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
 
 ```c
 #define NET_WM_STATE_ADD    1
@@ -231,7 +233,7 @@ Creating a modern OpenGL context in Windows is a [convoluted process](https://ww
 
 I extracted this functionality into a single-header library, [create-opengl.window.h](./lib/create-opengl.window.h).
 
-Once the context is created, OpenGL functions were loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
+Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
 
 ```c
 void *fn = (void *)wglGetProcAddress(openGLFunctionName);
@@ -261,7 +263,7 @@ glXMakeCurrent(display, window, ctx);
 
 A complete example of the process is provided by Apoorva Joshi [here](https://apoorvaj.io/creating-a-modern-opengl-context/).
 
-Again, once the context is created, loading functions was straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
+Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
 
 ```c
 
@@ -275,7 +277,7 @@ As mentioned above, I extracted the logic for loading OpenGL functions into a si
 
 #### Windows
 
-Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) is implemented using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
+I implemented Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
 
 Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that) but is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead of:
 
@@ -289,7 +291,7 @@ you write:
 IXAudio2_CreateMasteringVoice(xaudio, xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
 ```
 
-Once trickier subtlety is how to define the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover this requires setting a `lpVtbl` member in the `IXAudio2VoiceCallback` struct:
+One trickier subtlety is how to define the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover this requires setting a `lpVtbl` member in the `IXAudio2VoiceCallback` struct:
 
 ```c
 IXAudio2VoiceCallback callbacks = {
@@ -308,7 +310,7 @@ IXAudio2VoiceCallback callbacks = {
 
 #### Linux
 
-Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) is implemented using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so a 32-channel additive mixer is implemented explicitly on the audio thread:
+I implemented Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implemented a 32-channel additive mixer explicitly on the audio thread:
 
 ```c
 for (int32_t i = 0; i < mixer.count; ++i) {
@@ -349,7 +351,7 @@ At the end of the audio thread loop, mixed audio is submitted to the device with
 
 #### Windows
 
-[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) was by far the simplest OS API to work with. The function `XInputGetState()` will query the current state at a gamepad index and return `ERROR_SUCCESS` if it was successful, so detecting an gamepad can be done with a simple loop:
+[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) was by far the simplest OS API I had to work with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting an gamepad can be done with a simple loop:
 
 ```c
 XINPUT_STATE xInputState;
@@ -362,7 +364,7 @@ for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
 }
 ```
 
-And querying the current state involves reading the state from the `XINPUT_STATE` struct:
+The current state of the gamepad is provided in the `XINPUT_STATE` struct:
 
 ```c
 if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {

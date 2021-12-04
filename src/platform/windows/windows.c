@@ -90,7 +90,7 @@ static void toggleFullscreen(HWND window) {
         windowState.preFullscreenWidth = windowState.width;
         windowState.preFullscreenHeight = windowState.height;
         HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
-        MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+        MONITORINFO monitorInfo = { .cbSize = sizeof(MONITORINFO) };
         GetMonitorInfo(monitor, &monitorInfo);
         x = monitorInfo.rcMonitor.left;
         y = monitorInfo.rcMonitor.top;

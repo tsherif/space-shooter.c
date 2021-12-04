@@ -135,7 +135,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (windowWidth == 0 || windowHeight == 0) {
         HMONITOR monitor = MonitorFromWindow(dummyWindow, MONITOR_DEFAULTTONEAREST);
-        MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+        MONITORINFO monitorInfo = { .cbSize = sizeof(MONITORINFO) };
         GetMonitorInfo(monitor, &monitorInfo);
         windowX      = monitorInfo.rcMonitor.left;
         windowY      = monitorInfo.rcMonitor.top;

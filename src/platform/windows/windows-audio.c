@@ -89,7 +89,7 @@ bool windows_initAudio(void) {
         return false;
     }
 
-    comResult = XAudio2Create(&audio.xaudio, 0, XAUDIO2_DEFAULT_PROCESSOR );
+    comResult = XAudio2Create(&audio.xaudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
 
     if (FAILED(comResult)) {
         return false;
