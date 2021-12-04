@@ -22,7 +22,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// Uses Win32 and Xinput
+// Uses Win32 and XInput
 // - https://docs.microsoft.com/en-us/windows/win32/
 // - https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +111,7 @@ static void toggleFullscreen(HWND window) {
     );
 }
 
-static void processXinputState(XINPUT_STATE* xinputState) {
+static void processXInputState(XINPUT_STATE* xInputState) {
     bool gamepadHasInput = false;
     float stickX = 0.0f;
     float stickY = 0.0f;
@@ -119,8 +119,8 @@ static void processXinputState(XINPUT_STATE* xinputState) {
     bool startButton = false;
     bool backButton = false;
 
-    float x = xinputState->Gamepad.sThumbLX;
-    float y = xinputState->Gamepad.sThumbLY;
+    float x = xInputState->Gamepad.sThumbLX;
+    float y = xInputState->Gamepad.sThumbLY;
 
     float mag = (float) sqrt(x * x + y * y);
     x /= mag;
@@ -138,9 +138,9 @@ static void processXinputState(XINPUT_STATE* xinputState) {
         gamepadHasInput = true;
     }
     
-    aButton = xinputState->Gamepad.wButtons & XINPUT_GAMEPAD_A;
-    startButton = xinputState->Gamepad.wButtons & XINPUT_GAMEPAD_START;
-    backButton = xinputState->Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+    aButton = (xInputState->Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
+    startButton = (xInputState->Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0;
+    backButton = (xInputState->Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
 
     if (aButton || startButton || backButton) {
         gamepadHasInput = true;
@@ -269,12 +269,12 @@ int32_t CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLi
         }
     }
 
-    XINPUT_STATE xinputState;
-    int32_t controllerIndex = -1;
+    XINPUT_STATE xInputState;
+    int32_t gamepadIndex = -1;
 
     for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
-        if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
-            controllerIndex = i;
+        if (XInputGetState(i, &xInputState) == ERROR_SUCCESS) {
+            gamepadIndex = i;
             break;
         }
     }
@@ -330,19 +330,19 @@ int32_t CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLi
             }
         }
 
-        if (controllerIndex == -1 && ticks % 200 == 0) {
+        if (gamepadIndex == -1 && ticks % 200 == 0) {
             for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
-                if (XInputGetState(i, &xinputState) == ERROR_SUCCESS) {
-                    controllerIndex = i;
+                if (XInputGetState(i, &xInputState) == ERROR_SUCCESS) {
+                    gamepadIndex = i;
                     break;
                 }
             }
         }
 
-        if (controllerIndex > -1 && XInputGetState(controllerIndex, &xinputState) == ERROR_SUCCESS) {
-            processXinputState(&xinputState);
+        if (gamepadIndex > -1 && XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
+            processXInputState(&xInputState);
         } else {
-            controllerIndex = -1;
+            gamepadIndex = -1;
             gamepad.keyboard = true;
         }
 

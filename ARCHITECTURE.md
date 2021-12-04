@@ -342,6 +342,31 @@ At the end of the audio thread loop, mixed audio is submitted to the device with
 
 #### Windows
 
+[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) was by far the simplest OS API to work with. The function `XInputGetState()` will query the current state at a gamepad index and return `ERROR_SUCCESS` if it was successful, so detecting an gamepad can be done with a simple loop:
+
+```c
+XINPUT_STATE xInputState;
+int32_t gamepadIndex = -1;
+for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
+    if (XInputGetState(i, &xInputState) == ERROR_SUCCESS) {
+        gamepadIndex = i;
+        break;
+    }
+}
+```
+
+And querying the current state involves reading the state from the `XINPUT_STATE` struct:
+
+```c
+if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
+    int16_t stickX = xInputState.Gamepad.sThumbLX
+    int16_t stickY = xInputState.Gamepad.sThumbLY
+    bool aButton = xInputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
+
+    // Process input
+}
+```
+
 #### Linux
 
 

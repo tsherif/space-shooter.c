@@ -9,7 +9,7 @@ Dependencies
 - Window management: Win32 (Windows), Xlib (Linux)
 - Rendering: OpenGL
 - Audio: XAudio2 (Windows), ALSA/pthread (Linux)
-- Gamepad: Xinput (Windows), evdev (Linux)
+- Gamepad: XInput (Windows), evdev (Linux)
 
 Description
 -----------
