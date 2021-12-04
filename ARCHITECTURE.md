@@ -1,18 +1,27 @@
 The Architecture of space-shooter.c [WIP]
 =========================================
 
+- [Introduction](#introduction)
 - [Architectural Overview](#architectural-overview)
 - [Data Model](#architectural-overview)
 - [The Platform Layer](#the-platform-layer)
 - [The Game Layer](#the-game-layer)
 - [The Rendering Layer](#the-rendering-layer)
 
+Introduction
+------------
+
+In developing `space-shooter.c`, I went through several iterations on the architecture and dug into a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. In turn, I want to call out a few resources that invaluable to me in building `space-shooter.c`:
+- The early episodes of [Handmade Hero](https://handmadehero.org/) are a fantastic intro to programming low-level OS APIs and just make it all seem less scary.
+- [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
+- [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were amazing references for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and the documentation tends to be much worse.
+
 Architectural Overview
 ----------------------
 
 At a high level, the architecture of `space-shooter.c` involves 3 layers:
 
-- The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) and is responsible for:
+- The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and is responsible for:
 	- Opening a window
 	- Initializing OpenGL
 	- Initializing audio
@@ -40,7 +49,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw(void)`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match current window size.
-- `game_close()`: Release game resources.
+- `game_close(void)`: Release game resources.
 
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
@@ -54,9 +63,9 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed using the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To simplify parsing, the BMP files are required to be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed using the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed using the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To simplify parsing, the WAVE files are required to contain 44.1kHz, 16-bit stereo data, and the chunks must be in the order RIFF, fmt then data.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed using the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This chunk order was the one I found in all the assets I used (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will still allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
@@ -152,8 +161,6 @@ I implemented a relatively simple event system for`space-shooter.c` inspired by 
 
 The Platform Layer
 ------------------
-
-Many of the techniques described here were built using open-source projects like [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) as invaluable references.
 
 ### Window Management
 
