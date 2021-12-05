@@ -141,7 +141,7 @@ void linux_detectGamepad(void) {
                 goto ERROR_FILE_OPENED;  
             }
 
-            // Test for thumbstick (ABS_X/ABS_Y) and A button (BTN_A)
+            // Test for thumbstick (ABS_X/ABS_Y) and the A, Start and Back buttons.
             if (
                 testBit(absBits, ABS_X) && 
                 testBit(absBits, ABS_Y) && 
