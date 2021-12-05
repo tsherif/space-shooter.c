@@ -11,9 +11,9 @@ The Architecture of space-shooter.c [WIP]
 Introduction
 ------------
 
-In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. Just someone who enjoys solving interesting problems and learning how things work. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
+In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
 
-I link to many of the references I used in building different parts of `space-shooter.c` throughout the text, but I'll call out a few that were especially invaluable:
+I link to the references I used in building different parts of `space-shooter.c` throughout the text, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
 - [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
 - The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and the documentation tends to be much worse.
