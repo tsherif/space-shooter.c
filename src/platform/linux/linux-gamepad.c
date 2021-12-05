@@ -122,6 +122,15 @@ void linux_detectGamepad(void) {
             }
 
             // Get bitfields to test for gamepad capabilities
+            uint8_t evBits[(EV_CNT + 7) / 8] = { 0 };
+            if (ioctl(gamepadData.fd, EVIOCGBIT(0, sizeof(evBits)), evBits) < 0) {
+                goto ERROR_FILE_OPENED;
+            }
+
+            if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_KEY)) {
+                goto ERROR_FILE_OPENED;
+            }
+
             uint8_t absBits[(ABS_CNT + 7) / 8] = { 0 };
             if (ioctl(gamepadData.fd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits) < 0) {
                 goto ERROR_FILE_OPENED;
