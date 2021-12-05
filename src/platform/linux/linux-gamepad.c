@@ -118,7 +118,7 @@ void linux_detectGamepad(void) {
             gamepadData.fd = open(path, O_RDONLY | O_NONBLOCK);
 
             if (gamepadData.fd == -1) {
-                continue;
+                goto ERROR_NEXT;
             }
 
             // Get bitfields to test for gamepad capabilities
@@ -127,7 +127,7 @@ void linux_detectGamepad(void) {
                 goto ERROR_FILE_OPENED;
             }
 
-            if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_KEY)) {
+            if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_LED)) {
                 goto ERROR_FILE_OPENED;
             }
 
@@ -136,26 +136,29 @@ void linux_detectGamepad(void) {
                 goto ERROR_FILE_OPENED;
             }
 
-            uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
-            if (ioctl(gamepadData.fd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits) < 0) {
-                goto ERROR_FILE_OPENED;  
+            // Test for thumbstick (ABS_X/ABS_Y)
+            if (!testBit(absBits, ABS_X) || !testBit(absBits, ABS_Y)) {
+                goto ERROR_FILE_OPENED;
             }
 
-            // Test for thumbstick (ABS_X/ABS_Y) and the A, Start and Back buttons.
-            if (
-                testBit(absBits, ABS_X) && 
-                testBit(absBits, ABS_Y) && 
-                testBit(keyBits, BTN_A) &&
-                testBit(keyBits, BTN_START) &&
-                testBit(keyBits, BTN_SELECT)
-            ) {
-                break;
+            uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
+            if (ioctl(gamepadData.fd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits) < 0) {
+                goto ERROR_FILE_OPENED;
             }
-        
-            ERROR_FILE_OPENED:
-            close(gamepadData.fd);
-            gamepadData.fd = -1;
+
+            // Test for the A, Start and Back buttons.
+            if (!testBit(keyBits, BTN_A) || !testBit(keyBits, BTN_START) || !testBit(keyBits, BTN_SELECT)) {
+                goto ERROR_FILE_OPENED;
+            }
+
+            // Success!
+            break;
         }
+        ERROR_FILE_OPENED:
+        close(gamepadData.fd);
+        gamepadData.fd = -1;
+
+        ERROR_NEXT:
         entry = readdir(inputDir);
     }
 
@@ -212,6 +215,7 @@ void linux_updateGamepad(Linux_Gamepad* gamepad) {
         gamepad->keyboard = false;
     } else if (errno != EWOULDBLOCK && errno != EAGAIN) {
         gamepadData.fd = -1;
+        gamepad->keyboard = true;
     }
 }
 
