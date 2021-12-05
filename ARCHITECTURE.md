@@ -11,7 +11,9 @@ The Architecture of space-shooter.c [WIP]
 Introduction
 ------------
 
-In developing `space-shooter.c`, I went through several iterations on the overall structure and dug into a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. In turn, I want to call out resources that were invaluable to me in building `space-shooter.c`:
+In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. Just someone who enjoys low-level C programming as a "detox" from the high-level, heavily-abstracted, framework-heavy work I do day-to-day. I just read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
+
+I link to many of the references I used in building different parts of `space-shooter.c` throughout the text, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
 - [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
 - The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and the documentation tends to be much worse.
@@ -370,7 +372,9 @@ The current state of the gamepad is provided in the `XINPUT_STATE` struct:
 if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
     int16_t stickX = xInputState.Gamepad.sThumbLX
     int16_t stickY = xInputState.Gamepad.sThumbLY
-    bool aButton = xInputState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
+    bool aButton = (xInputState->Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
+    bool startButton = (xInputState->Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0;
+    bool backButton = (xInputState->Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
 
     // Process input
 }
@@ -412,7 +416,7 @@ ioctl(gamepadFd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits);
 uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
 ioctl(gamepadFd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits);
 
-if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A) &&testBit(keyBits, BTN_START) &&testBit(keyBits, BTN_SELECT)) {
+if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A) && testBit(keyBits, BTN_START) && testBit(keyBits, BTN_SELECT)) {
 	// Success!
     break;
 }
