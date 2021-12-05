@@ -403,23 +403,31 @@ while (entry) {
 
 ```c
 // NOTE: ioctl error checks removed for clarity!
+
+// Check for gamepad event types
 uint8_t evBits[(EV_CNT + 7) / 8] = { 0 };
 ioctl(gamepadFd, EVIOCGBIT(0, sizeof(evBits)), evBits);
 if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_KEY)) {
-    // Failure: Not a valid gamepad
-    continue;
+    // Failure: go to next device
 }
 
+// Check for thumbstick events
 uint8_t absBits[(ABS_CNT + 7) / 8] = { 0 };
 ioctl(gamepadFd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits);
 
+if (!testBit(absBits, ABS_X) || !testBit(absBits, ABS_Y)) {
+   // Failure: go to next device
+}
+
+// Check for button events
 uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
 ioctl(gamepadFd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits);
 
-if (testBit(absBits, ABS_X) && testBit(absBits, ABS_Y) && testBit(keyBits, BTN_A) && testBit(keyBits, BTN_START) && testBit(keyBits, BTN_SELECT)) {
-	// Success!
-    break;
+if (!testBit(keyBits, BTN_A) || !testBit(keyBits, BTN_START) || !testBit(keyBits, BTN_SELECT)) {
+    // Failure: go to next device
 }
+
+// Success!
 ```
 
 Capturing gamepad input involves reading from the gamepad input file into `input_event` structs and parsing them: 
