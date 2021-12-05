@@ -382,7 +382,7 @@ if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
 
 #### Linux
 
-I implemented Gamepad support on Linux using the [evdev](https://www.kernel.org/doc/html/v4.13/input/input.html#evdev) interface of the [Linux Input Subsystem](https://www.kernel.org/doc/html/v4.13/input/input.html). The first step is detecting whether a gamepad is connected which is done by first looking for files ending in ["-event-joystick" in the directory "/dev/input/by-id/"](https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems): 
+I implemented Gamepad support on Linux using the [evdev](https://www.kernel.org/doc/html/v4.13/input/input.html#evdev) interface of the [Linux Input Subsystem](https://www.kernel.org/doc/html/v4.13/input/input.html). The first step is detecting whether a gamepad is connected by looking for files ending with ["-event-joystick"](https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems) in `/dev/input/by-id`: 
 
 ```c
 struct dirent* entry = readdir(inputDir);
@@ -399,7 +399,7 @@ while (entry) {
 }
 ```
 
-`evdev` is an extremely generic interface and doesn't differentiate between different devices other than to indicate what kinds of events they emit. So the next step in gamepad detection is ensuring that the device emits events relevant to a gamepad, which is done via [ioctl calls](https://www.linuxjournal.com/article/6429). The events types I'm interested in for a gamepad are `EV_ABS` for the thumb stick and `EV_KEY` the buttons, and the specific events I want are `ABS_X`, `ABS_Y`, `BTN_A`, `BTN_START`, `BTN_SELECT` (see the [Linux Gamepad Specification](https://www.kernel.org/doc/html/v4.13/input/gamepad.html) for more details). 
+`evdev` is an extremely generic interface and doesn't differentiate between devices types other than to indicate what kinds of events they emit. So the next step is to ensure that the connected device emits events relevant to a gamepad, which is done via [ioctl calls](https://www.linuxjournal.com/article/6429). The event types I'm interested in for a gamepad are `EV_ABS` for the thumb stick and `EV_KEY` for the buttons, and the specific events I want are `ABS_X`, `ABS_Y`, `BTN_A`, `BTN_START`, `BTN_SELECT` (see the [Linux Gamepad Specification](https://www.kernel.org/doc/html/v4.13/input/gamepad.html) for more details). 
 
 ```c
 // NOTE: ioctl error checks removed for clarity!
@@ -414,7 +414,6 @@ if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_KEY)) {
 // Check for thumbstick events
 uint8_t absBits[(ABS_CNT + 7) / 8] = { 0 };
 ioctl(gamepadFd, EVIOCGBIT(EV_ABS, sizeof(absBits)), absBits);
-
 if (!testBit(absBits, ABS_X) || !testBit(absBits, ABS_Y)) {
    // Failure: go to next device
 }
@@ -422,7 +421,6 @@ if (!testBit(absBits, ABS_X) || !testBit(absBits, ABS_Y)) {
 // Check for button events
 uint8_t keyBits[(KEY_CNT + 7) / 8] = { 0 };
 ioctl(gamepadFd, EVIOCGBIT(EV_KEY, sizeof(keyBits)), keyBits);
-
 if (!testBit(keyBits, BTN_A) || !testBit(keyBits, BTN_START) || !testBit(keyBits, BTN_SELECT)) {
     // Failure: go to next device
 }
@@ -430,7 +428,7 @@ if (!testBit(keyBits, BTN_A) || !testBit(keyBits, BTN_START) || !testBit(keyBits
 // Success!
 ```
 
-Capturing gamepad input involves reading from the gamepad input file into `input_event` structs and parsing them: 
+Capturing gamepad input involves reading from the gamepad input file into [input_event](https://www.kernel.org/doc/html/v4.13/input/input.html#event-interface) structs and parsing them: 
 
 ```c
 struct input_event events[32];
@@ -463,7 +461,7 @@ if (bytesRead >= 0) {
 
 ```
 
-A more detailed write-up of the entire process was done by Raphael De Vasconcelos Nascimento [here](https://ourmachinery.com/post/gamepad-implementation-on-linux/).
+Raphael De Vasconcelos Nascimento provides a more detailed description of the entire process [here](https://ourmachinery.com/post/gamepad-implementation-on-linux/).
 
 
 The Game Layer
