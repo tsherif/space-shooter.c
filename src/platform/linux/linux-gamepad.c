@@ -127,7 +127,7 @@ void linux_detectGamepad(void) {
                 goto ERROR_FILE_OPENED;
             }
 
-            if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_LED)) {
+            if (!testBit(evBits, EV_ABS) || !testBit(evBits, EV_KEY)) {
                 goto ERROR_FILE_OPENED;
             }
 
@@ -153,10 +153,11 @@ void linux_detectGamepad(void) {
 
             // Success!
             break;
+
+            ERROR_FILE_OPENED:
+            close(gamepadData.fd);
+            gamepadData.fd = -1;
         }
-        ERROR_FILE_OPENED:
-        close(gamepadData.fd);
-        gamepadData.fd = -1;
 
         ERROR_NEXT:
         entry = readdir(inputDir);
