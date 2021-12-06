@@ -237,6 +237,7 @@ static void transitionLevel(void) {
         levelState.warpVy = LEVEL_WARP;
         levelState.starProbabilityMultiplier = LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER;
     }
+    entities_setAnimation(&entities.player.entity, 0, SPRITES_PLAYER_CENTER);
     entities.playerBullets.count = 0;
     updateLevelTitle();
     events_start(&events_levelTransitionSequence);
