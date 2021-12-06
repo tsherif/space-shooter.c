@@ -36,6 +36,7 @@
 //////////////////////////////////////////////////////////////
 
 #define MIX_BUFFER_FRAMES 2048
+#define MIXER_GAIN_DIVISOR 4
 
 typedef struct {
     int16_t* data;
@@ -107,12 +108,7 @@ static void *audioThread(void* args) {
     }
 
     bool running = true;
-    while (running) {
-        int32_t numSamples = MIX_BUFFER_FRAMES * 2;
-
-        for (int32_t i = 0; i < numSamples; ++i) {
-            mixer.buffer[i] = 0;
-        }    
+    while (running) {  
  
         //////////////////////////////////////
         // Copy queued audio into mixer
@@ -137,55 +133,59 @@ static void *audioThread(void* args) {
         // Simple additive mix with clipping
         //////////////////////////////////////
 
-        for (int32_t i = 0; i < mixer.count; ++i) {
-            AudioStream* channel = mixer.channels + i;
-            int32_t samplesToMix = numSamples;
-            int32_t samplesRemaining = channel->count - channel->cursor;
+        int32_t numSamples = MIX_BUFFER_FRAMES * 2;
 
-            if (samplesRemaining < numSamples) {
-                samplesToMix = samplesRemaining;
-            }
+        for (int32_t i = 0; i < numSamples; ++i) {
+            int32_t sample = 0;
 
-            for (int32_t i = 0; i < samplesToMix; ++i) {
-                int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
-                
-                if (sample < INT16_MIN) {
-                    sample = INT16_MIN;
+            for (int32_t i = 0; i < mixer.count; ++i) {
+                AudioStream* channel = mixer.channels + i;
+
+                if (channel->cursor == channel->count) {
+                    if (channel->loop) {
+                        channel->cursor = 0;
+                    } else {
+                        continue;
+                    }
                 }
 
-                if (sample > INT16_MAX) {
-                    sample = INT16_MAX;
-                }
+                sample += channel->data[channel->cursor];
 
-                mixer.buffer[i] = sample;
                 ++channel->cursor;
             }
-        }
 
+            sample /= MIXER_GAIN_DIVISOR;
+
+            if (sample < INT16_MIN) {
+                sample = INT16_MIN;
+            }
+
+            if (sample > INT16_MAX) {
+                sample = INT16_MAX;
+            }
+
+
+            mixer.buffer[i] = sample;
+        }  
 
         //////////////////////////////////////
         // Handle streams that have finished.
         //////////////////////////////////////
 
-        int32_t last = mixer.count - 1;
         for (int32_t i = mixer.count - 1; i >= 0; --i) {
             AudioStream* channel = mixer.channels + i;
-            if (channel->cursor == channel->count) {
-                if (channel->loop) {
-                    channel->cursor = 0;
-                } else {
+            if (channel->cursor == channel->count && !channel->loop) {
+                //////////////////////////////////////////////////////////////
+                // "Delete" stream by swapping to past the end of the array.
+                //////////////////////////////////////////////////////////////
 
-                    //////////////////////////////////////////////////////////////
-                    // "Delete" stream by swapping to past the end of the array.
-                    //////////////////////////////////////////////////////////////
+                int32_t last = mixer.count - 1;
+                mixer.channels[i].data = mixer.channels[last].data;
+                mixer.channels[i].count = mixer.channels[last].count;
+                mixer.channels[i].cursor = mixer.channels[last].cursor;
+                mixer.channels[i].loop = mixer.channels[last].loop;
 
-                    mixer.channels[i].data = mixer.channels[last].data;
-                    mixer.channels[i].count = mixer.channels[last].count;
-                    mixer.channels[i].cursor = mixer.channels[last].cursor;
-                    mixer.channels[i].loop = mixer.channels[last].loop;
-
-                    --mixer.count;
-                }
+                --mixer.count;
             }
         }
         
