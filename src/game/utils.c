@@ -178,7 +178,7 @@ bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
     uint16_t channels   = *(uint16_t *) (soundData->data + 22);            
     uint32_t rate       = *(uint32_t *) (soundData->data + 24);            
     uint16_t bps        = *(uint16_t *) (soundData->data + 34);
-    DEBUG_ASSERT(formatCode == 1, "utils_wavToSound: Invalid audio data. Audio must be uncompressed.");
+    DEBUG_ASSERT(formatCode == WAVE_PCM_FORMAT, "utils_wavToSound: Invalid audio data. Audio must be uncompressed.");
     DEBUG_ASSERT(channels == SPACE_SHOOTER_AUDIO_CHANNELS, "utils_wavToSound: Invalid audio data. Audio must be stereo.");
     DEBUG_ASSERT(rate == SPACE_SHOOTER_AUDIO_SAMPLE_RATE, "utils_wavToSound: Invalid audio data. Audio must be 44.1k samples per second.");
     DEBUG_ASSERT(bps == SPACE_SHOOTER_AUDIO_BPS, "utils_wavToSound: Invalid audio data. Audio must be 16bps.");
@@ -197,7 +197,7 @@ bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
         return false; 
     }
 
-    memcpy(sound->data, soundData->data + dataOffset, dataSize);
+    memcpy(sound->data, soundData->data + dataOffset + 8, dataSize);
 
     return true;
 }
