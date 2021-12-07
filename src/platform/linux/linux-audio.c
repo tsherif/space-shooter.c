@@ -36,7 +36,6 @@
 //////////////////////////////////////////////////////////////
 
 #define MIX_BUFFER_FRAMES 2048
-#define MIXER_GAIN_DIVISOR 4
 
 typedef struct {
     int16_t* data;
@@ -64,7 +63,7 @@ static void *audioThread(void* args) {
     struct {
         AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
         int32_t count;
-        int16_t buffer[MIX_BUFFER_FRAMES * 2];
+        float buffer[MIX_BUFFER_FRAMES * 2];
     } mixer = { 0 };
 
     /////////////////////////////////////
@@ -87,7 +86,7 @@ static void *audioThread(void* args) {
         return NULL;   
     }
 
-    if (snd_pcm_hw_params_set_format(device, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
+    if (snd_pcm_hw_params_set_format(device, deviceParams, SND_PCM_FORMAT_FLOAT_LE) < 0) {
         return NULL;   
     }
 
@@ -136,7 +135,7 @@ static void *audioThread(void* args) {
         int32_t numSamples = MIX_BUFFER_FRAMES * 2;
 
         for (int32_t i = 0; i < numSamples; ++i) {
-            int32_t sample = 0;
+            float sample = 0;
 
             for (int32_t i = 0; i < mixer.count; ++i) {
                 AudioStream* channel = mixer.channels + i;
@@ -149,21 +148,28 @@ static void *audioThread(void* args) {
                     }
                 }
 
-                sample += channel->data[channel->cursor];
+                float channelSample = (float) channel->data[channel->cursor];
+
+                if (channelSample < 0.0f) {
+                    channelSample /= (float) -INT16_MIN;
+                } else {
+                    channelSample /= (float) INT16_MAX; 
+                }
+
+                sample += channelSample;
 
                 ++channel->cursor;
             }
 
-            sample /= MIXER_GAIN_DIVISOR;
-
-            if (sample < INT16_MIN) {
-                sample = INT16_MIN;
+            // NOTE(Tarek): Not sure if this is necessary. Maybe ALSA
+            // does this for us?
+            if (sample < -1.0f) {
+                sample = -1.0f;
             }
 
-            if (sample > INT16_MAX) {
-                sample = INT16_MAX;
+            if (sample > 1.0f) {
+                sample = 1.0f;
             }
-
 
             mixer.buffer[i] = sample;
         }  
