@@ -63,7 +63,7 @@ static void *audioThread(void* args) {
     struct {
         AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
         int32_t count;
-        float buffer[MIX_BUFFER_FRAMES * 2];
+        int16_t buffer[MIX_BUFFER_FRAMES * 2];
     } mixer = { 0 };
 
     /////////////////////////////////////
@@ -86,7 +86,7 @@ static void *audioThread(void* args) {
         return NULL;   
     }
 
-    if (snd_pcm_hw_params_set_format(device, deviceParams, SND_PCM_FORMAT_FLOAT_LE) < 0) {
+    if (snd_pcm_hw_params_set_format(device, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
         return NULL;   
     }
 
@@ -135,7 +135,7 @@ static void *audioThread(void* args) {
         int32_t numSamples = MIX_BUFFER_FRAMES * 2;
 
         for (int32_t i = 0; i < numSamples; ++i) {
-            float sample = 0;
+            int32_t sample = 0;
 
             for (int32_t i = 0; i < mixer.count; ++i) {
                 AudioStream* channel = mixer.channels + i;
@@ -148,28 +148,19 @@ static void *audioThread(void* args) {
                     }
                 }
 
-                float channelSample = (float) channel->data[channel->cursor];
-
-                if (channelSample < 0.0f) {
-                    channelSample /= (float) -INT16_MIN;
-                } else {
-                    channelSample /= (float) INT16_MAX; 
-                }
-
-                sample += channelSample;
+                sample += channel->data[channel->cursor];
 
                 ++channel->cursor;
             }
 
-            // NOTE(Tarek): Not sure if this is necessary. Maybe ALSA
-            // does this for us?
-            if (sample < -1.0f) {
-                sample = -1.0f;
+            if (sample < INT16_MIN) {
+                sample = INT16_MIN;
             }
 
-            if (sample > 1.0f) {
-                sample = 1.0f;
+            if (sample > INT16_MAX) {
+                sample = INT16_MAX;
             }
+
 
             mixer.buffer[i] = sample;
         }  
