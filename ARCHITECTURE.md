@@ -473,11 +473,16 @@ Raphael De Vasconcelos Nascimento provides a more detailed description of the en
 The Game Layer
 --------------
 
-### Initialization
-
-### Update Loop
-
 ### Events
+
+### Framerate Independence
+
+### Game States
+
 
 The Rendering Layer
 -------------------
+
+### Input
+
+### OpenGL Primitives
