@@ -25,6 +25,7 @@
 #include <alsa/asoundlib.h>
 #include <pthread.h>
 #include "../../shared/constants.h"
+#include "../../shared/debug.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "linux-audio.h"
@@ -127,7 +128,6 @@ static void *audioThread(void* args) {
 
         pthread_mutex_unlock(&threadInterface.queue.lock);
 
-
         //////////////////////////////////////
         // Simple additive mix with clipping
         //////////////////////////////////////
@@ -135,35 +135,37 @@ static void *audioThread(void* args) {
         int32_t numSamples = MIX_BUFFER_FRAMES * 2;
 
         for (int32_t i = 0; i < numSamples; ++i) {
-            int32_t sample = 0;
+            mixer.buffer[i] = 0;
+        }  
 
-            for (int32_t i = 0; i < mixer.count; ++i) {
-                AudioStream* channel = mixer.channels + i;
+        for (int32_t i = 0; i < mixer.count; ++i) {
+            AudioStream* channel = mixer.channels + i;
 
+            DEBUG_ASSERT(channel->count > 0, "linux-audio.c: Mixer should not be playing empty sounds.")
+
+            for (int32_t i = 0; i < numSamples; ++i) {
                 if (channel->cursor == channel->count) {
                     if (channel->loop) {
                         channel->cursor = 0;
                     } else {
-                        continue;
+                        break;
                     }
                 }
 
-                sample += channel->data[channel->cursor];
+                int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
+                
+                if (sample < INT16_MIN) {
+                    sample = INT16_MIN;
+                }
 
+                if (sample > INT16_MAX) {
+                    sample = INT16_MAX;
+                }
+
+                mixer.buffer[i] = sample;
                 ++channel->cursor;
             }
-
-            if (sample < INT16_MIN) {
-                sample = INT16_MIN;
-            }
-
-            if (sample > INT16_MAX) {
-                sample = INT16_MAX;
-            }
-
-
-            mixer.buffer[i] = sample;
-        }  
+        }
 
         //////////////////////////////////////
         // Handle streams that have finished.
