@@ -315,16 +315,22 @@ IXAudio2VoiceCallback callbacks = {
 I implemented Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implemented a 32-channel additive mixer explicitly on the audio thread:
 
 ```c
+for (int32_t i = 0; i < numSamples; ++i) {
+    mixer.buffer[i] = 0;
+}  
+
 for (int32_t i = 0; i < mixer.count; ++i) {
     AudioStream* channel = mixer.channels + i;
-    int32_t samplesToMix = numSamples;
-    int32_t samplesRemaining = channel->count - channel->cursor;
 
-    if (samplesRemaining < numSamples) {
-        samplesToMix = samplesRemaining;
-    }
+    for (int32_t i = 0; i < numSamples; ++i) {
+        if (channel->cursor == channel->count) {
+            if (channel->loop) {
+                channel->cursor = 0;
+            } else {
+                break;
+            }
+        }
 
-    for (int32_t i = 0; i < samplesToMix; ++i) {
         int32_t sample = mixer.buffer[i] + channel->data[channel->cursor];
         
         if (sample < INT16_MIN) {
