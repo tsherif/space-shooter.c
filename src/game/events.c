@@ -34,7 +34,7 @@ void events_start(Events_Sequence* sequence) {
 
     sequence->running = true;
     sequence->time = 0.0f;
-    sequence->triggeredEvent = EVENTS_NONE;
+    sequence->activeEvent = EVENTS_NONE;
     sequence->complete = false;
     sequence->alpha = 0.0f;
 }
@@ -43,7 +43,7 @@ void events_start(Events_Sequence* sequence) {
 void events_stop(Events_Sequence* sequence) {
     sequence->running = false;
     sequence->time = 0.0f;
-    sequence->triggeredEvent = EVENTS_NONE;
+    sequence->activeEvent = EVENTS_NONE;
     sequence->complete = false;
     sequence->alpha = 0.0f;
 }
@@ -55,7 +55,7 @@ void events_beforeFrame(Events_Sequence* sequence, float dt) {
         return;
     }
 
-    sequence->triggeredEvent = EVENTS_NONE;
+    sequence->activeEvent = EVENTS_NONE;
     sequence->alpha = 0.0f;
     float lastTime = sequence->time;
     sequence->time = lastTime + dt;
@@ -74,12 +74,12 @@ void events_beforeFrame(Events_Sequence* sequence, float dt) {
                     sequence->alpha = 1.0f;
                 } 
             }
-            sequence->triggeredEvent = event->id;
+            sequence->activeEvent = event->id;
             break;
         }
     }
 
-    if (sequence->triggeredEvent == EVENTS_NONE && lastTime > end) {
+    if (sequence->activeEvent == EVENTS_NONE && lastTime > end) {
         if (sequence->loop) {
             float loopDt = lastTime - end + dt;
             sequence->time = 0.0f;
@@ -94,11 +94,11 @@ void events_beforeFrame(Events_Sequence* sequence, float dt) {
 
 // Check the currently active event
 bool events_on(Events_Sequence* sequence, int32_t id) {
-    if (!sequence->running || sequence->triggeredEvent == EVENTS_NONE) {
+    if (!sequence->running || sequence->activeEvent == EVENTS_NONE) {
         return false;
     }
 
-    return sequence->triggeredEvent == id;
+    return sequence->activeEvent == id;
 }
 
 //////////////////////////////////////////////////////////

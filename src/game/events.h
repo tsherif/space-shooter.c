@@ -77,7 +77,7 @@ typedef struct {
 //  - events: array of Events_Events.
 //  - count: length of events array.
 //  - time: current time within the sequence.
-//  - triggeredEvent: currently active event, or NULL if none are active.
+//  - activeEvent: currently active event, or NULL if none are active.
 //  - alpha: proportion between 0-1 indicating how far we are into the 
 //      currently active event (useful for things like fading out).
 //  - running: is this sequence currently active?
@@ -91,7 +91,7 @@ typedef struct {
     Events_Event* events;
     int32_t count;
     float time;
-    Events_Id triggeredEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
+    Events_Id activeEvent; // NOTE(Tarek): Only one triggered event at a time! Do we ever need simultaneous events?
     float alpha; // "Factor" between 0-1 of how far into the the current triggered event we are. Can be used for blending.
     bool running;
     bool complete;
@@ -103,10 +103,10 @@ typedef struct {
 //
 // - events_start(): Mark sequence as running.
 // - events_stop(): Reset sequence and mark as not running.
-// - events_beforeFrame(): Update sequence based on elapsed time
+// - events_beforeFrame(): Update a sequence based on elapsed time
 //      since last frame.
 // - events_on(): Check if the provided event ID is currently 
-//      triggered in the sequence.
+//      active in a sequence.
 //
 // Basic usage:
 //

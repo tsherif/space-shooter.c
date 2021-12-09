@@ -473,12 +473,107 @@ Raphael De Vasconcelos Nascimento provides a more detailed description of the en
 The Game Layer
 --------------
 
+### The Update Loop
+
+The platform layer calls `game_update()` in a loop, passing in the elapsed time in milliseconds since the last call. The behavior of the update will depend on which of four states the game is in: `TITLE_SCREEN`, `MAIN_GAME`, `LEVEL_TRANSITION` or `GAME_OVER`. I implemented each state as a single function and made the updates framerate-independent using [this technique](https://www.gafferongames.com/post/fix_your_timestep/) described by Glenn Fiedler: 
+
+```c
+#define TICK_DURATION 16.6667f
+
+tickTime += elapsedTime;
+
+if (tickTime > TICK_DURATION) {
+    while (tickTime > TICK_DURATION) {
+        currentStateFunction(TICK_DURATION);    
+        tickTime -= TICK_DURATION;
+    }
+
+    currentStateFunction(tickTime);
+    tickTime = 0.0f;
+}
+```
+
+Essentially, the update functions "consume" the elapsed time in fixed time steps of 16.6ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all the movement is linear, but I chose to leave it in after implementing it since it's not much more complex than the minimal approach of one state function call with the full elapsed time.
+
 ### Events
 
-### Framerate Independence
+I implemented a simple event system in `space-shooter.c` inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c), but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct:
 
-### Game States
+```c
+typedef struct {
+    float delay;
+    float duration;
+    int32_t id;
+} Events_Event;
+```
 
+The `id` member will be an `enum` defining all the events used in the game, e.g. `EVENTS_TITLE`, `EVENTS_DISPLAY`, `EVENTS_RESTART`. Events are managed as sequences which are arrays of events, along with some meta-information, and can be defined as follows:
+
+```c
+Events_Sequence sequence = {
+    .events = {
+	    { 
+	        .delay = 1000.0f,
+	        .duration = 2000.0f,
+	        .id =  EVENTS_DISPLAY
+	    },
+	    {
+	        .duration = 2500.0f,
+	        .id = EVENTS_FADE
+	    }
+	},
+    .count = 2
+};
+```
+
+This defines a sequence that once started waits 1s, triggers the `EVENTS_DISPLAY` event, which lasts 2s, then triggers the `EVENTS_FADE` events, which lasts for 2.5s. Sequences can be made to loop by setting the `loop` member. A sequence similar to the following, for example, is used to flash text on the screen. 
+
+```c
+Events_Sequence loopingSequence = {
+    .events = {
+	    { 
+	        .duration = 1000.0f,
+	        .id =  EVENTS_DISPLAY
+	    },
+	    {
+	        .duration = 1000.0f,
+	    }
+	},
+    .count = 2,
+    .loop = true
+};
+``` 
+
+Events are processed using the following functions:
+- `events_start(Events_Sequence* sequence)`: Start a sequence.
+- `events_stop(Events_Sequence* sequence)`: Stop and reset a sequence.
+- `events_beforeFrame(Events_Sequence* sequence, float deltaTime)`: Update a sequence based on elapsed time since last frame.
+- `events_on(Events_Sequence* sequence, int32_t id)`: Check if the provided event `id` is currently active in a sequence.
+
+Usage might look like the following:
+
+```c
+events_start(&sequence);
+
+// On each frame:
+events_beforeFrame(&sequence, elapsedTime);
+
+if (events_on(&sequence, EVENTS_DISPLAY)) {
+    // ... Display something   
+}
+```
+
+Sequences also have a `complete` member that is set when the sequence finishes running through all its events (and is, of course, never set for looping sequences). 
+
+```c
+events_beforeFrame(&sequence, elapsedTime);
+
+if (sequence->complete) {
+	// ... Do something
+}
+```
+
+Note that only one event can be active per sequence at a given time. This wasn't a significant constraint in practice as multiple active events were straightforward to represent by running multiple sequences in parallel.
 
 The Rendering Layer
 -------------------
