@@ -493,7 +493,7 @@ if (tickTime > TICK_DURATION) {
 }
 ```
 
-Essentially, the update functions "consume" the elapsed time in fixed time steps of 16.6ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all the movement is linear, but I chose to leave it in after implementing it since it's not much more complex than the minimal approach of one state function call with the full elapsed time.
+Essentially, the update functions "consume" the elapsed time in fixed time steps of 16.6ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all the movement is linear, but I chose to leave it in after implementing it since it's not much more complex than the minimal approach of calling a state function once with the full elapsed time.
 
 ### Events
 
@@ -526,7 +526,7 @@ Events_Sequence sequence = {
 };
 ```
 
-This defines a sequence that once started waits 1s, triggers the `EVENTS_DISPLAY` event, which lasts 2s, then triggers the `EVENTS_FADE` events, which lasts for 2.5s. Sequences can be made to loop by setting the `loop` member. A sequence similar to the following, for example, is used to flash text on the screen. 
+This defines a sequence that once started waits 1s, triggers the `EVENTS_DISPLAY` event, which lasts 2s, then triggers the `EVENTS_FADE` event, which lasts for 2.5s. Sequences can be made to loop by setting the `loop` member. A sequence similar to the following, for example, is used to flash text on the screen. 
 
 ```c
 Events_Sequence loopingSequence = {
@@ -578,6 +578,10 @@ Note that only one event can be active per sequence at a given time. This wasn't
 The Rendering Layer
 -------------------
 
-### Input
+#### Interface
+
+To simplify calculations in the game layer, I defined coordinates in `space-shooter.c` in terms of a rectangular canvas of 320x180 pixels, (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change if the window is resized. 
+
+`game_draw()` calls `renderer_beforeFrame()` once and then submits the `Renderer_List` mixins of all `Entity_List`s to the rendering layer in calls to `renderer_draw()`.
 
 ### OpenGL Primitives
