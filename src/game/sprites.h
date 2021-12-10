@@ -150,14 +150,14 @@ int32_t sprites_charToAnimationIndex(char c);
 // Sprites used in the game
 /////////////////////////////////////////////
 
-Sprites_Sprite sprites_player;
-Sprites_Sprite sprites_smallEnemy;
-Sprites_Sprite sprites_mediumEnemy;
-Sprites_Sprite sprites_largeEnemy;
-Sprites_Sprite sprites_playerBullet;
-Sprites_Sprite sprites_enemyBullet;
-Sprites_Sprite sprites_explosion;
-Sprites_Sprite sprites_text;
-Sprites_Sprite sprites_whitePixel;
+extern Sprites_Sprite sprites_player;
+extern Sprites_Sprite sprites_smallEnemy;
+extern Sprites_Sprite sprites_mediumEnemy;
+extern Sprites_Sprite sprites_largeEnemy;
+extern Sprites_Sprite sprites_playerBullet;
+extern Sprites_Sprite sprites_enemyBullet;
+extern Sprites_Sprite sprites_explosion;
+extern Sprites_Sprite sprites_text;
+extern Sprites_Sprite sprites_whitePixel;
 
 #endif

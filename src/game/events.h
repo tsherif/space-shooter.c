@@ -131,12 +131,12 @@ bool events_on(Events_Sequence* sequence, int32_t id);
 // The sequences used by the game
 //////////////////////////////////////////////////////////////////////
 
-Events_Sequence events_titleControlSequence;
-Events_Sequence events_titleSequence;
-Events_Sequence events_subtitleSequence;
-Events_Sequence events_instructionSequence;
-Events_Sequence events_gameOverSequence;
-Events_Sequence events_gameOverRestartSequence;
-Events_Sequence events_levelTransitionSequence;
+extern Events_Sequence events_titleControlSequence;
+extern Events_Sequence events_titleSequence;
+extern Events_Sequence events_subtitleSequence;
+extern Events_Sequence events_instructionSequence;
+extern Events_Sequence events_gameOverSequence;
+extern Events_Sequence events_gameOverRestartSequence;
+extern Events_Sequence events_levelTransitionSequence;
 
 #endif
