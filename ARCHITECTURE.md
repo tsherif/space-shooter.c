@@ -580,7 +580,7 @@ The Rendering Layer
 
 #### Interface
 
-To simplify calculations in the game layer, I defined coordinates in `space-shooter.c` in terms of a rectangular canvas of 320x180 pixels, (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change if the window is resized. 
+To simplify calculations in the game layer, I defined coordinates in `space-shooter.c` in terms of a rectangular canvas of 320x180 pixels, with (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change if the window is resized. 
 
 `game_draw()` calls `renderer_beforeFrame()` once and then submits the `Renderer_List` mixins of all `Entity_List`s to the rendering layer in calls to `renderer_draw()`.
 
