@@ -51,7 +51,7 @@ static struct {
 } buffers;
 
 static struct {
-    GLuint pixelSize;
+    GLuint pixelClipSize;
     GLuint spriteSheet;
     GLuint panelPixelSize;
     GLuint spriteSheetDimensions;
@@ -125,10 +125,10 @@ bool renderer_init(int worldWidth, int worldHeight) {
 
     uniforms.panelPixelSize = glGetUniformLocation(program, "panelPixelSize");
     uniforms.spriteSheetDimensions = glGetUniformLocation(program, "spriteSheetDimensions");
-    GLuint pixelSizeUniform = glGetUniformLocation(program, "pixelSize");
+    GLuint pixelClipSizeUniform = glGetUniformLocation(program, "pixelClipSize");
     GLuint spriteSheetUniform = glGetUniformLocation(program, "spriteSheet");
 
-    glUniform2f(pixelSizeUniform, 2.0f / worldWidth, 2.0f / worldHeight);
+    glUniform2f(pixelClipSizeUniform, 2.0f / worldWidth, 2.0f / worldHeight);
     glUniform1i(spriteSheetUniform, 0);
 
     float positions[] = {

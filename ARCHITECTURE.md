@@ -26,7 +26,7 @@ At a high level, the architecture of `space-shooter.c` involves 3 layers:
 - The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and is responsible for:
 	- Opening a window
 	- Initializing OpenGL
-	- Initializing audio
+	- Playing audio
 	- Capturing user input
 	- File I/O
 	- Starting the game loop
@@ -65,15 +65,15 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed using the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed using the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))) in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This chunk order was the one I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This chunk order was the one I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will still allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
 ### Memory Management
 
-Almost all memory allocations in `space-shooter.c` are static, with dynamic allocations only used to load image and sound assets when the game initializes. This leads to a nice "developer peace of mind" benefit that once the game initializes, I no longer have to worry about errors related to allocating or freeing memory.
+Almost all memory allocations in `space-shooter.c` are static, with dynamic allocations only used to load image and sound assets when the game initializes. This leads to a nice "programmer peace of mind" benefit that once the game initializes, I no longer have to worry about errors related to allocating or freeing memory.
 
 I implemented objects pools to manage objects that could exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
 
@@ -144,7 +144,7 @@ This allows the members of the mixin struct to be used directly, or the mixin st
 
 #### Sprite
 
-A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and the game layer for positioning/collision logic.
+A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and by the game layer for positioning/collision logic.
 
 #### Renderer_List
 
@@ -156,7 +156,7 @@ An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all p
 
 #### Player
 
-The `Player` struct ([game.h](./src/game/game.h)) is singleton that represent the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
+The `Player` struct ([game.h](./src/game/game.h)) is singleton that represents the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
 
 #### Event and Sequence
 
@@ -168,7 +168,7 @@ The Platform Layer
 
 ### Window Management
 
-Most window management in `space-shooter.c` involved straightforward usage of the relevant APIS ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality for which the documentation wasn't as clear on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
+Most window management in `space-shooter.c` involves standard usage of the relevant APIS ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality that aren't well-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
 
 #### Windows
 
@@ -226,16 +226,14 @@ XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedi
 
 #### Windows
 
-Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps involve:
-1. Creating a dummy window
-2. Creating a dummy OpenGL context
-3. Getting pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
-4. Destroying the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks))
-5. Creating the real window and context using the extension functions.
+Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps are:
+1. Create a dummy window.
+2. Create a dummy OpenGL context.
+3. Get pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
+4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks)).
+5. Create the real window and context using the extension functions.
 
-I extracted this functionality into a single-header library, [create-opengl.window.h](./lib/create-opengl.window.h).
-
-Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
+I extracted this functionality into a single-header library, [create-opengl.window.h](./lib/create-opengl.window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
 
 ```c
 void *fn = (void *)wglGetProcAddress(openGLFunctionName);
@@ -248,7 +246,7 @@ I also extracted the logic for loading OpenGL functions into a single-header lib
 
 #### Linux
 
-OpenGL context creation in Linux is a little simpler and doesn't require dummy context creation:
+OpenGL context creation in Linux is simpler and doesn't require dummy context creation:
 
 ```c
 glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const uint8_t *) "glXCreateContextAttribsARB");
@@ -258,14 +256,12 @@ int32_t visualAtt[] = { ... };
 GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
 
 int32_t contextAttribs[] = { ... };
-GLXContext ctx = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
+GLXContext gl = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
 
-glXMakeCurrent(display, window, ctx);
+glXMakeCurrent(display, window, gl);
 ```
 
-A complete example of the process is provided by Apoorva Joshi [here](https://apoorvaj.io/creating-a-modern-opengl-context/).
-
-Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
+A complete example of the process is provided by Apoorva Joshi [here](https://apoorvaj.io/creating-a-modern-opengl-context/). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
 
 ```c
 
@@ -281,13 +277,13 @@ As mentioned above, I extracted the logic for loading OpenGL functions into a si
 
 I implemented Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
 
-Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that) but is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead of:
+Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that) but is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
 
 ```c++
 xaudio->CreateMasteringVoice(xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
 ```
 
-you write:
+one passes the object to a similarly-named macro:
 
 ```c
 IXAudio2_CreateMasteringVoice(xaudio, xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
@@ -359,7 +355,7 @@ At the end of the audio thread loop, mixed audio is submitted to the device with
 
 #### Windows
 
-[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) was by far the simplest OS API I had to work with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting an gamepad can be done with a simple loop:
+[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) was by far the simplest OS API I had to work with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop:
 
 ```c
 XINPUT_STATE xInputState;
@@ -405,7 +401,7 @@ while (entry) {
 }
 ```
 
-`evdev` is an extremely generic interface and doesn't differentiate between devices types other than to indicate what kinds of events they emit. So the next step is to ensure that the connected device emits events relevant to a gamepad, which is done via [ioctl calls](https://www.linuxjournal.com/article/6429). The event types I'm interested in for a gamepad are `EV_ABS` for the thumb stick and `EV_KEY` for the buttons, and the specific events I want are `ABS_X`, `ABS_Y`, `BTN_A`, `BTN_START`, `BTN_SELECT` (see the [Linux Gamepad Specification](https://www.kernel.org/doc/html/v4.13/input/gamepad.html) for more details). 
+`evdev` is an extremely generic interface and doesn't differentiate between device types other than to indicate what kinds of events they emit. So the next step is to ensure that the connected device emits events relevant to a gamepad, which is done via [ioctl calls](https://www.linuxjournal.com/article/6429). The event types I'm interested in for a gamepad are `EV_ABS` for the thumb stick and `EV_KEY` for the buttons, and the specific events I want are `ABS_X`, `ABS_Y`, `BTN_A`, `BTN_START`, `BTN_SELECT` (see the [Linux Gamepad Specification](https://www.kernel.org/doc/html/v4.13/input/gamepad.html) for more details). 
 
 ```c
 // NOTE: ioctl error checks removed for clarity!
@@ -507,7 +503,7 @@ typedef struct {
 } Events_Event;
 ```
 
-The `id` member will be an `enum` defining all the events used in the game, e.g. `EVENTS_TITLE`, `EVENTS_DISPLAY`, `EVENTS_RESTART`. Events are managed as sequences which are arrays of events, along with some meta-information, and can be defined as follows:
+The `id` member will be an `enum` representing an event used in the game, e.g. `EVENTS_TITLE`, `EVENTS_DISPLAY`, `EVENTS_RESTART`. `Events_Sequence` structs represent a sequence of events that "play out" over time. They are defined as follows:
 
 ```c
 Events_Sequence sequence = {
@@ -544,7 +540,7 @@ Events_Sequence loopingSequence = {
 };
 ``` 
 
-Events are processed using the following functions:
+Event sequences are managed using the following functions:
 - `events_start(Events_Sequence* sequence)`: Start a sequence.
 - `events_stop(Events_Sequence* sequence)`: Stop and reset a sequence.
 - `events_beforeFrame(Events_Sequence* sequence, float deltaTime)`: Update a sequence based on elapsed time since last frame.
@@ -573,15 +569,27 @@ if (sequence->complete) {
 }
 ```
 
-Note that only one event can be active per sequence at a given time. This wasn't a significant constraint in practice as multiple active events were straightforward to represent by running multiple sequences in parallel.
+Note that only one event can be active per sequence at a given time. This wasn't a significant constraint in practice as multiple active events can be implemented by running multiple sequences in parallel.
 
 The Rendering Layer
 -------------------
 
 #### Interface
 
-To simplify calculations in the game layer, I defined coordinates in `space-shooter.c` in terms of a rectangular canvas of 320x180 pixels, with (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change if the window is resized. 
+To simplify calculations in the game layer, I defined coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change if the window is resized. 
 
-`game_draw()` calls `renderer_beforeFrame()` once and then submits the `Renderer_List` mixins of all `Entity_List`s to the rendering layer in calls to `renderer_draw()`.
+`game_draw()` calls `renderer_beforeFrame()` once and then passes the `Renderer_List` mixin of each `Entity_List` to the rendering layer in a call `renderer_draw()`.
 
 ### OpenGL Primitives
+
+In `renderer_draw()`, the arrays in the passed `Renderer_List` are submitted to the GL in buffers that are used as instance attributes, and the dimensions and texture handle for each `Renderer_List`'s sprite are submitted as uniforms. All objects represented in the `Renderer_List` are drawn in a single, instanced draw call, with each object represented as a quad sized to match the sprite panel. The values in `Renderer_List.positions` are interpreted as the top-left corner of the quad. The transformation between game and clip coordinates is done in the [vertex shader](./assets/shaders/vs.glsl):
+
+```c
+vec2 clipOffset = pixelOffset * pixelClipSize - 1.0;
+gl_Position = vec4((vertexPosition * panelPixelSize * pixelClipSize + clipOffset) * vec2(1.0, -1.0), 0.0, 1.0);
+``` 
+- `vertexPosition` is the quad vertex position between (0.0, 0.0) and (1.0, 1.0).
+- `pixelOffset` is the offset of the top-left corner of the quad in game pixel coordinates (i.e. the position from the `Renderer_List.positions` array).
+- `panelPixelSize` is the dimensions of the sprite's panels in game pixel units.
+- `clipOffset` is the offset of the top-left corner of the quad in clip coordinates.
+- `pixelClipSize` is the size of one game pixel in clip units (i.e. `1.0 / vec2(gamePixelWidth, gamePixelHeight)`) .
