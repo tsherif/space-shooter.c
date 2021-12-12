@@ -70,7 +70,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     Data_Buffer fsSource = { 0 };
 
     if (!platform_loadFile("assets/shaders/vs.glsl", &vsSource, true)) {
-        DEBUG_LOG("renderer_init: Unable to vertex shader.");
+        DEBUG_LOG("renderer_init: Unable to load vertex shader.");
         return false;
     }
 
@@ -81,7 +81,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     data_freeBuffer(&vsSource);
 
     if (!platform_loadFile("assets/shaders/fs.glsl", &fsSource, true)) {
-        DEBUG_LOG("renderer_init: Unable to vertex shader.");
+        DEBUG_LOG("renderer_init: Unable to load fragment shader.");
         return false;
     }
         
