@@ -32,6 +32,8 @@ Linux
 - Run `make` for a debug build or `make release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
 
+Note: In case the `build/space-shooter` binary is copied to a separate folder, you will also need to copy `build/assets` to the same folder.
+
 Asset Credits
 -------------
 - Sprites: https://ansimuz.itch.io/spaceship-shooter-environment
