@@ -156,7 +156,7 @@ static void processXInputState(XINPUT_STATE* xInputState) {
     }
 }
 
-static LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     if (!running) {
         return DefWindowProc(window, message, wParam, lParam);
     }
@@ -245,12 +245,12 @@ static LRESULT CALLBACK winProc(HWND window, UINT message, WPARAM wParam, LPARAM
     return DefWindowProc(window, message, wParam, lParam);
 }
 
-int32_t CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int32_t showWindow) {
+int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int32_t showWindow) {
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
         .title = "space-shooter.c (Windows)", 
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
-        .winCallback = winProc,
+        .winCallback = messageHandler,
         .vsync = true
     });
 
