@@ -51,8 +51,6 @@ static Linux_Gamepad gamepad;
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConfig framebufferConfig, GLXContext shareContext, Bool direct, const int32_t* contextAttribs);
 typedef void (*glXSwapIntervalEXTFUNC)(Display* display, GLXDrawable window, int32_t interval);
 
-#include <stdio.h>
-
 int32_t main(int32_t argc, char const *argv[]) {
 
     /////////////////////////
@@ -73,7 +71,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     // so we can create window with that configuration.
     //////////////////////////////////////////////////////
 
-    int32_t numFBC = 0;
+    int32_t fbcCount = 0;
     GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), (int32_t[]) {
         GLX_RENDER_TYPE, GLX_RGBA_BIT, 
         GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
@@ -82,10 +80,8 @@ int32_t main(int32_t argc, char const *argv[]) {
         GLX_GREEN_SIZE, 8,
         GLX_BLUE_SIZE, 8,
         GLX_ALPHA_SIZE, 8,
-        GLX_SAMPLE_BUFFERS, 1,
-        GLX_SAMPLES, 4,
         None
-    }, &numFBC);
+    }, &fbcCount);
 
     if (!fbcList) {
         DEBUG_LOG("No framebuffer config found.");
@@ -93,7 +89,22 @@ int32_t main(int32_t argc, char const *argv[]) {
         return 1;        
     }
 
-    GLXFBConfig framebufferConfig = fbcList[0];
+    // Find fbc with most samples but at most 4
+    int32_t fbcIndex = 0;
+    int32_t bestSamples = 0;
+    int32_t samples = 0;
+    glXGetFBConfigAttrib(display, fbcList[0], GLX_SAMPLES, &samples);
+
+    for (int32_t i = 1; i < fbcCount; ++i) {
+        glXGetFBConfigAttrib(display, fbcList[i], GLX_SAMPLES, &samples);
+
+        if (samples <= 4 && samples > bestSamples) {
+            bestSamples = samples;
+            fbcIndex = i;
+        }
+    }
+
+    GLXFBConfig framebufferConfig = fbcList[fbcIndex];
     XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
     XFree(fbcList);
 
