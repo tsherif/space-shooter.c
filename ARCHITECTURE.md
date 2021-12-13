@@ -261,7 +261,7 @@ GLXContext gl = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAtt
 glXMakeCurrent(display, window, gl);
 ```
 
-A complete example of the process is provided by Apoorva Joshi [here](https://apoorvaj.io/creating-a-modern-opengl-context/). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
+A complete example of the process is available [here](https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
 
 ```c
 
