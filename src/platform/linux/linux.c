@@ -107,14 +107,11 @@ int32_t main(int32_t argc, char const *argv[]) {
     // Create window
     ///////////////////
 
-    int32_t screen = visualInfo->screen;
-    Window rootWindow = XRootWindow(display, screen);
-    Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
-    XSetWindowAttributes windowAttributes = {
-        .colormap = colorMap,
-        .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
-    };
+    // NOTE(Tarek): border pixel is required in case depth doesn't match parent depth.
+    // See: https://stackoverflow.com/questions/3645632/how-to-create-a-window-with-a-bit-depth-of-32
 
+    Window rootWindow = XRootWindow(display, visualInfo->screen);
+    Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
     Window window = XCreateWindow(
         display,
         rootWindow,
@@ -124,8 +121,12 @@ int32_t main(int32_t argc, char const *argv[]) {
         visualInfo->depth,
         InputOutput,
         visualInfo->visual,
-        CWColormap | CWEventMask,
-        &windowAttributes
+        CWColormap | CWEventMask | CWBorderPixel,
+        &(XSetWindowAttributes) {
+            .colormap = colorMap,
+            .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask,
+            .border_pixel = 0
+        }
     );
 
     XStoreName(display, window, "space-shooter.c (Linux)");

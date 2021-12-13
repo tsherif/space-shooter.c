@@ -270,26 +270,24 @@ XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
 This configuration can then be used to create a window that's configured properly:
 
 ```c
-int32_t screen = visualInfo->screen;
-Window rootWindow = XRootWindow(display, screen);
+Window rootWindow = XRootWindow(display, visualInfo->screen);
 Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
-XSetWindowAttributes windowAttributes = {
-    .colormap = colorMap,
-    .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
-};
-
 Window window = XCreateWindow(
     display,
     rootWindow,
-    20, 20, 1200, 600,
+    20, 20, 
+    SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH, SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT,
     0,
     visualInfo->depth,
     InputOutput,
     visualInfo->visual,
-    CWColormap | CWEventMask,
-    &windowAttributes
+    CWColormap | CWEventMask | CWBorderPixel,
+    &(XSetWindowAttributes) {
+        .colormap = colorMap,
+        .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask,
+        .border_pixel = 0
+    }
 );
-
 ```
 
 Finally, an OpenGL context can be created with a matching framebuffer configuration: 
