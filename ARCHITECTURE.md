@@ -250,7 +250,7 @@ OpenGL context creation in Linux is also convoluted but doesn't require dummy co
 
 ```c
 int32_t numFBC = 0;
-int32_t fbAttributes[] = {
+GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), (int32_t[]) {
     GLX_RENDER_TYPE, GLX_RGBA_BIT, 
     GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
     GLX_DOUBLEBUFFER, True, 
@@ -261,9 +261,8 @@ int32_t fbAttributes[] = {
     GLX_SAMPLE_BUFFERS, 1,
     GLX_SAMPLES, 4,
     None
-};
+}, &numFBC);
 
-GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), fbAttributes, &numFBC);
 GLXFBConfig framebufferConfig = fbcList[0];
 XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
 ```
@@ -296,14 +295,12 @@ Window window = XCreateWindow(
 Finally, an OpenGL context can be created with a matching framebuffer configuration: 
 
 ```c
-int32_t contextAttribs[] = {
-    GLX_CONTEXT_MAJOR_VERSION_ARB, SOGL_MAJOR_VERSION,
-    GLX_CONTEXT_MINOR_VERSION_ARB, SOGL_MINOR_VERSION,
+GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, (int32_t []) {
+    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+    GLX_CONTEXT_MINOR_VERSION_ARB, 3,
     GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
     None
-};
-
-GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, contextAttribs);
+});
 ```
 
 A complete example of the process is available [here](https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
