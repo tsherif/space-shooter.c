@@ -51,6 +51,8 @@ static Linux_Gamepad gamepad;
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConfig fbc, GLXContext shareContext, Bool direct, const int32_t* contextAttribs);
 typedef void (*glXSwapIntervalEXTFUNC)(Display* display, GLXDrawable window, int32_t interval);
 
+#include <stdio.h>
+
 int32_t main(int32_t argc, char const *argv[]) {
 
     ////////////////////////////////
@@ -60,29 +62,69 @@ int32_t main(int32_t argc, char const *argv[]) {
     Display* display = XOpenDisplay(NULL);
 
     if (display == NULL) {
+        DEBUG_LOG("Unable to open X connection.");
         platform_userMessage("Unable to create window.");
         return 1;
     }
 
-    XSetWindowAttributes windowAttributes = { 0 };
-    windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask;
+    int32_t numFBC = 0;
+    int32_t visualAtt[] = {
+        GLX_RENDER_TYPE, GLX_RGBA_BIT, 
+        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
+        GLX_DOUBLEBUFFER, True, 
+        GLX_RED_SIZE, 8,
+        GLX_GREEN_SIZE, 8,
+        GLX_BLUE_SIZE, 8,
+        GLX_ALPHA_SIZE, 8,
+        GLX_SAMPLE_BUFFERS, 1,
+        GLX_SAMPLES, 4,
+        None
+    };
 
-    int32_t screen = XDefaultScreen(display);
+    GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
+
+    if (!fbcList) {
+        DEBUG_LOG("No framebuffer config found.");
+        platform_userMessage("Unable to load OpenGL.");
+        return 1;        
+    }
+
+    GLXFBConfig fbc = fbcList[0];
+    XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, fbc);
+
+    if (!visualInfo) {
+        DEBUG_LOG("No visual info found.");
+        platform_userMessage("Unable to load OpenGL.");
+        XFree(fbcList);
+        return 1;        
+    }
+
+    int32_t screen = visualInfo->screen;
     Window rootWindow = XRootWindow(display, screen);
+
+    Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
+
+    XSetWindowAttributes windowAttributes = {
+        .colormap = colorMap,
+        .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
+    };
+
     Window window = XCreateWindow(
         display,
         rootWindow,
         20, 20, 
         SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH, SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT,
         0,
-        CopyFromParent,
-        CopyFromParent,
-        CopyFromParent,
-        CWEventMask,
+        visualInfo->depth,
+        InputOutput,
+        visualInfo->visual,
+        CWColormap | CWEventMask,
         &windowAttributes
     );
 
     XStoreName(display, window, "space-shooter.c (Linux)");
+
+    XFree(visualInfo);
     
     /////////////////
     // Hide cursor
@@ -100,34 +142,12 @@ int32_t main(int32_t argc, char const *argv[]) {
     // Create OpenGL context
     ///////////////////////////
 
-    int32_t numFBC = 0;
-    int32_t visualAtt[] = {
-        GLX_RENDER_TYPE, GLX_RGBA_BIT, 
-        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
-        GLX_DOUBLEBUFFER, True, 
-        GLX_RED_SIZE, 1,
-        GLX_GREEN_SIZE, 1,
-        GLX_BLUE_SIZE, 1,
-        GLX_DEPTH_SIZE, 1,
-        GLX_STENCIL_SIZE, 1,
-        GLX_SAMPLE_BUFFERS, 1,
-        GLX_SAMPLES, 4,
-        None
-    };
-
-    GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
-
-    if (!fbc) {
-        platform_userMessage("Unable to load OpenGL.");
-        return 1;        
-    }
-
     glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const GLubyte *) "glXCreateContextAttribsARB");
     glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const GLubyte *) "glXSwapIntervalEXT");
 
     if (!glXCreateContextAttribsARB) {
         platform_userMessage("Unable to load OpenGL.");
-        XFree(fbc);
+        XFree(fbcList);
         return 1; 
     }
 
@@ -138,9 +158,9 @@ int32_t main(int32_t argc, char const *argv[]) {
         None
     };
 
-    GLXContext gl = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
+    GLXContext gl = glXCreateContextAttribsARB(display, fbc, NULL, True, contextAttribs);
 
-    XFree(fbc);
+    XFree(fbcList);
 
     if (!gl) {
         platform_userMessage("Unable to load OpenGL.");
@@ -345,6 +365,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, gl);
     XDestroyWindow(display, window);
+    XFreeColormap(display, colorMap);
     XCloseDisplay(display);
     game_close();
 }
