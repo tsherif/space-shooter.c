@@ -74,7 +74,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     //////////////////////////////////////////////////////
 
     int32_t numFBC = 0;
-    int32_t visualAtt[] = {
+    int32_t fbAttributes[] = {
         GLX_RENDER_TYPE, GLX_RGBA_BIT, 
         GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
         GLX_DOUBLEBUFFER, True, 
@@ -87,7 +87,7 @@ int32_t main(int32_t argc, char const *argv[]) {
         None
     };
 
-    GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
+    GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), fbAttributes, &numFBC);
 
     if (!fbcList) {
         DEBUG_LOG("No framebuffer config found.");

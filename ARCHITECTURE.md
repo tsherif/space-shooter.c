@@ -246,19 +246,64 @@ I also extracted the logic for loading OpenGL functions into a single-header lib
 
 #### Linux
 
-OpenGL context creation in Linux is simpler and doesn't require dummy context creation:
+OpenGL context creation in Linux is also convoluted but doesn't require dummy context creation. The first step is to find a framebuffer configuration that satisfies the rendering requirements:
 
 ```c
-glXCreateContextAttribsARBFUNC glXCreateContextAttribsARB = (glXCreateContextAttribsARBFUNC) glXGetProcAddress((const uint8_t *) "glXCreateContextAttribsARB");
-glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const uint8_t *) "glXSwapIntervalEXT");
+int32_t numFBC = 0;
+int32_t fbAttributes[] = {
+    GLX_RENDER_TYPE, GLX_RGBA_BIT, 
+    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
+    GLX_DOUBLEBUFFER, True, 
+    GLX_RED_SIZE, 8,
+    GLX_GREEN_SIZE, 8,
+    GLX_BLUE_SIZE, 8,
+    GLX_ALPHA_SIZE, 8,
+    GLX_SAMPLE_BUFFERS, 1,
+    GLX_SAMPLES, 4,
+    None
+};
 
-int32_t visualAtt[] = { ... };
-GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display), visualAtt, &numFBC);
+GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), fbAttributes, &numFBC);
+GLXFBConfig framebufferConfig = fbcList[0];
+XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
+```
 
-int32_t contextAttribs[] = { ... };
-GLXContext gl = glXCreateContextAttribsARB(display, *fbc, NULL, True, contextAttribs);
+This configuration can then be used to create a window that's configured properly:
 
-glXMakeCurrent(display, window, gl);
+```c
+int32_t screen = visualInfo->screen;
+Window rootWindow = XRootWindow(display, screen);
+Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
+XSetWindowAttributes windowAttributes = {
+    .colormap = colorMap,
+    .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
+};
+
+Window window = XCreateWindow(
+    display,
+    rootWindow,
+    20, 20, 1200, 600,
+    0,
+    visualInfo->depth,
+    InputOutput,
+    visualInfo->visual,
+    CWColormap | CWEventMask,
+    &windowAttributes
+);
+
+```
+
+Finally, an OpenGL context can be created with a matching framebuffer configuration: 
+
+```c
+int32_t contextAttribs[] = {
+    GLX_CONTEXT_MAJOR_VERSION_ARB, SOGL_MAJOR_VERSION,
+    GLX_CONTEXT_MINOR_VERSION_ARB, SOGL_MINOR_VERSION,
+    GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+    None
+};
+
+GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, contextAttribs);
 ```
 
 A complete example of the process is available [here](https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
