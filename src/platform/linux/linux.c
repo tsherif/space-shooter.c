@@ -48,16 +48,16 @@
 
 static Linux_Gamepad gamepad;
 
-typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConfig fbc, GLXContext shareContext, Bool direct, const int32_t* contextAttribs);
+typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConfig framebufferConfig, GLXContext shareContext, Bool direct, const int32_t* contextAttribs);
 typedef void (*glXSwapIntervalEXTFUNC)(Display* display, GLXDrawable window, int32_t interval);
 
 #include <stdio.h>
 
 int32_t main(int32_t argc, char const *argv[]) {
 
-    ////////////////////////////////
-    // Create window
-    ////////////////////////////////
+    /////////////////////////
+    // Connect to X server
+    /////////////////////////
 
     Display* display = XOpenDisplay(NULL);
 
@@ -66,6 +66,12 @@ int32_t main(int32_t argc, char const *argv[]) {
         platform_userMessage("Unable to create window.");
         return 1;
     }
+
+    //////////////////////////////////////////////////////
+    // Find framebuffer configuration that satisfies
+    // OpenGL requirements. Have to do this here,
+    // so we can create window with that configuration.
+    //////////////////////////////////////////////////////
 
     int32_t numFBC = 0;
     int32_t visualAtt[] = {
@@ -89,8 +95,8 @@ int32_t main(int32_t argc, char const *argv[]) {
         return 1;        
     }
 
-    GLXFBConfig fbc = fbcList[0];
-    XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, fbc);
+    GLXFBConfig framebufferConfig = fbcList[0];
+    XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
 
     if (!visualInfo) {
         DEBUG_LOG("No visual info found.");
@@ -99,11 +105,13 @@ int32_t main(int32_t argc, char const *argv[]) {
         return 1;        
     }
 
+    ///////////////////
+    // Create window
+    ///////////////////
+
     int32_t screen = visualInfo->screen;
     Window rootWindow = XRootWindow(display, screen);
-
     Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
-
     XSetWindowAttributes windowAttributes = {
         .colormap = colorMap,
         .event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
@@ -158,7 +166,7 @@ int32_t main(int32_t argc, char const *argv[]) {
         None
     };
 
-    GLXContext gl = glXCreateContextAttribsARB(display, fbc, NULL, True, contextAttribs);
+    GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, contextAttribs);
 
     XFree(fbcList);
 
