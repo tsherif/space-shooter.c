@@ -74,7 +74,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     //////////////////////////////////////////////////////
 
     int32_t numFBC = 0;
-    int32_t fbAttributes[] = {
+    GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), (int32_t[]) {
         GLX_RENDER_TYPE, GLX_RGBA_BIT, 
         GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, 
         GLX_DOUBLEBUFFER, True, 
@@ -85,9 +85,7 @@ int32_t main(int32_t argc, char const *argv[]) {
         GLX_SAMPLE_BUFFERS, 1,
         GLX_SAMPLES, 4,
         None
-    };
-
-    GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), fbAttributes, &numFBC);
+    }, &numFBC);
 
     if (!fbcList) {
         DEBUG_LOG("No framebuffer config found.");
@@ -97,11 +95,11 @@ int32_t main(int32_t argc, char const *argv[]) {
 
     GLXFBConfig framebufferConfig = fbcList[0];
     XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
+    XFree(fbcList);
 
     if (!visualInfo) {
         DEBUG_LOG("No visual info found.");
         platform_userMessage("Unable to load OpenGL.");
-        XFree(fbcList);
         return 1;        
     }
 
@@ -155,20 +153,15 @@ int32_t main(int32_t argc, char const *argv[]) {
 
     if (!glXCreateContextAttribsARB) {
         platform_userMessage("Unable to load OpenGL.");
-        XFree(fbcList);
         return 1; 
     }
 
-    int32_t contextAttribs[] = {
+    GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, (int32_t []) {
         GLX_CONTEXT_MAJOR_VERSION_ARB, SOGL_MAJOR_VERSION,
         GLX_CONTEXT_MINOR_VERSION_ARB, SOGL_MINOR_VERSION,
         GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
         None
-    };
-
-    GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, contextAttribs);
-
-    XFree(fbcList);
+    });
 
     if (!gl) {
         platform_userMessage("Unable to load OpenGL.");
