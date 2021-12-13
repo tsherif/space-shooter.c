@@ -108,7 +108,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     ///////////////////
 
     // NOTE(Tarek): border pixel is required in case depth doesn't match parent depth.
-    // See: https://stackoverflow.com/questions/3645632/how-to-create-a-window-with-a-bit-depth-of-32
+    // See: https://tronche.com/gui/x/xlib/window/attributes/border.html
 
     Window rootWindow = XRootWindow(display, visualInfo->screen);
     Colormap colorMap = XCreateColormap(display, rootWindow, visualInfo->visual, AllocNone);
