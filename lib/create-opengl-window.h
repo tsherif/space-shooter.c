@@ -32,20 +32,24 @@ extern "C" {
 #endif
 
 typedef struct {
-	char* title;
-	int majorVersion;
-	int minorVersion;
-	WNDPROC winCallback;
-	int width;
-	int height;
+    char* title;
+    int majorVersion;
+    int minorVersion;
+    int width;
+    int height;
+    int msaaSamples;
+    WNDPROC winCallback;
+    bool depth;
+    bool stencil;
     bool vsync;
-    DWORD windowStyle;
 } CreateOpenGLWindowArgs;
 
 HWND createOpenGLWindow(CreateOpenGLWindowArgs* args);
 void destroyOpenGLWindow(HWND window);
 
 #ifdef CREATE_OPENGL_WINDOW_IMPLEMENTATION
+
+#define CREATE_OPENGL_WINDOW_MAX_PIXEL_FORMATS 128
 
 /////////////////////////////////////
 // OpenGL constants
@@ -62,9 +66,10 @@ void destroyOpenGLWindow(HWND window);
 #define WGL_SUPPORT_OPENGL_ARB            0x2010
 #define WGL_DOUBLE_BUFFER_ARB             0x2011
 #define WGL_PIXEL_TYPE_ARB                0x2013
-#define WGL_COLOR_BITS_ARB                0x2014
-#define WGL_DEPTH_BITS_ARB                0x2022
-#define WGL_STENCIL_BITS_ARB              0x2023
+#define WGL_RED_BITS_ARB                  0x2015
+#define WGL_GREEN_BITS_ARB                0x2017
+#define WGL_BLUE_BITS_ARB                 0x2019
+#define WGL_ALPHA_BITS_ARB                0x201B
 #define WGL_FULL_ACCELERATION_ARB         0x2027
 #define WGL_TYPE_RGBA_ARB                 0x202B
 #define WGL_SAMPLE_BUFFERS_ARB            0x2041
@@ -89,6 +94,7 @@ void destroyOpenGLWindow(HWND window);
 DECLARE_WGL_EXT_FUNC(BOOL, wglChoosePixelFormatARB, HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 DECLARE_WGL_EXT_FUNC(HGLRC, wglCreateContextAttribsARB, HDC hDC, HGLRC hshareContext, const int *attribList);
 DECLARE_WGL_EXT_FUNC(BOOL, wglSwapIntervalEXT, int interval);
+DECLARE_WGL_EXT_FUNC(BOOL, wglGetPixelFormatAttribivARB, HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
 
 static const char WIN_CLASS_NAME[] = "CREATE_OPENGL_WINDOW_CLASS"; 
 
@@ -158,14 +164,15 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     };
     
     
-    int pixelFormat = ChoosePixelFormat(dummyContext, &pfd);
-    SetPixelFormat(dummyContext, pixelFormat, &pfd);
+    int dummyPixelFormat = ChoosePixelFormat(dummyContext, &pfd);
+    SetPixelFormat(dummyContext, dummyPixelFormat, &pfd);
     HGLRC dummyGL = wglCreateContext(dummyContext);
     wglMakeCurrent(dummyContext, dummyGL);
 
     LOAD_WGL_EXT_FUNC(wglChoosePixelFormatARB);
     LOAD_WGL_EXT_FUNC(wglCreateContextAttribsARB);
     LOAD_WGL_EXT_FUNC(wglSwapIntervalEXT);
+    LOAD_WGL_EXT_FUNC(wglGetPixelFormatAttribivARB);
 
     if (!wglCreateContextAttribsARB || !wglCreateContextAttribsARB) {
         MessageBoxA(NULL, "Didn't get wgl ARB functions!", "FAILURE", MB_OK);
@@ -205,26 +212,41 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
         WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
         WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
         WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-        WGL_COLOR_BITS_ARB, 32,
-        WGL_DEPTH_BITS_ARB, 24,
-        WGL_STENCIL_BITS_ARB, 8,
         WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-        // TODO(Tarek): Make these optional 
-        WGL_SAMPLE_BUFFERS_ARB, 1,
-        WGL_SAMPLES_ARB, 4,
+        WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+        WGL_RED_BITS_ARB, 8,
+        WGL_BLUE_BITS_ARB, 8,
+        WGL_RED_BITS_ARB, 8,
+        WGL_ALPHA_BITS_ARB, 8,
         0
     };
 
-    UINT numFormats;
+    UINT formatCount;
+    int pixelFormats[CREATE_OPENGL_WINDOW_MAX_PIXEL_FORMATS];
     BOOL success;
-    success = wglChoosePixelFormatARB(deviceContext, pixelAttribList, NULL, 1, &pixelFormat, &numFormats);
+    success = wglChoosePixelFormatARB(deviceContext, pixelAttribList, NULL, CREATE_OPENGL_WINDOW_MAX_PIXEL_FORMATS, pixelFormats, &formatCount);
 
-    if (!success || numFormats == 0) {
+    if (!success || formatCount == 0) {
         MessageBoxA(NULL, "Didn't get ARB pixel format!", "FAILURE", MB_OK);
         return NULL;
     }
-    
+
+    // Find format with most samples but at most the number requested
+    int formatIndex = 0;
+    int bestSamples = 0;
+    int samples = 0;
+    wglGetPixelFormatAttribivARB(deviceContext, pixelFormats[0], 0, 1, (int []) { WGL_SAMPLES_ARB } , &samples);
+
+    for (UINT i = 1; i < formatCount; ++i) {
+        wglGetPixelFormatAttribivARB(deviceContext, pixelFormats[i], 0, 1, (int []) { WGL_SAMPLES_ARB } , &samples);
+
+        if (samples <= args->msaaSamples && samples > bestSamples) {
+            bestSamples = samples;
+            formatIndex = i;
+        }
+    }
+
+    int pixelFormat = pixelFormats[formatIndex];
     DescribePixelFormat(deviceContext, pixelFormat, sizeof(pfd), &pfd);
     SetPixelFormat(deviceContext, pixelFormat, &pfd);
 
