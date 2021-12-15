@@ -27,7 +27,6 @@
 #include <windows.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Uses WGL extensions:
@@ -168,7 +167,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     HDC dummyContext = GetDC(dummyWindow);
 
-    PIXELFORMATDESCRIPTOR pfd = {
+    PIXELFORMATDESCRIPTOR pixelFormatDescriptor = {
         .nSize = sizeof(PIXELFORMATDESCRIPTOR),
         .nVersion = 1,
         .dwFlags = PFD_SUPPORT_OPENGL,
@@ -180,8 +179,8 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     };
     
     
-    int32_t dummyPixelFormat = ChoosePixelFormat(dummyContext, &pfd);
-    SetPixelFormat(dummyContext, dummyPixelFormat, &pfd);
+    int32_t dummyPixelFormat = ChoosePixelFormat(dummyContext, &pixelFormatDescriptor);
+    SetPixelFormat(dummyContext, dummyPixelFormat, &pixelFormatDescriptor);
     HGLRC dummyGL = wglCreateContext(dummyContext);
     wglMakeCurrent(dummyContext, dummyGL);
 
@@ -267,8 +266,8 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     }
 
     int32_t pixelFormat = pixelFormats[formatIndex];
-    DescribePixelFormat(deviceContext, pixelFormat, sizeof(pfd), &pfd);
-    SetPixelFormat(deviceContext, pixelFormat, &pfd);
+    DescribePixelFormat(deviceContext, pixelFormat, sizeof(pixelFormatDescriptor), &pixelFormatDescriptor);
+    SetPixelFormat(deviceContext, pixelFormat, &pixelFormatDescriptor);
 
     HGLRC gl = wglCreateContextAttribsARB(deviceContext, NULL,  (int32_t[]) {
         WGL_CONTEXT_MAJOR_VERSION_ARB, args->majorVersion,
@@ -278,9 +277,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     });
 
     if (!gl) {
-        char buffer[256];
-        snprintf(buffer, 256, "Couldn't create OpenGL context.\nPerhaps the requested version (%d, %d) isn't supported on this system?", args->majorVersion, args->minorVersion);
-        errorLog(buffer);
+        errorLog("Unable to load OpenGL.");
         return NULL;
     }
 
