@@ -27,13 +27,23 @@
 #include <windows.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// Uses WGL extensions:
+// - https://www.khronos.org/registry/OpenGL/extensions/ARB/WGL_ARB_pixel_format.txt
+// - https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_multisample.txt
+//////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef void (*CreateOpenGLWindowLoggingFunc)(const char*);
+
 typedef struct {
     WNDPROC winCallback;
+    CreateOpenGLWindowLoggingFunc errorLogFunction;
     char* title;
     int32_t majorVersion;
     int32_t minorVersion;
@@ -99,6 +109,10 @@ DECLARE_WGL_EXT_FUNC(BOOL, wglGetPixelFormatAttribivARB, HDC hdc, int32_t iPixel
 
 static const char WIN_CLASS_NAME[] = "CREATE_OPENGL_WINDOW_CLASS"; 
 
+static void createOpenGLWindowDefaultErrorLog(const char* message) {
+    MessageBoxA(NULL, message, "FAILURE", MB_OK);   
+}
+
 HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     HINSTANCE instance = GetModuleHandle(NULL);
     int32_t windowX      = CW_USEDEFAULT;
@@ -106,6 +120,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     int32_t windowWidth  = args->width;
     int32_t windowHeight = args->height;
     DWORD windowStyle = WS_OVERLAPPEDWINDOW;
+    CreateOpenGLWindowLoggingFunc errorLog = args->errorLogFunction ? args->errorLogFunction : createOpenGLWindowDefaultErrorLog;
 
     WNDCLASSEXA winClass = {
         .cbSize = sizeof(winClass),
@@ -120,7 +135,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     };
 
     if (!RegisterClassExA(&winClass)) {
-        MessageBoxA(NULL, "Failed to register window class!", "FAILURE", MB_OK);
+        errorLog("Failed to register window class.");
 
         return NULL;
     }
@@ -135,7 +150,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     HWND dummyWindow = CreateWindowA(WIN_CLASS_NAME, "DUMMY", WS_POPUP, 0, 0, 1, 1, NULL,  NULL, instance, NULL);
 
     if (!dummyWindow) {
-        MessageBoxA(NULL, "Failed to create window!", "FAILURE", MB_OK);
+        errorLog("Failed to create window.");
 
         return NULL;
     }
@@ -176,7 +191,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     LOAD_WGL_EXT_FUNC(wglGetPixelFormatAttribivARB);
 
     if (!wglCreateContextAttribsARB || !wglCreateContextAttribsARB) {
-        MessageBoxA(NULL, "Didn't get wgl ARB functions!", "FAILURE", MB_OK);
+        errorLog("Failed to load WGL functions.");
         return NULL;
     }
 
@@ -202,7 +217,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     );
 
     if (!window) {
-        MessageBoxA(NULL, "Failed to create window!", "FAILURE", MB_OK);
+        errorLog("Failed to create window.");
 
         return NULL;
     }
@@ -232,7 +247,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     );
 
     if (!success || formatCount == 0) {
-        MessageBoxA(NULL, "Didn't get ARB pixel format!", "FAILURE", MB_OK);
+        errorLog("Failed to find valid pixel format.");
         return NULL;
     }
 
@@ -263,7 +278,9 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     });
 
     if (!gl) {
-        MessageBoxA(NULL, "Didn't get ARB GL context!", "FAILURE", MB_OK);
+        char buffer[256];
+        snprintf(buffer, 256, "Couldn't create OpenGL context.\nPerhaps the requested version (%d, %d) isn't supported on this system?", args->majorVersion, args->minorVersion);
+        MessageBoxA(NULL, buffer, "FAILURE", MB_OK);
         return NULL;
     }
 
