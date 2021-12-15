@@ -32,6 +32,14 @@ Linux
 - Run `make` for a debug build or `make release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
 
+What About Mac?
+---------------
+I hope to work on a Mac platform layer as soon as I have a Mac machine to work on.
+
+Contributing
+------------
+Since this project is intended as a personal challenge, I am not accepting external contributions at this time. I am very open to feedback, however, so feel free to open an [issue](https://github.com/tsherif/space-shooter.c/issues) for anything that needs fixing.
+
 Asset Credits
 -------------
 - Sprites: https://ansimuz.itch.io/spaceship-shooter-environment
