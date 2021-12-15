@@ -36,6 +36,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "../../shared/constants.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
@@ -52,6 +53,13 @@ typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConf
 typedef void (*glXSwapIntervalEXTFUNC)(Display* display, GLXDrawable window, int32_t interval);
 
 int32_t main(int32_t argc, char const *argv[]) {
+    struct stat assetsStat = { 0 };
+    int statResult = stat("./assets", &assetsStat);
+    if (statResult == -1 || !S_ISDIR(assetsStat.st_mode)) {
+        platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
+        return 1;
+    }
+
 
     /////////////////////////
     // Connect to X server
