@@ -1,1 +1,1 @@
-Thanks for your interesting in space-shooter.c! Since this project is intended as a personal challenge, I am not accepting external contributions at this time. I am very open to feedback, however, so feel free to open an issue for anything that needs fixing.
+Thanks for your interest in space-shooter.c! Since this project is intended as a personal challenge, I am not accepting external contributions at this time. I am very open to feedback, however, so feel free to open an issue for anything that needs fixing.
