@@ -251,7 +251,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
         .majorVersion = SOGL_MAJOR_VERSION, 
         .minorVersion = SOGL_MINOR_VERSION,
         .winCallback = messageHandler,
-        .msaaSamples = 4,
+        .msaaSamples = SPACE_SHOOTER_MSAA_SAMPLES,
         .vsync = true
     });
 
