@@ -280,7 +280,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     if (!gl) {
         char buffer[256];
         snprintf(buffer, 256, "Couldn't create OpenGL context.\nPerhaps the requested version (%d, %d) isn't supported on this system?", args->majorVersion, args->minorVersion);
-        MessageBoxA(NULL, buffer, "FAILURE", MB_OK);
+        errorLog(buffer);
         return NULL;
     }
 
