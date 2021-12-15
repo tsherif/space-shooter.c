@@ -52,6 +52,11 @@ static Linux_Gamepad gamepad;
 typedef GLXContext (*glXCreateContextAttribsARBFUNC)(Display* display, GLXFBConfig framebufferConfig, GLXContext shareContext, Bool direct, const int32_t* contextAttribs);
 typedef void (*glXSwapIntervalEXTFUNC)(Display* display, GLXDrawable window, int32_t interval);
 
+int xErrorHandler(Display* display, XErrorEvent* event) {
+    platform_userMessage("An Xlib error occurred.");
+    return 0;
+}
+
 int32_t main(int32_t argc, char const *argv[]) {
     struct stat assetsStat = { 0 };
     int statResult = stat("./assets", &assetsStat);
@@ -59,6 +64,8 @@ int32_t main(int32_t argc, char const *argv[]) {
         platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
         return 1;
     }
+
+    XSetErrorHandler(xErrorHandler);
 
 
     /////////////////////////
@@ -68,8 +75,8 @@ int32_t main(int32_t argc, char const *argv[]) {
     Display* display = XOpenDisplay(NULL);
 
     if (display == NULL) {
-        DEBUG_LOG("Unable to open X connection.");
-        platform_userMessage("Unable to create window.");
+        DEBUG_LOG("Failed to open X connection.");
+        platform_userMessage("Failed to create window.");
         return 1;
     }
 
@@ -93,7 +100,7 @@ int32_t main(int32_t argc, char const *argv[]) {
 
     if (!fbcList) {
         DEBUG_LOG("No framebuffer config found.");
-        platform_userMessage("Unable to load OpenGL.");
+        platform_userMessage("Failed to load OpenGL.");
         return 1;        
     }
 
@@ -118,7 +125,7 @@ int32_t main(int32_t argc, char const *argv[]) {
 
     if (!visualInfo) {
         DEBUG_LOG("No visual info found.");
-        platform_userMessage("Unable to load OpenGL.");
+        platform_userMessage("Failed to load OpenGL.");
         return 1;        
     }
 
@@ -172,7 +179,8 @@ int32_t main(int32_t argc, char const *argv[]) {
     glXSwapIntervalEXTFUNC glXSwapIntervalEXT = (glXSwapIntervalEXTFUNC) glXGetProcAddress((const GLubyte *) "glXSwapIntervalEXT");
 
     if (!glXCreateContextAttribsARB) {
-        platform_userMessage("Unable to load OpenGL.");
+        DEBUG_LOG("Failed to load GLX extension functions.");
+        platform_userMessage("Failed to load OpenGL.");
         return 1; 
     }
 
@@ -184,7 +192,8 @@ int32_t main(int32_t argc, char const *argv[]) {
     });
 
     if (!gl) {
-        platform_userMessage("Unable to load OpenGL.");
+        DEBUG_LOG("Unable create OpenGL context.");
+        platform_userMessage("Failed to load OpenGL.");
         return 1;
     }
 
@@ -263,7 +272,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     /////////////////////
 
     if (!linux_initAudio()) {
-        platform_userMessage("Unable to initialize audio.");
+        platform_userMessage("Failed to initialize audio.");
     }
 
     /////////////////////
@@ -419,7 +428,7 @@ bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTermi
     uint8_t* data = 0;
 
     if (fd == -1) {
-        DEBUG_LOG("platform_loadFile: Unable to open file.");
+        DEBUG_LOG("platform_loadFile: Failed to open file.");
         goto ERROR_NO_RESOURCES;
     }
 
@@ -431,24 +440,24 @@ bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTermi
     }
 
     if (size == -1) {
-        DEBUG_LOG("platform_loadFile: Unable to get file size.");
+        DEBUG_LOG("platform_loadFile: Failed to get file size.");
         goto ERROR_FILE_OPENED;
     }
 
     if (lseek(fd, 0, SEEK_SET) == -1) {
-        DEBUG_LOG("platform_loadFile: Unable to reset file cursor.");
+        DEBUG_LOG("platform_loadFile: Failed to reset file cursor.");
         goto ERROR_FILE_OPENED;
     }
 
     data = (uint8_t*) malloc(allocation);
 
     if (!data) {
-        DEBUG_LOG("platform_loadFile: Unable to allocate data.");
+        DEBUG_LOG("platform_loadFile: Failed to allocate data.");
         goto ERROR_FILE_OPENED;
     }
 
     if (read(fd, data, size) == -1) {
-        DEBUG_LOG("platform_loadFile: Unable to read data.");
+        DEBUG_LOG("platform_loadFile: Failed to read data.");
         goto ERROR_DATA_ALLOCATED;
     }
 

@@ -277,7 +277,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     });
 
     if (!gl) {
-        errorLog("Unable to load OpenGL.");
+        errorLog("Failed to load OpenGL.");
         return NULL;
     }
 
