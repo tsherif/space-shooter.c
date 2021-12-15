@@ -246,6 +246,12 @@ static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam,
 }
 
 int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int32_t showWindow) {
+    DWORD fileAttributes = GetFileAttributesA("./assets");
+    if (fileAttributes == INVALID_FILE_ATTRIBUTES || !(fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+        platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
+        return 1;
+    };
+
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
         .title = "space-shooter.c (Windows)", 
         .majorVersion = SOGL_MAJOR_VERSION, 
