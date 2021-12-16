@@ -135,8 +135,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!RegisterClassExA(&winClass)) {
         errorLog("Failed to register window class.");
-
-        return NULL;
+        goto ERROR_NO_ALLOCATION;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,9 +149,10 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!dummyWindow) {
         errorLog("Failed to create window.");
-
-        return NULL;
+        goto ERROR_NO_ALLOCATION;
     }
+
+    HDC dummyContext = GetDC(dummyWindow);
 
     if (windowWidth == 0 || windowHeight == 0) {
         HMONITOR monitor = MonitorFromWindow(dummyWindow, MONITOR_DEFAULTTONEAREST);
@@ -165,33 +165,39 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
         windowStyle = WS_POPUP;
     }
 
-    HDC dummyContext = GetDC(dummyWindow);
-
     PIXELFORMATDESCRIPTOR pixelFormatDescriptor = {
         .nSize = sizeof(PIXELFORMATDESCRIPTOR),
         .nVersion = 1,
         .dwFlags = PFD_SUPPORT_OPENGL,
         .iPixelType = PFD_TYPE_RGBA,        
-        .cColorBits = 32,                   
-        .cDepthBits = 24,           
-        .cStencilBits = 8,                 
         .iLayerType = PFD_MAIN_PLANE
     };
     
-    
     int32_t dummyPixelFormat = ChoosePixelFormat(dummyContext, &pixelFormatDescriptor);
+
+    if (dummyPixelFormat == 0) {
+        errorLog("Failed to find valid pixel format.");
+        goto ERROR_DUMMY_DC;
+    }
+
     SetPixelFormat(dummyContext, dummyPixelFormat, &pixelFormatDescriptor);
     HGLRC dummyGL = wglCreateContext(dummyContext);
+
+    if (!dummyGL) {
+        errorLog("Unable to load OpenGL.");
+        goto ERROR_DUMMY_DC;
+    }
+
     wglMakeCurrent(dummyContext, dummyGL);
 
     LOAD_WGL_EXT_FUNC(wglChoosePixelFormatARB);
+    LOAD_WGL_EXT_FUNC(wglGetPixelFormatAttribivARB);
     LOAD_WGL_EXT_FUNC(wglCreateContextAttribsARB);
     LOAD_WGL_EXT_FUNC(wglSwapIntervalEXT);
-    LOAD_WGL_EXT_FUNC(wglGetPixelFormatAttribivARB);
 
-    if (!wglCreateContextAttribsARB || !wglCreateContextAttribsARB) {
+    if (!wglChoosePixelFormatARB || !wglGetPixelFormatAttribivARB || !wglCreateContextAttribsARB) {
         errorLog("Failed to load WGL functions.");
-        return NULL;
+        goto ERROR_DUMMY_GL;
     }
 
     wglMakeCurrent(NULL, NULL);
@@ -217,8 +223,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!window) {
         errorLog("Failed to create window.");
-
-        return NULL;
+        goto ERROR_NO_ALLOCATION;
     }
 
     HDC deviceContext = GetDC(window);
@@ -247,7 +252,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!success || formatCount == 0) {
         errorLog("Failed to find valid pixel format.");
-        return NULL;
+        goto ERROR_DC;
     }
 
     // Find format with most samples but at most the number requested
@@ -278,7 +283,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!gl) {
         errorLog("Failed to load OpenGL.");
-        return NULL;
+        goto ERROR_DC;
     }
 
     wglMakeCurrent(deviceContext, gl);
@@ -287,7 +292,33 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
         wglSwapIntervalEXT(1);
     }
 
+    /////////////
+    // Success!
+    /////////////
+
     return window;
+
+    ///////////////////
+    // Error handling
+    ///////////////////
+
+    ERROR_DC:
+    ReleaseDC(window, deviceContext);
+    DestroyWindow(window);
+
+    return NULL;
+
+
+    ERROR_DUMMY_GL:
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(dummyGL);
+
+    ERROR_DUMMY_DC:
+    ReleaseDC(dummyWindow, dummyContext);
+    DestroyWindow(dummyWindow);
+
+    ERROR_NO_ALLOCATION:
+    return NULL;
 }
 
 void destroyOpenGLWindow(HWND window) {

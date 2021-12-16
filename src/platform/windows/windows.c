@@ -456,7 +456,15 @@ bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTermi
     buffer->size = allocation;
     CloseHandle(file);
 
+    /////////////
+    // Success!
+    /////////////
+
     return true;
+
+    ///////////////////
+    // Error handling
+    ///////////////////
 
     ERROR_DATA_ALLOCATED:
     free(data);
