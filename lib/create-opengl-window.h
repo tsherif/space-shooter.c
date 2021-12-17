@@ -177,7 +177,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (dummyPixelFormat == 0) {
         errorLog("Failed to find valid pixel format.");
-        goto ERROR_DUMMY_DC;
+        goto ERROR_DUMMY_WINDOW;
     }
 
     SetPixelFormat(dummyContext, dummyPixelFormat, &pixelFormatDescriptor);
@@ -185,7 +185,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!dummyGL) {
         errorLog("Unable to load OpenGL.");
-        goto ERROR_DUMMY_DC;
+        goto ERROR_DUMMY_WINDOW;
     }
 
     wglMakeCurrent(dummyContext, dummyGL);
@@ -202,7 +202,6 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(dummyGL);
-    ReleaseDC(dummyWindow, dummyContext);
     DestroyWindow(dummyWindow);
 
     /////////////////////////////////////////////
@@ -252,7 +251,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!success || formatCount == 0) {
         errorLog("Failed to find valid pixel format.");
-        goto ERROR_DC;
+        goto ERROR_WINDOW;
     }
 
     // Find format with most samples but at most the number requested
@@ -283,7 +282,7 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
     if (!gl) {
         errorLog("Failed to load OpenGL.");
-        goto ERROR_DC;
+        goto ERROR_WINDOW;
     }
 
     wglMakeCurrent(deviceContext, gl);
@@ -302,19 +301,16 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
     // Error handling
     ///////////////////
 
-    ERROR_DC:
-    ReleaseDC(window, deviceContext);
+    ERROR_WINDOW:
     DestroyWindow(window);
 
     return NULL;
-
 
     ERROR_DUMMY_GL:
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(dummyGL);
 
-    ERROR_DUMMY_DC:
-    ReleaseDC(dummyWindow, dummyContext);
+    ERROR_DUMMY_WINDOW:
     DestroyWindow(dummyWindow);
 
     ERROR_NO_ALLOCATION:
@@ -323,11 +319,9 @@ HWND createOpenGLWindow(CreateOpenGLWindowArgs* args) {
 
 void destroyOpenGLWindow(HWND window) {
     HGLRC gl = wglGetCurrentContext();
-    HDC deviceContext = GetDC(window);
     
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(gl);
-    ReleaseDC(window, deviceContext);
     DestroyWindow(window);
 }
 
