@@ -246,10 +246,12 @@ static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam,
 }
 
 int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int32_t showWindow) {
+    int32_t processStatus = 1;
+
     DWORD fileAttributes = GetFileAttributesA("./assets");
     if (fileAttributes == INVALID_FILE_ATTRIBUTES || !(fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
         platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
-        return 1;
+        goto EXIT_NO_ALLOCATIONS;
     };
 
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
@@ -264,7 +266,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
     if (!window) {
         platform_userMessage("Unable to create window.");
-        return 1;
+        goto EXIT_NO_ALLOCATIONS;
     }
 
     if (!sogl_loadOpenGL()) {
@@ -293,7 +295,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
 
     if (!game_init()) {
-        return 1;
+        goto EXIT_RESOURCES_ALLOCATED;
     }
 
     RECT clientRect;
@@ -333,6 +335,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
             DispatchMessage(&message);
 
             if (message.message == WM_QUIT) {
+                processStatus = (int32_t) message.wParam;
                 running = false; 
                 break;
             }
@@ -362,6 +365,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
         systemInput.quit = gamepad.backButton;
         if (systemInput.quit && !systemInput.lastQuit) {
+            processStatus = 0;
             running = false;
         }
         systemInput.lastQuit = systemInput.quit;
@@ -379,11 +383,14 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
         ++ticks;
     }
 
-    windows_closeAudio();
-    destroyOpenGLWindow(window);
-    game_close();
 
-    return (int32_t) message.wParam;
+    EXIT_RESOURCES_ALLOCATED:
+    windows_closeAudio();
+    game_close();
+    destroyOpenGLWindow(window);
+
+    EXIT_NO_ALLOCATIONS:
+    return processStatus;
 }
 
 void platform_getInput(Game_Input* input) {
