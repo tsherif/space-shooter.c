@@ -15,6 +15,6 @@
 @mkdir build
 @xcopy /S /y assets build\assets\
 @pushd build
-cl %shared_args% %build_args% ..\src\shared\*.c ..\src\game\*.c ..\src\platform\windows\*.c user32.lib gdi32.lib opengl32.lib xinput.lib ole32.lib
+cl %shared_args% %build_args% ..\src\shared\*.c ..\src\game\*.c ..\src\platform\windows\*.c user32.lib gdi32.lib opengl32.lib xinput.lib ole32.lib winmm.lib
 @popd
  

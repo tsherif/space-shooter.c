@@ -35,6 +35,7 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <xinput.h>
+#include <timeapi.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <malloc.h>
@@ -154,6 +155,11 @@ static void processXInputState(XINPUT_STATE* xInputState) {
         gamepad.backButton = backButton;
         gamepad.keyboard = false;
     }
+}
+
+float getElapsedTime(LARGE_INTEGER currentCount, LARGE_INTEGER lastCount, LARGE_INTEGER frequency) {
+    uint64_t elapsedCount = (currentCount.QuadPart - lastCount.QuadPart) * 1000000;
+    return elapsedCount / (frequency.QuadPart * 1000.0f);
 }
 
 static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -311,7 +317,6 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     ShowWindow(window, showWindow);
     HDC deviceContext = GetDC(window);
 
-
     //////////////////////////////////
     // Start render and message loop
     //////////////////////////////////
@@ -327,6 +332,15 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     uint64_t ticks = 0;
     QueryPerformanceFrequency(&tickFrequency);
     QueryPerformanceCounter(&lastPerfCount);
+    
+    TIMECAPS timeCaps = { 0 };
+    bool useSleep = false;
+    uint32_t timerResolution = 0;
+    if (timeGetDevCaps(&timeCaps, sizeof(timeCaps)) == MMSYSERR_NOERROR) {
+        timerResolution = timeCaps.wPeriodMin;
+        useSleep = timeBeginPeriod(timerResolution) == TIMERR_NOERROR;
+    }
+
     running = true;
 
     while (running) {
@@ -372,17 +386,27 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
         LARGE_INTEGER perfCount;
         QueryPerformanceCounter(&perfCount);
-        uint64_t elapsedTime = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000;
-        elapsedTime /= tickFrequency.QuadPart;
+        float elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
 
-        game_update(elapsedTime / 1000.0f);
+        if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > 1.0f) {
+            DWORD sleepMs = (DWORD) (SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime);
+            Sleep(sleepMs);
+
+            QueryPerformanceCounter(&perfCount);
+            elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
+        }
+
+        game_update(elapsedTime);
         game_draw();
-        SwapBuffers(deviceContext);
-
+        SwapBuffers(deviceContext);    
+        
         lastPerfCount = perfCount;
         ++ticks;
     }
 
+    if (useSleep) {
+        timeEndPeriod(timerResolution);
+    }
 
     EXIT_RESOURCES_ALLOCATED:
     windows_closeAudio();
