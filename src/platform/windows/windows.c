@@ -252,7 +252,7 @@ static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam,
 }
 
 int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int32_t showWindow) {
-    int32_t processStatus = 1;
+    int32_t exitStatus = 1;
 
     DWORD fileAttributes = GetFileAttributesA("./assets");
     if (fileAttributes == INVALID_FILE_ATTRIBUTES || !(fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
@@ -349,7 +349,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
             DispatchMessage(&message);
 
             if (message.message == WM_QUIT) {
-                processStatus = (int32_t) message.wParam;
+                exitStatus = (int32_t) message.wParam;
                 running = false; 
                 break;
             }
@@ -379,7 +379,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
         systemInput.quit = gamepad.backButton;
         if (systemInput.quit && !systemInput.lastQuit) {
-            processStatus = 0;
+            exitStatus = 0;
             running = false;
         }
         systemInput.lastQuit = systemInput.quit;
@@ -410,11 +410,11 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
     EXIT_RESOURCES_ALLOCATED:
     windows_closeAudio();
-    game_close();
+    game_close();  // NOTE(Tarek): After closeAudio so audio buffers don't get freed while playing.
     destroyOpenGLWindow(window);
 
     EXIT_NO_ALLOCATIONS:
-    return processStatus;
+    return exitStatus;
 }
 
 void platform_getInput(Game_Input* input) {

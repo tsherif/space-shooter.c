@@ -58,15 +58,16 @@ int xErrorHandler(Display* display, XErrorEvent* event) {
 }
 
 int32_t main(int32_t argc, char const *argv[]) {
+    int32_t exitStatus = 1;
+
     struct stat assetsStat = { 0 };
     int statResult = stat("./assets", &assetsStat);
     if (statResult == -1 || !S_ISDIR(assetsStat.st_mode)) {
         platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
-        return 1;
+        goto EXIT_NO_ALLOCATIONS;
     }
 
-    XSetErrorHandler(xErrorHandler);
-
+    XSetErrorHandler(xErrorHandler); 
 
     /////////////////////////
     // Connect to X server
@@ -77,8 +78,9 @@ int32_t main(int32_t argc, char const *argv[]) {
     if (display == NULL) {
         DEBUG_LOG("Failed to open X connection.");
         platform_userMessage("Failed to create window.");
-        return 1;
+        goto EXIT_ERROR_HANDLER;
     }
+
 
     //////////////////////////////////////////////////////
     // Find framebuffer configuration that satisfies
@@ -101,7 +103,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     if (!fbcList) {
         DEBUG_LOG("No framebuffer config found.");
         platform_userMessage("Failed to load OpenGL.");
-        return 1;        
+        goto EXIT_DISPLAY;
     }
 
     // Find fbc with most samples but at most 4
@@ -126,7 +128,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     if (!visualInfo) {
         DEBUG_LOG("No visual info found.");
         platform_userMessage("Failed to load OpenGL.");
-        return 1;        
+        goto EXIT_DISPLAY;
     }
 
     ///////////////////
@@ -156,7 +158,6 @@ int32_t main(int32_t argc, char const *argv[]) {
     );
 
     XStoreName(display, window, "space-shooter.c (Linux)");
-
     XFree(visualInfo);
     
     /////////////////
@@ -181,7 +182,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     if (!glXCreateContextAttribsARB) {
         DEBUG_LOG("Failed to load GLX extension functions.");
         platform_userMessage("Failed to load OpenGL.");
-        return 1; 
+        goto EXIT_WINDOW; 
     }
 
     GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, (int32_t []) {
@@ -194,7 +195,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     if (!gl) {
         DEBUG_LOG("Unable create OpenGL context.");
         platform_userMessage("Failed to load OpenGL.");
-        return 1;
+        goto EXIT_WINDOW;
     }
 
     glXMakeCurrent(display, window, gl);
@@ -279,12 +280,11 @@ int32_t main(int32_t argc, char const *argv[]) {
     // Start game
     /////////////////////
 
-    if (!game_init()) {
-        return 1;
-    }
+    linux_detectGamepad(); 
 
-    game_resize(SPACE_SHOOTER_DEFAULT_WINDOWED_WIDTH, SPACE_SHOOTER_DEFAULT_WINDOWED_HEIGHT);
-    linux_detectGamepad();
+    if (!game_init()) {
+        goto EXIT_GAME;
+    }
 
     struct {
         bool left;
@@ -390,14 +390,25 @@ int32_t main(int32_t argc, char const *argv[]) {
         lastTime = time;
     };
 
+    EXIT_GAME:
     linux_closeGamepad();
     linux_closeAudio();
+    game_close(); // NOTE(Tarek): After closeAudio so audio buffers don't get freed while playing.
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, gl);
+
+    EXIT_WINDOW:
     XDestroyWindow(display, window);
     XFreeColormap(display, colorMap);
+
+    EXIT_DISPLAY:
     XCloseDisplay(display);
-    game_close();
+
+    EXIT_ERROR_HANDLER:
+    XSetErrorHandler(NULL);
+    
+    EXIT_NO_ALLOCATIONS:
+    return exitStatus;
 }
 
 void platform_getInput(Game_Input* input) {
