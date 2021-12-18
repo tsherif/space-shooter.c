@@ -57,6 +57,10 @@ int xErrorHandler(Display* display, XErrorEvent* event) {
     return 0;
 }
 
+int64_t nsFromTimeSpec(struct timespec timeSpec) {
+    return timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+}
+
 int32_t main(int32_t argc, char const *argv[]) {
     int32_t exitStatus = 1;
 
@@ -301,7 +305,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     XEvent event = { 0 };
     XWindowAttributes xWinAtt = { 0 };
     uint64_t ticks = 0;
-    uint64_t lastTime;
+    int64_t lastTime;
     struct timespec timeSpec;
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
     lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
@@ -378,9 +382,20 @@ int32_t main(int32_t argc, char const *argv[]) {
         systemInput.lastQuit = systemInput.quit;
 
         clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-        uint64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+        int64_t time = nsFromTimeSpec(timeSpec);
+        int64_t elapsedTime = time - lastTime;
 
-        uint64_t elapsedTime = time - lastTime;
+        // Sleep if at least 1ms less than frame min
+        if (SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000) {
+            struct timespec sleepTime = {
+                .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime
+            };
+            nanosleep(&sleepTime, NULL);
+
+            clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+            time = nsFromTimeSpec(timeSpec);
+            elapsedTime = time - lastTime;
+        }
 
         game_update(elapsedTime / 1000000.0f);
         game_draw();
