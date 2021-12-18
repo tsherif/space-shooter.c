@@ -333,14 +333,8 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     QueryPerformanceFrequency(&tickFrequency);
     QueryPerformanceCounter(&lastPerfCount);
     
-    TIMECAPS timeCaps = { 0 };
-    bool useSleep = false;
-    uint32_t timerResolution = 0;
-    if (timeGetDevCaps(&timeCaps, sizeof(timeCaps)) == MMSYSERR_NOERROR) {
-        timerResolution = timeCaps.wPeriodMin;
-        useSleep = timeBeginPeriod(timerResolution) == TIMERR_NOERROR;
-    }
-
+    // Use 1ms schedular frequency for sleeps if available.
+    bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
     running = true;
 
     while (running) {
@@ -405,7 +399,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     }
 
     if (useSleep) {
-        timeEndPeriod(timerResolution);
+        timeEndPeriod(1);
     }
 
     EXIT_RESOURCES_ALLOCATED:
