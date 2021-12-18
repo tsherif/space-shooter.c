@@ -211,7 +211,9 @@ int32_t main(int32_t argc, char const *argv[]) {
     if (!sogl_loadOpenGL()) {
         const char **failures = sogl_getFailures();
         while (*failures) {
-            fprintf(stderr, "space-shooter.c Linux: Failed to load function %s\n", *failures);
+            char debugMessage[256];
+            snprintf(debugMessage, 256, "SOGL: Failed to load function %s", *failures);
+            DEBUG_LOG(debugMessage);
             failures++;
         }
     }

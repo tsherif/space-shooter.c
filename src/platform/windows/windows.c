@@ -157,9 +157,9 @@ static void processXInputState(XINPUT_STATE* xInputState) {
     }
 }
 
-float getElapsedTime(LARGE_INTEGER currentCount, LARGE_INTEGER lastCount, LARGE_INTEGER frequency) {
-    uint64_t elapsedCount = (currentCount.QuadPart - lastCount.QuadPart) * 1000000;
-    return elapsedCount / (frequency.QuadPart * 1000.0f);
+int64_t getElapsedTime(LARGE_INTEGER currentCount, LARGE_INTEGER lastCount, LARGE_INTEGER frequency) {
+    int64_t elapsedCount = (currentCount.QuadPart - lastCount.QuadPart) * 1000000000ll;
+    return elapsedCount / frequency.QuadPart;
 }
 
 static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -279,7 +279,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
         const char **failures = sogl_getFailures();
         while (*failures) {
             char debugMessage[256];
-            snprintf(debugMessage, 256, "SOGL: Failed to load function %s\n", *failures);
+            snprintf(debugMessage, 256, "SOGL: Failed to load function %s", *failures);
             DEBUG_LOG(debugMessage);
             failures++;
         }
@@ -386,17 +386,17 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
         LARGE_INTEGER perfCount;
         QueryPerformanceCounter(&perfCount);
-        float elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
+        int64_t elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
 
-        if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > 1.0f) {
-            DWORD sleepMs = (DWORD) (SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime);
+        if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
+            DWORD sleepMs = (DWORD) ((SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime) / 1000000ll);
             Sleep(sleepMs);
 
             QueryPerformanceCounter(&perfCount);
             elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
         }
 
-        game_update(elapsedTime);
+        game_update(elapsedTime / 1000000.0f);
         game_draw();
         SwapBuffers(deviceContext);    
         
