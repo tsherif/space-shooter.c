@@ -306,11 +306,12 @@ int32_t main(int32_t argc, char const *argv[]) {
     } systemInput = { 0 };
     XEvent event = { 0 };
     XWindowAttributes xWinAtt = { 0 };
-    uint64_t ticks = 0;
-    int64_t lastTime;
-    struct timespec timeSpec;
+    
+    struct timespec timeSpec = { 0 };
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-    lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    int64_t lastTime = nsFromTimeSpec(timeSpec);
+    int64_t gamePadPollTime = 0;
+    
     bool fullscreen = true;
     bool running = true;
 
@@ -360,10 +361,6 @@ int32_t main(int32_t argc, char const *argv[]) {
             gamepad.keyboard = true;
         }
 
-        if (ticks % 200 == 0) {
-            linux_detectGamepad();
-        }
-
         linux_updateGamepad(&gamepad);
         
         systemInput.toggleFullscreen = gamepad.startButton;
@@ -397,6 +394,12 @@ int32_t main(int32_t argc, char const *argv[]) {
             clock_gettime(CLOCK_MONOTONIC, &timeSpec);
             time = nsFromTimeSpec(timeSpec);
             elapsedTime = time - lastTime;
+        }
+
+        gamePadPollTime += elapsedTime;
+        if (gamePadPollTime > SPACE_SHOOTER_GAMEPAD_POLL_TIME_NS) {
+            linux_detectGamepad();
+            gamePadPollTime = 0;
         }
 
         game_update(elapsedTime / 1000000.0f);

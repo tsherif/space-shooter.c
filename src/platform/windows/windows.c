@@ -329,7 +329,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     } systemInput = { 0 };
     MSG message = { 0 };
     LARGE_INTEGER lastPerfCount, tickFrequency;
-    uint64_t ticks = 0;
+    int64_t gamePadPollTime = 0;
     QueryPerformanceFrequency(&tickFrequency);
     QueryPerformanceCounter(&lastPerfCount);
     
@@ -346,15 +346,6 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
                 exitStatus = (int32_t) message.wParam;
                 running = false; 
                 break;
-            }
-        }
-
-        if (gamepadIndex == -1 && ticks % 200 == 0) {
-            for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
-                if (XInputGetState(i, &xInputState) == ERROR_SUCCESS) {
-                    gamepadIndex = i;
-                    break;
-                }
             }
         }
 
@@ -390,12 +381,25 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
             elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
         }
 
+
+        if (gamepadIndex == -1) {
+            gamePadPollTime += elapsedTime;
+            if (gamePadPollTime > SPACE_SHOOTER_GAMEPAD_POLL_TIME_NS) {
+                for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
+                    if (XInputGetState(i, &xInputState) == ERROR_SUCCESS) {
+                        gamepadIndex = i;
+                        break;
+                    }
+                }
+                gamePadPollTime = 0;
+            }
+        }
+
         game_update(elapsedTime / 1000000.0f);
         game_draw();
         SwapBuffers(deviceContext);    
         
         lastPerfCount = perfCount;
-        ++ticks;
     }
 
     if (useSleep) {
