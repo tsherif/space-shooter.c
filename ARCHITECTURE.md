@@ -345,7 +345,6 @@ IXAudio2VoiceCallback callbacks = {
 };
 ```
 
-
 #### Linux
 
 I implemented Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implemented a 32-channel additive mixer explicitly on the audio thread:
@@ -504,6 +503,12 @@ if (bytesRead >= 0) {
 ```
 
 Raphael De Vasconcelos Nascimento provides a more detailed description of the entire process [here](https://ourmachinery.com/post/gamepad-implementation-on-linux/).
+
+
+### High-resolution Time
+
+
+### High-resolution Sleep
 
 
 The Game Layer
