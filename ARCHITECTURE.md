@@ -110,6 +110,8 @@ All operations on objects are run in batches on `objects[0 .. count - 1]`.
 
 Note that the implementations in most cases don't look exactly like the above depending on how the objects will be consumed by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
 
+### Error Handling
+
 ### Mixin Structs
 
 To simplify passing of game data between the different layers, I implemented a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
