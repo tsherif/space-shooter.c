@@ -83,16 +83,14 @@ static struct {
 };
 
 bool windows_initAudio(void) {
-    HRESULT comResult;
-    comResult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    HRESULT comResult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(comResult)) {
-        return false;
+        goto ERROR_NO_RESOURCES;
     }
 
     comResult = XAudio2Create(&audio.xaudio, 0, XAUDIO2_DEFAULT_PROCESSOR);
-
     if (FAILED(comResult)) {
-        return false;
+        goto ERROR_COM;
     }
 
     comResult = IXAudio2_CreateMasteringVoice(
@@ -105,9 +103,8 @@ bool windows_initAudio(void) {
         NULL,
         AudioCategory_GameEffects
     );
-
     if (FAILED(comResult)) {
-        return false;
+        goto ERROR_XAUDIO2;
     }
 
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
@@ -126,11 +123,29 @@ bool windows_initAudio(void) {
         );
 
         if (FAILED(comResult)) {
-            return false;
+            goto ERROR_XAUDIO2;
         }
     }
 
+    /////////////
+    // Success!
+    /////////////
+
     return true;
+
+    ///////////////////
+    // Error handling
+    ///////////////////
+
+    ERROR_XAUDIO2:
+    IXAudio2_Release(audio.xaudio);
+    audio.xaudio = NULL;
+
+    ERROR_COM:
+    CoUninitialize();
+
+    ERROR_NO_RESOURCES:
+    return false;
 }
 
 void platform_playSound(Data_Buffer* sound, bool loop) {
@@ -153,6 +168,10 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 }
 
 void windows_closeAudio(void) {
+    if (!audio.xaudio) {
+        return;
+    }
+
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (audio.channels[i].inUse) {
             IXAudio2SourceVoice_Stop(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
@@ -162,6 +181,7 @@ void windows_closeAudio(void) {
     }
 
     IXAudio2_Release(audio.xaudio);
+    audio.xaudio = NULL;
     CoUninitialize();
 }
 

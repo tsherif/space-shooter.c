@@ -76,7 +76,7 @@ static void *audioThread(void* args) {
     /////////////////////////////////////
 
     if (snd_pcm_open(&device, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        return NULL;
+        goto EXIT_NO_RESOURCES;
     }
 
     snd_pcm_hw_params_t *deviceParams = NULL;
@@ -84,27 +84,27 @@ static void *audioThread(void* args) {
     snd_pcm_hw_params_any(device, deviceParams);
 
     if (snd_pcm_hw_params_set_access(device, deviceParams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
-        return NULL;   
+        goto EXIT_DEVICE;   
     }
 
     if (snd_pcm_hw_params_set_format(device, deviceParams, SND_PCM_FORMAT_S16_LE) < 0) {
-        return NULL;   
+        goto EXIT_DEVICE;   
     }
 
     if (snd_pcm_hw_params_set_rate(device, deviceParams, 44100, 0) < 0) {
-        return NULL;   
+        goto EXIT_DEVICE;   
     }
 
     if (snd_pcm_hw_params_set_channels(device, deviceParams, 2) < 0) {
-        return NULL;   
+        goto EXIT_DEVICE;   
     }
 
     if (snd_pcm_hw_params_set_buffer_size(device, deviceParams, MIX_BUFFER_FRAMES) < 0) {
-        return NULL;   
+        goto EXIT_DEVICE;   
     }
 
     if (snd_pcm_hw_params(device, deviceParams) < 0) {
-        return NULL;   
+        goto EXIT_DEVICE;   
     }
 
     bool running = true;
@@ -200,9 +200,11 @@ static void *audioThread(void* args) {
         pthread_mutex_unlock(&threadInterface.shutdown.lock);
     }
 
+    EXIT_DEVICE:
     snd_pcm_drop(device);
     snd_pcm_close(device);
 
+    EXIT_NO_RESOURCES:
     return NULL;
 }
 
@@ -213,20 +215,37 @@ bool linux_initAudio(void) {
     ////////////////////////
 
     if (pthread_mutex_init(&threadInterface.queue.lock, NULL)) {
-        return false;
+        goto ERROR_NO_RESOURCES;
     }
 
     if (pthread_mutex_init(&threadInterface.shutdown.lock, NULL)) {
-        return false;
+        goto ERROR_QUEUE_LOCK;
     }
     
     if (pthread_create(&threadInterface.handle, NULL, audioThread, NULL)) {
-        return false;
+        goto ERROR_SHUTDOWN_LOCK;
     }
 
     threadInterface.initialized = true;
 
+    /////////////
+    // Success!
+    /////////////
+
     return true;
+
+    ///////////////////
+    // Error handling
+    ///////////////////
+
+    ERROR_SHUTDOWN_LOCK:
+    pthread_mutex_destroy(&threadInterface.shutdown.lock);
+
+    ERROR_QUEUE_LOCK:
+    pthread_mutex_destroy(&threadInterface.queue.lock);
+
+    ERROR_NO_RESOURCES:
+    return false;
 }
 
 void platform_playSound(Data_Buffer* sound, bool loop) {
@@ -258,6 +277,10 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 }
 
 void linux_closeAudio(void) {
+    if (!threadInterface.initialized) {
+        return;
+    }
+
     pthread_mutex_lock(&threadInterface.shutdown.lock);
     threadInterface.shutdown.signalled = true;
     pthread_mutex_unlock(&threadInterface.shutdown.lock);
