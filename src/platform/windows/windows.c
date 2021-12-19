@@ -257,7 +257,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     DWORD fileAttributes = GetFileAttributesA("./assets");
     if (fileAttributes == INVALID_FILE_ATTRIBUTES || !(fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
         platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
-        goto EXIT_NO_ALLOCATIONS;
+        goto EXIT_NO_RESOURCES;
     };
 
     HWND window = createOpenGLWindow( &(CreateOpenGLWindowArgs) {
@@ -272,7 +272,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
     if (!window) {
         platform_userMessage("Unable to create window.");
-        goto EXIT_NO_ALLOCATIONS;
+        goto EXIT_NO_RESOURCES;
     }
 
     if (!sogl_loadOpenGL()) {
@@ -301,7 +301,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
 
 
     if (!game_init()) {
-        goto EXIT_RESOURCES_ALLOCATED;
+        goto EXIT_GAME;
     }
 
     RECT clientRect;
@@ -406,12 +406,12 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
         timeEndPeriod(1);
     }
 
-    EXIT_RESOURCES_ALLOCATED:
+    EXIT_GAME:
     windows_closeAudio();
     game_close();  // NOTE(Tarek): After closeAudio so audio buffers don't get freed while playing.
     destroyOpenGLWindow(window);
 
-    EXIT_NO_ALLOCATIONS:
+    EXIT_NO_RESOURCES:
     return exitStatus;
 }
 

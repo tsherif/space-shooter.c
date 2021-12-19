@@ -68,7 +68,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     int statResult = stat("./assets", &assetsStat);
     if (statResult == -1 || !S_ISDIR(assetsStat.st_mode)) {
         platform_userMessage("Asset directory not found.\nDid you move the game executable without moving the assets?");
-        goto EXIT_NO_ALLOCATIONS;
+        goto EXIT_NO_RESOURCES;
     }
 
     XSetErrorHandler(xErrorHandler); 
@@ -427,7 +427,7 @@ int32_t main(int32_t argc, char const *argv[]) {
     EXIT_ERROR_HANDLER:
     XSetErrorHandler(NULL);
     
-    EXIT_NO_ALLOCATIONS:
+    EXIT_NO_RESOURCES:
     return exitStatus;
 }
 
