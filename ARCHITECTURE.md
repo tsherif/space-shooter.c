@@ -112,6 +112,69 @@ Note that the implementations in most cases don't look exactly like the above de
 
 ### Error Handling
 
+My primary concern in managing errors in `space-shooter.c` is to structure interactions with OS APIs, since they're the only operations that can fail in a manner outside my control. The key strategy is to run as many of these operations as possible during initialization, so the rest of the game doesn't have to worry about them:
+- Acquire any required OS or hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
+- Validate asset data during initialization.
+- Use static memory for game objects so allocations aren't required while the game is running.
+
+In terms of structuring the OS operations themselves, the only concern was in sequences where resources that are dependent on each other are allocated one after the other, and on failure, any allocated resources have to be freed. For example, consider the following simplified version of opening a window and initializing OpenGL:
+
+```c
+// NOTE: This is not the actual implementation!
+
+Display* display = openDisplay();
+// Failures after this point must release display.
+
+Window* window = openWindow(display);
+// Failures after this point must release display and window.
+
+GL* gl = initializeOpenGL(display, window);
+// Failures after this point must release display and window and gl.
+
+return SUCCESS;
+```
+
+I manage these types of sequences using `goto` chains with labels based on the resources have been allocated and running in reverse order of the allocations:
+
+```c
+// NOTE: This is not the actual implementation!
+
+Display* display = openDisplay();
+if (!display) {
+    goto ERROR_NO_RESOURCES;
+}
+
+// Errors here goto ERROR_DISPLAY
+
+Window* window = openWindow(display);
+if (!window) {
+    goto ERROR_DISPLAY;
+}
+
+// Errors here goto ERROR_WINDOW
+
+GL* gl = initializeOpenGL(display, window);
+if (!gl) {
+    goto ERROR_WINDOW;
+}
+
+// Errors here goto ERROR_GL
+
+return SUCCESS;
+
+ERROR_GL:
+uninitializeOpenGL(gl);
+
+ERROR_WINDOW:
+closeWindow(window);
+
+ERROR_DISPLAY:
+closeDisplay(display);
+
+ERROR_NO_RESOURCES:
+return FAILURE;
+```
+
 ### Mixin Structs
 
 To simplify passing of game data between the different layers, I implemented a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
