@@ -154,6 +154,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glGenBuffers(1, &buffers.pixelOffset);
     glGenBuffers(1, &buffers.pixelOffset);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.pixelOffset);
+    glBufferData(GL_ARRAY_BUFFER, RENDERER_DRAWLIST_MAX * 2 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(1, 1);
     glEnableVertexAttribArray(1);
@@ -161,6 +162,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glGenBuffers(1, &buffers.panelIndex);
     glGenBuffers(1, &buffers.panelIndex);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.panelIndex);
+    glBufferData(GL_ARRAY_BUFFER, RENDERER_DRAWLIST_MAX * 2 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(2, 1);
     glEnableVertexAttribArray(2);
@@ -168,6 +170,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glGenBuffers(1, &buffers.scale);
     glGenBuffers(1, &buffers.scale);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.scale);
+    glBufferData(GL_ARRAY_BUFFER, RENDERER_DRAWLIST_MAX * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(3, 1);
     glEnableVertexAttribArray(3);
@@ -175,6 +178,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glGenBuffers(1, &buffers.alpha);
     glGenBuffers(1, &buffers.alpha);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.alpha);
+    glBufferData(GL_ARRAY_BUFFER, RENDERER_DRAWLIST_MAX * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(4, 1);
     glEnableVertexAttribArray(4);
@@ -182,6 +186,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glGenBuffers(1, &buffers.whiteOut);
     glGenBuffers(1, &buffers.whiteOut);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.whiteOut);
+    glBufferData(GL_ARRAY_BUFFER, RENDERER_DRAWLIST_MAX * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, NULL);
     glVertexAttribDivisor(5, 1);
     glEnableVertexAttribArray(5);
@@ -242,19 +247,19 @@ void renderer_draw(Renderer_List* list) {
     glUniform2fv(uniforms.spriteSheetDimensions, 1, list->sprite->sheetDims);
 
     glBindBuffer(GL_ARRAY_BUFFER, buffers.pixelOffset);
-    glBufferData(GL_ARRAY_BUFFER, list->count * 2 * sizeof(float), list->position, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, list->count * 2 * sizeof(float), list->position);
 
     glBindBuffer(GL_ARRAY_BUFFER, buffers.panelIndex);
-    glBufferData(GL_ARRAY_BUFFER, list->count * 2 * sizeof(float), list->currentSpritePanel, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, list->count * 2 * sizeof(float), list->currentSpritePanel);
 
     glBindBuffer(GL_ARRAY_BUFFER, buffers.scale);
-    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->scale, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, list->count * sizeof(float), list->scale);
 
     glBindBuffer(GL_ARRAY_BUFFER, buffers.alpha);
-    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->alpha, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, list->count * sizeof(float), list->alpha);
 
     glBindBuffer(GL_ARRAY_BUFFER, buffers.whiteOut);
-    glBufferData(GL_ARRAY_BUFFER, list->count * sizeof(float), list->whiteOut, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, list->count * sizeof(float), list->whiteOut);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, list->count);
 }
