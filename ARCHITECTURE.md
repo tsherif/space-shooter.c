@@ -113,12 +113,12 @@ Note that the implementations in most cases don't look exactly like the above de
 
 ### Error Handling
 
-My primary concern in managing errors in `space-shooter.c` is to structure interactions with OS APIs, since they're the only operations that can fail in a manner outside my control. The key strategy is to run as many of these operations as possible during initialization, so the rest of the game doesn't have to worry about them:
-- Acquire any required OS or hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
+My primary concern in managing errors in `space-shooter.c` is to structure interactions with OS APIs, since they're the only operations for which success or failure is outside my control. My strategy is to run as many of these operations as possible during initialization, so the rest of the game doesn't have to worry about them:
+- Acquire all OS and hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
 - Validate asset data during initialization.
 - Use static memory for game objects so allocations aren't required while the game is running.
 
-In terms of structuring the OS operations themselves, the only concern was in sequences where resources that are dependent on each other are allocated one after the other, and on failure, any allocated resources have to be freed. For example, consider the following simplified version of opening a window and initializing OpenGL:
+The OS operations themselves required structure in situations where sequences of dependent resources are acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -129,13 +129,13 @@ Display* display = openDisplay();
 Window* window = openWindow(display);
 // Failures after this point must release display and window.
 
-GL* gl = initializeOpenGL(display, window);
+GL* gl = initializeOpenGL(window);
 // Failures after this point must release display and window and gl.
 
 return SUCCESS;
 ```
 
-I manage these types of sequences using `goto` chains with labels based on the resources have been allocated and running in reverse order of the allocations:
+These sequences are managed using `goto` chains with labels based on the resources have been acquired and running in reverse order of the acquisitions:
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -154,7 +154,7 @@ if (!window) {
 
 // Errors here goto ERROR_WINDOW
 
-GL* gl = initializeOpenGL(display, window);
+GL* gl = initializeOpenGL(window);
 if (!gl) {
     goto ERROR_WINDOW;
 }
@@ -570,12 +570,99 @@ if (bytesRead >= 0) {
 
 Raphael De Vasconcelos Nascimento provides a more detailed description of the entire process [here](https://ourmachinery.com/post/gamepad-implementation-on-linux/).
 
-
 ### High-resolution Time
 
+#### Windows
+
+On Windows, time deltas for the game simulation are calculated using [QueryPerformanceCounter()](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and [QueryPerformanceFrequency()](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancefrequency) in the following manner:
+
+```c
+LARGE_INTEGER lastPerfCount, tickFrequency;
+QueryPerformanceFrequency(&tickFrequency);
+QueryPerformanceCounter(&lastPerfCount);
+
+// Game loop
+while (running) {
+
+    LARGE_INTEGER perfCount;
+    QueryPerformanceCounter(&perfCount);
+
+    // Multiply into nanoseconds first to avoid precision loss in the division.
+    int64_t elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000000ll;
+    int64_t elapsedTime = elapsedCount / tickFrequency.QuadPart;
+
+    game_update(elapsedTime);
+
+    lastPerfCount = perfCount;
+}
+```
+
+#### Linux
+
+On Linux, time deltas for the game simulation are calculated using [clock_gettime()](https://linux.die.net/man/3/clock_gettime):
+
+```c
+struct timespec timeSpec = { 0 };
+clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+int64_t lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+
+// Game loop
+while (running) {
+
+    clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+    int64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    int64_t elapsedTime = time - lastTime;
+
+    game_update(elapsedTime);
+
+    lastTime = time;
+}
+```
 
 ### High-resolution Sleep
 
+`space-shooter.c` uses vsync, if available, to control the frequency of the game loop. To avoid busy-looping when vsync isn't available, `space-shooter.c` will sleep if a frame runs under a minimum frame time of 3ms using the high-resolution sleep functions on each platform.
+
+#### Windows
+
+On Windows, the first step is to ensure the scheduler supports a granularity of 1ms using [timeBeginPeriod()](https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod):
+
+```
+    bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
+```
+
+Then the game sleeps using [Sleep()](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
+
+```c
+// Sleep if 1ms granularity is supported and the frame ran 
+// as least 1ms faster than the minimum.
+if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
+    DWORD sleepMs = (DWORD) ((SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime) / 1000000ll);
+    Sleep(sleepMs);
+
+    QueryPerformanceCounter(&perfCount);
+    elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000000ll;
+    elapsedTime = elapsedCount / tickFrequency.QuadPart;
+}
+```
+
+#### Linux
+
+On Linux, `space-shooter.c` sleeps using [nanosleep()](https://linux.die.net/man/2/nanosleep):
+
+```c
+// Sleep if the frame ran at least 1ms less than the minimum.
+if (SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
+    struct timespec sleepTime = {
+        .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime
+    };
+    nanosleep(&sleepTime, NULL);
+
+    clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+    time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    elapsedTime = time - lastTime;
+}
+```
 
 The Game Layer
 --------------

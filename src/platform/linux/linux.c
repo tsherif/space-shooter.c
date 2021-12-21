@@ -385,7 +385,7 @@ int32_t main(int32_t argc, char const *argv[]) {
         int64_t elapsedTime = time - lastTime;
 
         // Sleep if at least 1ms less than frame min
-        if (SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000) {
+        if (SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
             struct timespec sleepTime = {
                 .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime
             };
