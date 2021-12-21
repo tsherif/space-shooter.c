@@ -56,6 +56,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
 - `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the given data.
+- `renderer_validate(void)`: Check that OpenGL context isn't out of memory.
 - `renderer_resize(int width, int height)`: Resize the drawing surface.
 - `renderer_beforeFrame(void)`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
 - `renderer_draw(Renderer_List* list)`: Draw to the screen.

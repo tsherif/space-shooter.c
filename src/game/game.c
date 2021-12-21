@@ -912,6 +912,11 @@ bool game_init(void) {
     // Shared texture    
     sprites_enemyBullet.texture = sprites_playerBullet.texture;
 
+    if (!renderer_validate()) {
+        platform_userMessage("FATAL ERROR: Unable to allocate textures.");
+        return false;
+    }
+
     if (
         !loadSound("assets/audio/music.wav", &gameData.sounds.music) ||
         !loadSound("assets/audio/Laser_002.wav", &gameData.sounds.playerBullet) ||

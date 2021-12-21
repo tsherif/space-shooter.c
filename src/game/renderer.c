@@ -191,7 +191,7 @@ bool renderer_init(int worldWidth, int worldHeight) {
     glVertexAttribDivisor(5, 1);
     glEnableVertexAttribArray(5);
 
-    return true;
+    return renderer_validate();
 }
 
 uint32_t renderer_createTexture(uint8_t* data, int32_t width, int32_t height) {
@@ -207,6 +207,11 @@ uint32_t renderer_createTexture(uint8_t* data, int32_t width, int32_t height) {
 
     return texture;
 }
+
+bool renderer_validate(void) {
+    return glGetError() != GL_OUT_OF_MEMORY;
+}
+
 
 void renderer_resize(int32_t width, int32_t height) {
     window.width = width;
