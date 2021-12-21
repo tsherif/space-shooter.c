@@ -51,7 +51,7 @@ typedef struct {
 	bool keyboard;
 } Game_Input;
 
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 // Game lifecycle functions called by the platform layer and
 // implemented by the game layer.
 //
@@ -59,10 +59,10 @@ typedef struct {
 // - game_update(): Update game state based on time elapsed since
 //		last frame.
 // - game_draw(): Draw current frame.
-// - game_resize(): Update rendering state to match current window 
+// - game_resize(): Update rendering state to match the current window 
 //		size.
 // - game_close(): Release game resources.
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 bool game_init(void);
 void game_update(float elapsedTime); // In milliseconds

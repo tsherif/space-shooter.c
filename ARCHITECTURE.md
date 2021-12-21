@@ -11,7 +11,7 @@ The Architecture of space-shooter.c [WIP]
 Introduction
 ------------
 
-In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use a few more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
+In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use some more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
 
 I link to the references I used in building different parts of `space-shooter.c` throughout the text, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
@@ -50,7 +50,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 - `game_init(void)`: Initialize game resources.
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw(void)`: Draw current frame.
-- `game_resize(int width, int height)`: Update rendering state to match current window size.
+- `game_resize(int width, int height)`: Update rendering state to match the current window size.
 - `game_close(void)`: Release game resources.
 
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
@@ -66,9 +66,9 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I imposed the requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This chunk order was the one I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will still allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
@@ -76,7 +76,7 @@ Failure to load image data will cause the game to abort. Failure to load audio d
 
 Almost all memory allocations in `space-shooter.c` are static, with dynamic allocations only used to load image and sound assets when the game initializes. This leads to a nice "programmer peace of mind" benefit that once the game initializes, I no longer have to worry about errors related to allocating or freeing memory.
 
-I implemented objects pools to manage objects that could exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
+I use objects pools to manage objects that can exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -109,7 +109,7 @@ objects[deletedIndex].y = objects[lastIndex].y;
 
 All operations on objects are run in batches on `objects[0 .. count - 1]`.
 
-Note that the implementations in most cases don't look exactly like the above depending on how the objects will be consumed by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
+Note that the implementation in most cases doesn't look exactly like the above depending on how the objects will be consumed by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
 
 ### Error Handling
 
@@ -122,7 +122,6 @@ The OS operations themselves required structure in situations where sequences of
 
 ```c
 // NOTE: This is not the actual implementation!
-
 Display* display = openDisplay();
 // Failures after this point must release display.
 
@@ -139,26 +138,22 @@ These sequences are managed using `goto` chains with labels based on the resourc
 
 ```c
 // NOTE: This is not the actual implementation!
-
 Display* display = openDisplay();
 if (!display) {
     goto ERROR_NO_RESOURCES;
 }
-
 // Errors here goto ERROR_DISPLAY
 
 Window* window = openWindow(display);
 if (!window) {
     goto ERROR_DISPLAY;
 }
-
 // Errors here goto ERROR_WINDOW
 
 GL* gl = initializeOpenGL(window);
 if (!gl) {
     goto ERROR_WINDOW;
 }
-
 // Errors here goto ERROR_GL
 
 return SUCCESS;
@@ -210,11 +205,11 @@ This allows the members of the mixin struct to be used directly, or the mixin st
 
 #### Sprite
 
-A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and by the game layer for positioning/collision logic.
+A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and by the game layer for positioning and collision logic.
 
 #### Renderer_List
 
-A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will be drawn with a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify uploading it to the GPU as buffer data for instanced draw calls.
+A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will be drawn using a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify submitting it to the GPU as buffer data for instanced draw calls.
 
 #### Entities_List
 
@@ -226,7 +221,7 @@ The `Player` struct ([game.h](./src/game/game.h)) is singleton that represents t
 
 #### Event and Sequence
 
-I implemented a relatively simple event system for`space-shooter.c` inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c). The `Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Event`s and metadata to manage them. See [Events](#events) for more details.
+`space-shooter.c` uses a relatively simple event system inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c). The `Events_Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Events_Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Events_Event`s and metadata to manage them. See [Events](#events) for more details.
 
 
 The Platform Layer
@@ -234,11 +229,11 @@ The Platform Layer
 
 ### Window Management
 
-Most window management in `space-shooter.c` involves standard usage of the relevant APIS ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality that aren't well-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
+Window management in `space-shooter.c` involves standard usage of the relevant APIS ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality that aren't well-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
 
 #### Windows
 
-Hiding the cursor was straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I implemented a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
+Hiding the cursor is straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I open a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
 
 ```c
 HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
@@ -254,7 +249,7 @@ SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECH
 
 #### Linux
 
-I hide the cursor in Xlib by creating a "blank" cursor:
+I hide the cursor by creating a "blank" cursor:
 
 ```c
 char hiddenCursorData = 0;
@@ -264,7 +259,7 @@ Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCur
 XDefineCursor(display, window, hiddenCursor);
 ```
 
-I display a fullscreen window by sending the relevant [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
+I open a fullscreen window by sending the relevant [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
 
 ```c
 #define NET_WM_STATE_ADD    1
