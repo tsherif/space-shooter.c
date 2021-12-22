@@ -56,7 +56,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
 - `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the given data.
-- `renderer_validate(void)`: Check that OpenGL context isn't out of memory.
+- `renderer_validate(void)`: Check that the OpenGL context isn't out of memory.
 - `renderer_resize(int width, int height)`: Resize the drawing surface.
 - `renderer_beforeFrame(void)`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
 - `renderer_draw(Renderer_List* list)`: Draw to the screen.
@@ -76,7 +76,7 @@ Failure to load image data will cause the game to abort. Failure to load audio d
 
 Almost all memory allocations in `space-shooter.c` are static, with dynamic allocations only used to load image and sound assets when the game initializes. This leads to a nice "programmer peace of mind" benefit that once the game initializes, I no longer have to worry about errors related to allocating or freeing memory.
 
-I use objects pools to manage objects that can exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
+I use object pools to manage objects that can exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -118,7 +118,7 @@ My primary concern in managing errors in `space-shooter.c` is to structure inter
 - Validate asset data during initialization.
 - Use static memory for game objects so allocations aren't required while the game is running.
 
-The OS operations themselves required structure in situations where sequences of dependent resources are acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
+The OS operations themselves require structure in situations where sequences of dependent resources are acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -173,7 +173,7 @@ return FAILURE;
 
 ### Mixin Structs
 
-To simplify passing of game data between the different layers, I implemented a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
+To simplify passing of game data between the different layers, I implement a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
 
 ```c
 #define MY_STRUCT_BODY { int32_t x; int32_t y }
@@ -217,7 +217,7 @@ An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all p
 
 #### Player
 
-The `Player` struct ([game.h](./src/game/game.h)) is singleton that represents the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
+The `Player` struct ([game.h](./src/game/game.h)) is a singleton that represents the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
 
 #### Event and Sequence
 
@@ -229,7 +229,7 @@ The Platform Layer
 
 ### Window Management
 
-Window management in `space-shooter.c` involves standard usage of the relevant APIS ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality that aren't well-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
+Window management in `space-shooter.c` involves standard usage of the relevant APIs ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality that aren't well-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
 
 #### Windows
 
@@ -319,16 +319,14 @@ GLXFBConfig *fbcList = glXChooseFBConfig(display, DefaultScreen(display), (int32
     GLX_GREEN_SIZE, 8,
     GLX_BLUE_SIZE, 8,
     GLX_ALPHA_SIZE, 8,
-    GLX_SAMPLE_BUFFERS, 1,
-    GLX_SAMPLES, 4,
     None
-}, &numFBC);
+}, &fbcCount);
 
 GLXFBConfig framebufferConfig = fbcList[0];
 XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
 ```
 
-This configuration can then be used to create a window that's configured properly:
+This configuration is then used to create a window that's configured properly:
 
 ```c
 Window rootWindow = XRootWindow(display, visualInfo->screen);
@@ -351,7 +349,7 @@ Window window = XCreateWindow(
 );
 ```
 
-Finally, an OpenGL context can be created with a matching framebuffer configuration: 
+Finally, an OpenGL context is created with a matching framebuffer configuration: 
 
 ```c
 GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, (int32_t []) {
@@ -376,7 +374,7 @@ As mentioned above, I extracted the logic for loading OpenGL functions into a si
 
 #### Windows
 
-I implemented Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
+I implement Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
 
 Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that) but is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
 
@@ -390,7 +388,7 @@ one passes the object to a similarly-named macro:
 IXAudio2_CreateMasteringVoice(xaudio, xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
 ```
 
-One trickier subtlety is how to define the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover this requires setting a `lpVtbl` member in the `IXAudio2VoiceCallback` struct:
+One subtlety is defining the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover that in C, this requires setting the `lpVtbl` member in the `IXAudio2VoiceCallback` struct:
 
 ```c
 IXAudio2VoiceCallback callbacks = {
@@ -408,7 +406,7 @@ IXAudio2VoiceCallback callbacks = {
 
 #### Linux
 
-I implemented Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implemented a 32-channel additive mixer explicitly on the audio thread:
+I implement Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread:
 
 ```c
 for (int32_t i = 0; i < numSamples; ++i) {
@@ -455,7 +453,7 @@ At the end of the audio thread loop, mixed audio is submitted to the device with
 
 #### Windows
 
-[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) was by far the simplest OS API I had to work with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop:
+[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) is by far the simplest OS API I worked with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop:
 
 ```c
 XINPUT_STATE xInputState;
@@ -484,7 +482,7 @@ if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
 
 #### Linux
 
-I implemented Gamepad support on Linux using the [evdev](https://www.kernel.org/doc/html/v4.13/input/input.html#evdev) interface of the [Linux Input Subsystem](https://www.kernel.org/doc/html/v4.13/input/input.html). The first step is detecting whether a gamepad is connected by looking for files ending with ["-event-joystick"](https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems) in `/dev/input/by-id`: 
+I implement Gamepad support on Linux using the [evdev](https://www.kernel.org/doc/html/v4.13/input/input.html#evdev) interface of the [Linux Input Subsystem](https://www.kernel.org/doc/html/v4.13/input/input.html). The first step is detecting whether a gamepad is connected by looking for files ending with ["-event-joystick"](https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems) in `/dev/input/by-id`: 
 
 ```c
 struct dirent* entry = readdir(inputDir);
@@ -583,7 +581,7 @@ while (running) {
     QueryPerformanceCounter(&perfCount);
 
     // Multiply into nanoseconds first to avoid precision loss in the division.
-    int64_t elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000000ll;
+    int64_t elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * SPACE_SHOOTER_SECOND;
     int64_t elapsedTime = elapsedCount / tickFrequency.QuadPart;
 
     game_update(elapsedTime);
@@ -599,13 +597,13 @@ On Linux, time deltas for the game simulation are calculated using [clock_gettim
 ```c
 struct timespec timeSpec = { 0 };
 clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-int64_t lastTime = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+int64_t lastTime = timeSpec.tv_sec * SPACE_SHOOTER_SECOND + timeSpec.tv_nsec;
 
 // Game loop
 while (running) {
 
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-    int64_t time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    int64_t time = timeSpec.tv_sec * SPACE_SHOOTER_SECOND + timeSpec.tv_nsec;
     int64_t elapsedTime = time - lastTime;
 
     game_update(elapsedTime);
@@ -631,12 +629,12 @@ Then the game sleeps using [Sleep()](https://docs.microsoft.com/en-us/windows/wi
 ```c
 // Sleep if 1ms granularity is supported and the frame ran 
 // as least 1ms faster than the minimum.
-if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
-    DWORD sleepMs = (DWORD) ((SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime) / 1000000ll);
+if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLISECOND) {
+    DWORD sleepMs = (DWORD) ((SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime) / SPACE_SHOOTER_MILLISECOND);
     Sleep(sleepMs);
 
     QueryPerformanceCounter(&perfCount);
-    elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * 1000000000ll;
+    elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * SPACE_SHOOTER_SECOND;
     elapsedTime = elapsedCount / tickFrequency.QuadPart;
 }
 ```
@@ -647,14 +645,14 @@ On Linux, `space-shooter.c` sleeps using [nanosleep()](https://linux.die.net/man
 
 ```c
 // Sleep if the frame ran at least 1ms less than the minimum.
-if (SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
+if (SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLISECOND) {
     struct timespec sleepTime = {
-        .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime
+        .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime
     };
     nanosleep(&sleepTime, NULL);
 
     clock_gettime(CLOCK_MONOTONIC, &timeSpec);
-    time = timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    time = timeSpec.tv_sec * SPACE_SHOOTER_SECOND + timeSpec.tv_nsec;
     elapsedTime = time - lastTime;
 }
 ```
@@ -664,7 +662,7 @@ The Game Layer
 
 ### The Update Loop
 
-The platform layer calls `game_update()` in a loop, passing in the elapsed time in milliseconds since the last call. The behavior of the update will depend on which of four states the game is in: `TITLE_SCREEN`, `MAIN_GAME`, `LEVEL_TRANSITION` or `GAME_OVER`. I implemented each state as a single function and made the updates framerate-independent using [this technique](https://www.gafferongames.com/post/fix_your_timestep/) described by Glenn Fiedler: 
+The platform layer calls `game_update()` in a loop, passing in the elapsed time in milliseconds since the last call. The behavior of the update depends on which of four states the game is in: `TITLE_SCREEN`, `MAIN_GAME`, `LEVEL_TRANSITION` or `GAME_OVER`. I implement each state as a single function and make the updates framerate-independent using [this technique](https://www.gafferongames.com/post/fix_your_timestep/) described by Glenn Fiedler: 
 
 ```c
 #define TICK_DURATION 16.6667f
@@ -682,11 +680,11 @@ if (tickTime > TICK_DURATION) {
 }
 ```
 
-Essentially, the update functions "consume" the elapsed time in fixed time steps of 16.6ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all the movement is linear, but I chose to leave it in after implementing it since it's not much more complex than the minimal approach of calling a state function once with the full elapsed time.
+Essentially, the update functions "consume" the elapsed time in fixed time steps of 16ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all movement is linear, but I chose to leave it in after implementing it since it's not much more complex than the minimal approach of calling a state function once with the full elapsed time.
 
 ### Events
 
-I implemented a simple event system in `space-shooter.c` inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c), but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct:
+I implement a simple event system in `space-shooter.c` inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c), but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct:
 
 ```c
 typedef struct {
@@ -696,7 +694,7 @@ typedef struct {
 } Events_Event;
 ```
 
-The `id` member will be an `enum` representing an event used in the game, e.g. `EVENTS_TITLE`, `EVENTS_DISPLAY`, `EVENTS_RESTART`. `Events_Sequence` structs represent a sequence of events that "play out" over time. They are defined as follows:
+The `id` member is an `enum` representing an event used in the game, e.g. `EVENTS_TITLE`, `EVENTS_DISPLAY`, `EVENTS_RESTART`. `Events_Sequence` structs represent a sequence of events that "play out" over time. They are defined as follows:
 
 ```c
 Events_Sequence sequence = {
@@ -769,7 +767,7 @@ The Rendering Layer
 
 #### Interface
 
-To simplify calculations in the game layer, I defined coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change if the window is resized. 
+To simplify calculations in the game layer, I define coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change when the window is resized. 
 
 `game_draw()` calls `renderer_beforeFrame()` once and then passes the `Renderer_List` mixin of each `Entity_List` to the rendering layer in a call `renderer_draw()`.
 
@@ -785,4 +783,4 @@ gl_Position = vec4((vertexPosition * panelPixelSize * pixelClipSize + clipOffset
 - `pixelOffset` is the offset of the top-left corner of the quad in game pixel coordinates (i.e. the position from the `Renderer_List.positions` array).
 - `panelPixelSize` is the dimensions of the sprite's panels in game pixel units.
 - `clipOffset` is the offset of the top-left corner of the quad in clip coordinates.
-- `pixelClipSize` is the size of one game pixel in clip units (i.e. `1.0 / vec2(gamePixelWidth, gamePixelHeight)`) .
+- `pixelClipSize` is the size of one game pixel in clip units (i.e. `2.0 / vec2(gamePixelWidth, gamePixelHeight)`) .
