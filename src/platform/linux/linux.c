@@ -58,7 +58,7 @@ int xErrorHandler(Display* display, XErrorEvent* event) {
 }
 
 int64_t nsFromTimeSpec(struct timespec timeSpec) {
-    return timeSpec.tv_sec * 1000000000ll + timeSpec.tv_nsec;
+    return timeSpec.tv_sec * SPACE_SHOOTER_SECOND + timeSpec.tv_nsec;
 }
 
 int32_t main(int32_t argc, char const *argv[]) {
@@ -385,9 +385,9 @@ int32_t main(int32_t argc, char const *argv[]) {
         int64_t elapsedTime = time - lastTime;
 
         // Sleep if at least 1ms less than frame min
-        if (SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
+        if (SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLISECOND) {
             struct timespec sleepTime = {
-                .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime
+                .tv_nsec = SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime
             };
             nanosleep(&sleepTime, NULL);
 
@@ -397,12 +397,12 @@ int32_t main(int32_t argc, char const *argv[]) {
         }
 
         gamePadPollTime += elapsedTime;
-        if (gamePadPollTime > SPACE_SHOOTER_GAMEPAD_POLL_TIME_NS) {
+        if (gamePadPollTime > SPACE_SHOOTER_GAMEPAD_POLL_TIME) {
             linux_detectGamepad();
             gamePadPollTime = 0;
         }
 
-        game_update(elapsedTime / 1000000.0f);
+        game_update((float) elapsedTime / SPACE_SHOOTER_MILLISECOND);
         game_draw();
 
         glXSwapBuffers(display, window);
