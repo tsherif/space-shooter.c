@@ -158,7 +158,7 @@ static void processXInputState(XINPUT_STATE* xInputState) {
 }
 
 int64_t getElapsedTime(LARGE_INTEGER currentCount, LARGE_INTEGER lastCount, LARGE_INTEGER frequency) {
-    int64_t elapsedCount = (currentCount.QuadPart - lastCount.QuadPart) * 1000000000ll;
+    int64_t elapsedCount = (currentCount.QuadPart - lastCount.QuadPart) * SPACE_SHOOTER_SECOND(1);
     return elapsedCount / frequency.QuadPart;
 }
 
@@ -373,8 +373,8 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
         QueryPerformanceCounter(&perfCount);
         int64_t elapsedTime = getElapsedTime(perfCount, lastPerfCount, tickFrequency);
 
-        if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > 1000000ll) {
-            DWORD sleepMs = (DWORD) ((SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime) / 1000000ll);
+        if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime > SPACE_SHOOTER_MILLISECOND(1)) {
+            DWORD sleepMs = (DWORD) ((SPACE_SHOOTER_MIN_FRAME_TIME_NS - elapsedTime) / SPACE_SHOOTER_MILLISECOND(1));
             Sleep(sleepMs);
 
             QueryPerformanceCounter(&perfCount);
@@ -395,7 +395,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
             }
         }
 
-        game_update(elapsedTime / 1000000.0f);
+        game_update((float) elapsedTime / SPACE_SHOOTER_MILLISECOND(1));
         game_draw();
         SwapBuffers(deviceContext);    
         
