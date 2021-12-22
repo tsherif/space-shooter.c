@@ -29,7 +29,6 @@
 
 #define SOGL_IMPLEMENTATION_X11
 #include "../../../lib/simple-opengl-loader.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -209,13 +208,16 @@ int32_t main(int32_t argc, char const *argv[]) {
     }
 
     if (!sogl_loadOpenGL()) {
+#ifdef SPACE_SHOOTER_DEBUG
+        DEBUG_LOG("The following OpenGL functions could not be loaded:");
         const char **failures = sogl_getFailures();
         while (*failures) {
-            char debugMessage[256];
-            snprintf(debugMessage, 256, "SOGL: Failed to load function %s", *failures);
-            DEBUG_LOG(debugMessage);
+            DEBUG_LOG(*failures);
             failures++;
         }
+#endif        
+        platform_userMessage("Failed to load OpenGL functions.");
+        goto EXIT_GL;
     }
 
     /////////////////////////////////
@@ -414,6 +416,8 @@ int32_t main(int32_t argc, char const *argv[]) {
     linux_closeGamepad();
     linux_closeAudio();
     game_close(); // NOTE(Tarek): After closeAudio so audio buffers don't get freed while playing.
+
+    EXIT_GL:
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, gl);
 

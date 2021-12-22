@@ -37,7 +37,6 @@
 #include <xinput.h>
 #include <timeapi.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <malloc.h>
 #include <math.h>
 #include <profileapi.h>
@@ -276,13 +275,16 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     }
 
     if (!sogl_loadOpenGL()) {
+#ifdef SPACE_SHOOTER_DEBUG
+        DEBUG_LOG("The following OpenGL functions could not be loaded:");
         const char **failures = sogl_getFailures();
         while (*failures) {
-            char debugMessage[256];
-            snprintf(debugMessage, 256, "SOGL: Failed to load function %s", *failures);
-            DEBUG_LOG(debugMessage);
+            DEBUG_LOG(*failures);
             failures++;
         }
+#endif        
+        platform_userMessage("Failed to load OpenGL functions.");
+        goto EXIT_WINDOW;
     }
 
     XINPUT_STATE xInputState;
@@ -409,6 +411,8 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     EXIT_GAME:
     windows_closeAudio();
     game_close();  // NOTE(Tarek): After closeAudio so audio buffers don't get freed while playing.
+
+    EXIT_WINDOW:
     destroyOpenGLWindow(window);
 
     EXIT_NO_RESOURCES:
