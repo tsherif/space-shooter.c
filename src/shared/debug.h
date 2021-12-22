@@ -35,7 +35,7 @@
 //////////////////////////////////////////////////////////////////
 
 #ifdef SPACE_SHOOTER_DEBUG
-#define DEBUG_LOG(message) platform_debugLog(message)
+#define DEBUG_LOG(message) platform_debugMessage(message)
 #define DEBUG_ASSERT(condition, message) if (!(condition)) { DEBUG_LOG(message); *(int *)0 = 0;}
 #else
 #define DEBUG_LOG(message)

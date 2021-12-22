@@ -427,7 +427,7 @@ void platform_getInput(Game_Input* input) {
     input->keyboard = gamepad.keyboard;
 }
 
-void platform_debugLog(const char* message) {
+void platform_debugMessage(const char* message) {
     OutputDebugStringA(message);  
     OutputDebugStringA("\n");  
 }

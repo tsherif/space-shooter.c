@@ -70,24 +70,24 @@ void game_draw(void);
 void game_resize(int width, int height);
 void game_close(void);
 
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 // Platform utilities called by the game layer and implemented by
 // each platform layer.
 //
 // - platform_getInput(): Get current input state.
 // - platform_playSound(): Output sound to an audio device.
-// - platform_debugLog(): Output a message intended for the developer 
+// - platform_debugMessage(): Output a message intended for the developer 
 //		while debugging.
 // - platform_userMessage(): Output a message intended for the end
 //		user.
 // - platform_loadFile(): Load contents of a file into memory. 
 //		Optionally, null-terminate if the data will be used as a 
 //		string.
-//////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 
 void platform_getInput(Game_Input* input);
 void platform_playSound(Data_Buffer* sound, bool loop);
-void platform_debugLog(const char* message);
+void platform_debugMessage(const char* message);
 void platform_userMessage(const char* message);
 bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate);
 

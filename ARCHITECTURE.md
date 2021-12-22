@@ -3,7 +3,7 @@ The Architecture of space-shooter.c [WIP]
 
 - [Introduction](#introduction)
 - [Architectural Overview](#architectural-overview)
-- [Data Model](#architectural-overview)
+- [Data Model](#data-model)
 - [The Platform Layer](#the-platform-layer)
 - [The Game Layer](#the-game-layer)
 - [The Rendering Layer](#the-rendering-layer)
@@ -16,12 +16,12 @@ In developing `space-shooter.c`, I iterated a several times on how to organize t
 I link to the references I used in building different parts of `space-shooter.c` throughout the text, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
 - [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
-- The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and the documentation tends to be much worse.
+- The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and documentation tends to be much worse.
 
 Architectural Overview
 ----------------------
 
-At a high level, the architecture of `space-shooter.c` involves 3 layers:
+At a high level, the architecture of `space-shooter.c` is composed of 3 layers:
 
 - The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and is responsible for:
 	- Opening a window
@@ -33,7 +33,7 @@ At a high level, the architecture of `space-shooter.c` involves 3 layers:
 
 - The **game layer** is implemented in [game.c](./src/game/game.c) and is responsible for
 	- Initializing game resources
-	- Updating game state (player actions based on input, collisions, tracking score, etc.)
+	- Updating game state (player actions, collisions, score, etc.)
 	- Passing rendering data to the rendering layer based on the current game state
 
 - The **rendering layer** is implemented in [renderer.c](./src/game/renderer.c) and is responsible for:
@@ -42,23 +42,23 @@ At a high level, the architecture of `space-shooter.c` involves 3 layers:
 The platform layer interacts with the game and rendering layers using an API inspired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
 - `platform_getInput(Game_Input* input)`: Get current input state.
 - `platform_playSound(Data_Buffer* sound, bool loop)`: Output sound to an audio device.
-- `platform_debugLog(const char* message)`: Output a message intended for the developer while debugging.
+- `platform_debugMessage(const char* message)`: Output a message intended for the developer while debugging.
 - `platform_userMessage(const char* message)`: Output a message intended for the end user.
 - `platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate)`: Load contents of a file into memory. Optionally, null-terminate if the data will be used as a string.
 
 Once the platform layer initializes system resources, it calls into the game layer using the following lifecycle functions:
-- `game_init(void)`: Initialize game resources.
+- `game_init()`: Initialize game resources.
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
-- `game_draw(void)`: Draw current frame.
+- `game_draw()`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match the current window size.
-- `game_close(void)`: Release game resources.
+- `game_close()`: Release game resources.
 
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
 - `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the given data.
-- `renderer_validate(void)`: Check that the OpenGL context isn't out of memory.
+- `renderer_validate()`: Check that the OpenGL context isn't out of memory.
 - `renderer_resize(int width, int height)`: Resize the drawing surface.
-- `renderer_beforeFrame(void)`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
+- `renderer_beforeFrame()`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
 - `renderer_draw(Renderer_List* list)`: Draw to the screen.
 
 Data Model
@@ -70,22 +70,22 @@ Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedi
 
 Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
-Failure to load image data will cause the game to abort. Failure to load audio data will still allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
+Failure to load image data will cause the game to abort. Failure to load audio data will allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
 ### Memory Management
 
 Almost all memory allocations in `space-shooter.c` are static, with dynamic allocations only used to load image and sound assets when the game initializes. This leads to a nice "programmer peace of mind" benefit that once the game initializes, I no longer have to worry about errors related to allocating or freeing memory.
 
-I use object pools to manage objects that can exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, the object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
+I use object pools to manage objects that can exist in variable numbers in the game, such as game entities or sounds in the mixer. Conceptually, an object pool can be thought of as a static array of objects and a `count` that tracks how many of them are currently active.
 
 ```c
 // NOTE: This is not the actual implementation!
-struct {
+typedef struct {
 	int32_t x;
 	int32_t y;
-} object
+} Object;
 
-objects[MAX_OBJECTS];
+Object objects[MAX_OBJECTS];
 int32_t count;
 ```
 
@@ -118,7 +118,7 @@ My primary concern in managing errors in `space-shooter.c` is to structure inter
 - Validate asset data during initialization.
 - Use static memory for game objects so allocations aren't required while the game is running.
 
-The OS operations themselves require structure in situations where sequences of dependent resources are acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
+The OS operations themselves require structure in situations where a sequence of dependent resources is acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -134,7 +134,7 @@ GL* gl = initializeOpenGL(window);
 return SUCCESS;
 ```
 
-These sequences are managed using `goto` chains with labels based on the resources have been acquired and running in reverse order of the acquisitions:
+I manage these sequences using `goto` chains with labels based on the resources have been acquired and running in reverse order of the acquisitions:
 
 ```c
 // NOTE: This is not the actual implementation!

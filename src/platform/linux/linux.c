@@ -443,7 +443,7 @@ void platform_getInput(Game_Input* input) {
     input->keyboard = gamepad.keyboard;
 }
 
-void platform_debugLog(const char* message) {
+void platform_debugMessage(const char* message) {
     int32_t length = 0;
     while(message[length]) {
         ++length;
@@ -454,7 +454,7 @@ void platform_debugLog(const char* message) {
 }
 
 void platform_userMessage(const char* message) {
-    platform_debugLog(message);
+    platform_debugMessage(message);
 }
 
 
