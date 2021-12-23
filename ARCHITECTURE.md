@@ -13,7 +13,7 @@ Introduction
 
 In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use some more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
 
-I link to the references I used in building different parts of `space-shooter.c` throughout the text, but I'll call out a few that were especially invaluable:
+Throughout the text, I link to the references I used in building different parts of `space-shooter.c`, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
 - [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
 - The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and documentation tends to be much worse.
@@ -55,7 +55,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 
 The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
-- `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the given data.
+- `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the provided data.
 - `renderer_validate()`: Check that the OpenGL context isn't out of memory.
 - `renderer_resize(int width, int height)`: Resize the drawing surface.
 - `renderer_beforeFrame()`: Prepare for drawing (primarily to fix aspect ratio and draw borders if necessary).
@@ -66,9 +66,9 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c]((./src/game/utils.c))), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
@@ -217,7 +217,7 @@ An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all p
 
 #### Player
 
-The `Player` struct ([game.h](./src/game/game.h)) is a singleton that represents the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
+The `Player` struct ([game.c](./src/game/game.c)) is a singleton that represents the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
 
 #### Event and Sequence
 
@@ -326,7 +326,7 @@ GLXFBConfig framebufferConfig = fbcList[0];
 XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
 ```
 
-This configuration is then used to create a window that's configured properly:
+This configuration is then used to create a window:
 
 ```c
 Window rootWindow = XRootWindow(display, visualInfo->screen);
@@ -374,9 +374,9 @@ As mentioned above, I extracted the logic for loading OpenGL functions into a si
 
 #### Windows
 
-I implement Windows audio ([windows-audio.c](./platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph has 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
+I implement Windows audio ([windows-audio.c](./src/platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph is composed of 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
 
-Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that) but is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
+Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that), but the process is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
 
 ```c++
 xaudio->CreateMasteringVoice(xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
@@ -406,7 +406,7 @@ IXAudio2VoiceCallback callbacks = {
 
 #### Linux
 
-I implement Linux audio ([linux-audio.c](./platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread:
+I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread:
 
 ```c
 for (int32_t i = 0; i < numSamples; ++i) {
@@ -621,7 +621,7 @@ while (running) {
 On Windows, the first step is to ensure the scheduler supports a granularity of 1ms using [timeBeginPeriod()](https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod):
 
 ```
-    bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
+bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
 ```
 
 Then the game sleeps using [Sleep()](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
