@@ -734,7 +734,7 @@ Events_Sequence loopingSequence = {
 Event sequences are managed using the following functions:
 - `events_start(Events_Sequence* sequence)`: Start a sequence.
 - `events_stop(Events_Sequence* sequence)`: Stop and reset a sequence.
-- `events_beforeFrame(Events_Sequence* sequence, float deltaTime)`: Update a sequence based on elapsed time since last frame.
+- `events_beforeFrame(Events_Sequence* sequence, float elapsedTime)`: Update a sequence based on elapsed time since last frame.
 - `events_on(Events_Sequence* sequence, int32_t id)`: Check if the provided event `id` is currently active in a sequence.
 
 Usage might look like the following:

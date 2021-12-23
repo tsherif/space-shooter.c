@@ -48,9 +48,9 @@ void events_stop(Events_Sequence* sequence) {
     sequence->alpha = 0.0f;
 }
 
-// Move a sequence forward by dt milliseconds.
+// Move a sequence forward by elapsedTime milliseconds.
 // (Should be called at beginning of frame).
-void events_beforeFrame(Events_Sequence* sequence, float dt) {
+void events_beforeFrame(Events_Sequence* sequence, float elapsedTime) {
     if (!sequence->running) {
         return;
     }
@@ -58,7 +58,7 @@ void events_beforeFrame(Events_Sequence* sequence, float dt) {
     sequence->activeEvent = EVENTS_NONE;
     sequence->alpha = 0.0f;
     float lastTime = sequence->time;
-    sequence->time = lastTime + dt;
+    sequence->time = lastTime + elapsedTime;
 
     float start = 0.0f;
     float end = 0.0f;
@@ -81,7 +81,7 @@ void events_beforeFrame(Events_Sequence* sequence, float dt) {
 
     if (sequence->activeEvent == EVENTS_NONE && lastTime > end) {
         if (sequence->loop) {
-            float loopDt = lastTime - end + dt;
+            float loopDt = lastTime - end + elapsedTime;
             sequence->time = 0.0f;
             events_beforeFrame(sequence, loopDt);
         } else {

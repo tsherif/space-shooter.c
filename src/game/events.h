@@ -124,7 +124,7 @@ typedef struct {
 
 void events_start(Events_Sequence* sequence);
 void events_stop(Events_Sequence* sequence);
-void events_beforeFrame(Events_Sequence* sequence, float dt);
+void events_beforeFrame(Events_Sequence* sequence, float elapsedTime);
 bool events_on(Events_Sequence* sequence, int32_t id);
 
 //////////////////////////////////////////////////////////////////////

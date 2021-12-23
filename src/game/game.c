@@ -353,22 +353,24 @@ static void fireEnemyBullet(float x, float y) {
 //  General entity helpers
 //////////////////////////////////
 
-static void updateEntities(Entities_List* list, float dt, float killBuffer) {
+// offscreenBuffer is how far off the screen an entitiy needs to be before being killed.
+//   Used so enemies can fire while partially offscreen.
+static void updateEntities(Entities_List* list, float elapsedTime, float offscreenBuffer) {
     for (int32_t i = 0; i < list->count; ++i) {
         float* position = list->position + i * 2;
         float* velocity = list->velocity + i * 2;
-        position[0] += velocity[0] * dt;
-        position[1] += (velocity[1] + levelState.warpVy) * dt;
+        position[0] += velocity[0] * elapsedTime;
+        position[1] += (velocity[1] + levelState.warpVy) * elapsedTime;
 
         if (list->whiteOut[i] > 0.0f) {
-            list->whiteOut[i] -= dt;
+            list->whiteOut[i] -= elapsedTime;
         }
 
         if (
-            position[0] + list->sprite->panelDims[0] + killBuffer < 0 ||
-            position[1] + list->sprite->panelDims[1] + killBuffer < 0 ||
-            position[0] - killBuffer > GAME_WIDTH ||
-            position[1] - killBuffer > GAME_HEIGHT
+            position[0] + list->sprite->panelDims[0] + offscreenBuffer < 0 ||
+            position[1] + list->sprite->panelDims[1] + offscreenBuffer < 0 ||
+            position[0] - offscreenBuffer > GAME_WIDTH ||
+            position[1] - offscreenBuffer > GAME_HEIGHT
         ) {
             list->dead[i] = true;
         }
@@ -399,8 +401,8 @@ static void filterDeadEntities(void) {
     entities_filterDead(&entities.stars);
 }
 
-static void updateStars(float dt) {
-    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * levelState.starProbabilityMultiplier * dt) {
+static void updateStars(float elapsedTime) {
+    if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * levelState.starProbabilityMultiplier * elapsedTime) {
         float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&entities.stars, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
@@ -410,7 +412,7 @@ static void updateStars(float dt) {
         }); 
     }
 
-    updateEntities(&entities.stars, dt, 0.0f);
+    updateEntities(&entities.stars, elapsedTime, 0.0f);
 }
 
 //////////////////////////////////
@@ -441,11 +443,11 @@ static void updateScoreDisplay() {
 //  Entitity simulation functions
 //////////////////////////////////
 
-static void simWorld(float dt) {
-    updateStars(dt);
+static void simWorld(float elapsedTime) {
+    updateStars(elapsedTime);
 
     // Spawn new enemies
-    if (utils_randomRange(0.0f, 1.0f) < levelState.smallEnemySpawnProbability * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < levelState.smallEnemySpawnProbability * elapsedTime) {
         entities_spawn(&entities.smallEnemies, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
             .y = -sprites_smallEnemy.panelDims[1], 
@@ -454,7 +456,7 @@ static void simWorld(float dt) {
         }); 
     }
 
-    if (utils_randomRange(0.0f, 1.0f) < levelState.mediumEnemySpawnProbability * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < levelState.mediumEnemySpawnProbability * elapsedTime) {
         entities_spawn(&entities.mediumEnemies, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
             .y = -sprites_mediumEnemy.panelDims[1], 
@@ -463,7 +465,7 @@ static void simWorld(float dt) {
         });
     }
 
-    if (utils_randomRange(0.0f, 1.0f) < levelState.largeEnemySpawnProbability * dt) {
+    if (utils_randomRange(0.0f, 1.0f) < levelState.largeEnemySpawnProbability * elapsedTime) {
         entities_spawn(&entities.largeEnemies, &(Entities_InitOptions) {
             .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
             .y = -sprites_largeEnemy.panelDims[1], 
@@ -473,11 +475,11 @@ static void simWorld(float dt) {
     }
 
     // Sim enemies and bullets
-    updateEntities(&entities.smallEnemies, dt, 0.0f);
-    updateEntities(&entities.mediumEnemies, dt, 0.0f);
-    updateEntities(&entities.largeEnemies, dt, 0.0f);
-    updateEntities(&entities.playerBullets, dt, 32.0f);
-    updateEntities(&entities.enemyBullets, dt, 32.0f);
+    updateEntities(&entities.smallEnemies, elapsedTime, 0.0f);
+    updateEntities(&entities.mediumEnemies, elapsedTime, 0.0f);
+    updateEntities(&entities.largeEnemies, elapsedTime, 0.0f);
+    updateEntities(&entities.playerBullets, elapsedTime, 32.0f);
+    updateEntities(&entities.enemyBullets, elapsedTime, 32.0f);
 
     // Check for player bullets hitting enemies
     Sprites_CollisionBox* playerBulletCollisionBox = &sprites_playerBullet.collisionBox;
@@ -500,7 +502,7 @@ static void simWorld(float dt) {
     }
 }
 
-static void simPlayer(float dt) {
+static void simPlayer(float elapsedTime) {
     platform_getInput(&gameState.input);
 
     // Process player input
@@ -524,8 +526,8 @@ static void simPlayer(float dt) {
         entities_setAnimation(&player->entity, 0, SPRITES_PLAYER_CENTER);
     }
 
-    player->position[0] += player->velocity[0] * dt;
-    player->position[1] += player->velocity[1] * dt;
+    player->position[0] += player->velocity[0] * elapsedTime;
+    player->position[1] += player->velocity[1] * elapsedTime;
 
     if (player->position[0] < 0.0f) {
         player->position[0] = 0.0f;
@@ -547,21 +549,21 @@ static void simPlayer(float dt) {
     // NOTE(Tarek): This logic is in simPlayer because bullets
     //   should only fire if player is alive
     for (int32_t i = 0; i < entities.smallEnemies.count; ++i) {
-        if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * dt) {
+        if (utils_randomRange(0.0f, 1.0f) < SMALL_ENEMY_BULLET_PROBABILITY * elapsedTime) {
             float* position = entities.smallEnemies.position + i * 2;
             fireEnemyBullet(position[0] + SPRITES_SMALL_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_SMALL_ENEMY_BULLET_Y_OFFSET);
         }
     }
 
     for (int32_t i = 0; i < entities.mediumEnemies.count; ++i) {
-        if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * dt) {
+        if (utils_randomRange(0.0f, 1.0f) < MEDIUM_ENEMY_BULLET_PROBABILITY * elapsedTime) {
             float* position = entities.mediumEnemies.position + i * 2;
             fireEnemyBullet(position[0] + SPRITES_MEDIUM_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_MEDIUM_ENEMY_BULLET_Y_OFFSET);
         }
     }
 
     for (int32_t i = 0; i < entities.largeEnemies.count; ++i) {
-        if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * dt) {
+        if (utils_randomRange(0.0f, 1.0f) < LARGE_ENEMY_BULLET_PROBABILITY * elapsedTime) {
             float* position = entities.largeEnemies.position + i * 2;
             fireEnemyBullet(position[0] + SPRITES_LARGE_ENEMY_BULLET_X_OFFSET, position[1] + SPRITES_LARGE_ENEMY_BULLET_Y_OFFSET);
         }
@@ -569,7 +571,7 @@ static void simPlayer(float dt) {
 
     if (player->invincibleTimer > 0.0f) {
         // Player is invincible (grace period after dying)
-        player->invincibleTimer -= dt;
+        player->invincibleTimer -= elapsedTime;
         player->alpha[0] = PLAYER_INVINCIBLE_ALPHA;
     } else {
         // Player is alive and not invincible.
@@ -620,15 +622,15 @@ static void simPlayer(float dt) {
 //  Game state functions
 //////////////////////////////////
 
-static void titleScreen(float dt) {
-    events_beforeFrame(&events_titleControlSequence, dt);
-    events_beforeFrame(&events_titleSequence, dt);
-    events_beforeFrame(&events_subtitleSequence, dt);
-    events_beforeFrame(&events_instructionSequence, dt);
+static void titleScreen(float elapsedTime) {
+    events_beforeFrame(&events_titleControlSequence, elapsedTime);
+    events_beforeFrame(&events_titleSequence, elapsedTime);
+    events_beforeFrame(&events_subtitleSequence, elapsedTime);
+    events_beforeFrame(&events_instructionSequence, elapsedTime);
 
     platform_getInput(&gameState.input);
     
-    updateStars(dt);
+    updateStars(elapsedTime);
 
     entities.text.count = 0;
 
@@ -725,8 +727,8 @@ static void titleScreen(float dt) {
     filterDeadEntities();
 }
 
-static void levelTransition(float dt) {
-    events_beforeFrame(&events_levelTransitionSequence, dt);
+static void levelTransition(float elapsedTime) {
+    events_beforeFrame(&events_levelTransitionSequence, elapsedTime);
     entities.text.count = 0;
 
     // NOTE(Tarek): Not offsetting level because people probably won't get past level 9?
@@ -747,13 +749,13 @@ static void levelTransition(float dt) {
     }
 
     livesToEntities();
-    updateStars(dt);
-    updateEntities(&entities.smallEnemies, dt, 0.0f);
-    updateEntities(&entities.mediumEnemies, dt, 0.0f);
-    updateEntities(&entities.largeEnemies, dt, 0.0f);
-    updateEntities(&entities.playerBullets, dt, 32.0f);
-    updateEntities(&entities.enemyBullets, dt, 32.0f);
-    updateEntities(&entities.explosions, dt, 32.0f);
+    updateStars(elapsedTime);
+    updateEntities(&entities.smallEnemies, elapsedTime, 0.0f);
+    updateEntities(&entities.mediumEnemies, elapsedTime, 0.0f);
+    updateEntities(&entities.largeEnemies, elapsedTime, 0.0f);
+    updateEntities(&entities.playerBullets, elapsedTime, 32.0f);
+    updateEntities(&entities.enemyBullets, elapsedTime, 32.0f);
+    updateEntities(&entities.explosions, elapsedTime, 32.0f);
 
     if (events_levelTransitionSequence.complete) {
         entities.text.count = 0;
@@ -767,27 +769,27 @@ static void levelTransition(float dt) {
     filterDeadEntities();
 }
 
-static void mainGame(float dt) {
+static void mainGame(float elapsedTime) {
     entities.text.count = 0;
     
-    simWorld(dt);
+    simWorld(elapsedTime);
     livesToEntities();
 
     Player* player = &entities.player;
 
     if (player->bulletThrottle > 0.0f) {
-        player->bulletThrottle -= dt; 
+        player->bulletThrottle -= elapsedTime; 
     }
 
     if (player->lives > 0) {
         if (player->deadTimer > 0.0f) {
-            player->deadTimer -= dt;
+            player->deadTimer -= elapsedTime;
             if (player->deadTimer < 0.0f) {
                 player->invincibleTimer = PLAYER_INVINCIBLE_TIME;
                 player->alpha[0] = PLAYER_INVINCIBLE_ALPHA;
             }
         } else {
-            simPlayer(dt);           
+            simPlayer(elapsedTime);           
         }
 
         if (player->score >= levelState.scoreThreshold) {
@@ -808,14 +810,14 @@ static void mainGame(float dt) {
     filterDeadEntities();
 }
 
-static void gameOver(float dt) {
-    events_beforeFrame(&events_gameOverSequence, dt);
-    events_beforeFrame(&events_gameOverRestartSequence, dt);
+static void gameOver(float elapsedTime) {
+    events_beforeFrame(&events_gameOverSequence, elapsedTime);
+    events_beforeFrame(&events_gameOverRestartSequence, elapsedTime);
     entities.text.count = 0;
 
     platform_getInput(&gameState.input);
 
-    simWorld(dt);
+    simWorld(elapsedTime);
 
     entities_fromText(&entities.text, "Game Over", &(Entities_FromTextOptions) {
         .x = GAME_WIDTH / 2.0f - 127.0f,
@@ -865,14 +867,14 @@ static void gameOver(float dt) {
 //  Main state update function
 //////////////////////////////////
 
-static void simulate(float dt) {
-    gameState.animationTime += dt;
+static void simulate(float elapsedTime) {
+    gameState.animationTime += elapsedTime;
 
     switch(gameState.state) {
-        case TITLE_SCREEN: titleScreen(dt); break;
-        case LEVEL_TRANSITION: levelTransition(dt); break;
-        case MAIN_GAME: mainGame(dt); break;
-        case GAME_OVER: gameOver(dt); break;
+        case TITLE_SCREEN: titleScreen(elapsedTime); break;
+        case LEVEL_TRANSITION: levelTransition(elapsedTime); break;
+        case MAIN_GAME: mainGame(elapsedTime); break;
+        case GAME_OVER: gameOver(elapsedTime); break;
     }
 
     if (gameState.animationTime > TIME_PER_ANIMATION) {
