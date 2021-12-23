@@ -98,13 +98,13 @@ typedef struct {
     bool loop;
 } Events_Sequence;
 
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 // Event manipulation functions.
 //
 // - events_start(): Mark sequence as running.
 // - events_stop(): Reset sequence and mark as not running.
-// - events_beforeFrame(): Update a sequence based on elapsed time
-//      since last frame.
+// - events_beforeFrame(): Update a sequence based on the elapsed time
+//      since the last frame.
 // - events_on(): Check if the provided event ID is currently 
 //      active in a sequence.
 //
@@ -120,7 +120,7 @@ typedef struct {
 //     // ... Display something   
 // }
 //
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
 void events_start(Events_Sequence* sequence);
 void events_stop(Events_Sequence* sequence);

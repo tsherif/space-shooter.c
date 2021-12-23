@@ -1,4 +1,4 @@
-- [ ] Document design
+- [x] Document design
 - [x] Audio format constants should be in constants.h
 - [x] More comments
 - [x] Update readme

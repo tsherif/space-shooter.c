@@ -1,5 +1,5 @@
-The Architecture of space-shooter.c [WIP]
-=========================================
+The Architecture of space-shooter.c
+===================================
 
 - [Introduction](#introduction)
 - [Architectural Overview](#architectural-overview)
@@ -13,7 +13,7 @@ Introduction
 
 In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use some more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
 
-Throughout the text, I link to the references I used in building different parts of `space-shooter.c`, but I'll call out a few that were especially invaluable:
+Throughout the text, I link to the references I used in building `space-shooter.c`, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
 - [pacman.c](https://github.com/floooh/pacman.c) is a goldmine of ideas for simplified game systems.
 - The source code of [sokol](https://github.com/floooh/sokol), [GLFW](https://github.com/glfw/glfw) and [SDL](https://github.com/libsdl-org/SDL) were my encyclopedias for how get things done in the platform layer. This was especially helpful on Linux where functionality is spread across several APIs and documentation tends to be much worse.
@@ -24,20 +24,20 @@ Architectural Overview
 At a high level, the architecture of `space-shooter.c` is composed of 3 layers:
 
 - The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and is responsible for:
-    - Opening a window
-    - Initializing OpenGL
-    - Playing audio
-    - Capturing user input
-    - File I/O
-    - Starting the game loop
+    - Opening a window.
+    - Initializing OpenGL.
+    - Playing audio.
+    - Capturing user input.
+    - File I/O.
+    - Starting the game loop.
 
-- The **game layer** is implemented in [game.c](./src/game/game.c) and is responsible for
-    - Initializing game resources
-    - Updating game state (player actions, collisions, score, etc.)
-    - Passing rendering data to the rendering layer based on the current game state
+- The **game layer** is implemented in [game.c](./src/game/game.c) and is responsible for:
+    - Initializing game resources.
+    - Updating game state (player actions, collisions, score, etc.).
+    - Passing rendering data to the rendering layer based on the current game state.
 
 - The **rendering layer** is implemented in [renderer.c](./src/game/renderer.c) and is responsible for:
-    - Managing OpenGL state and drawing to the screen
+    - Managing OpenGL state and drawing to the screen.
 
 The platform layer interacts with the game and rendering layers using an API inspired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
 - `platform_getInput(Game_Input* input)`: Get current input state.
@@ -53,7 +53,7 @@ Once the platform layer initializes system resources, it calls into the game lay
 - `game_resize(int width, int height)`: Update rendering state to match the current window size.
 - `game_close()`: Release game resources.
 
-The rendering layer implements the following functions used by the game layer to draw (or update state related to drawing): 
+The rendering layer implements the following functions used by the game layer to draw or update state related to drawing: 
 - `renderer_init(int width, int height)`: Initialize OpenGL resources.
 - `renderer_createTexture(uint8_t* data, int32_t width, int32_t height)`: Create a texture with the provided data.
 - `renderer_validate()`: Check that the OpenGL context isn't out of memory.
@@ -66,9 +66,9 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the BMP data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the WAVE data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the audio data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
@@ -109,11 +109,11 @@ objects[deletedIndex].y = objects[lastIndex].y;
 
 All operations on objects are run in batches on `objects[0 .. count - 1]`.
 
-Note that the implementation in most cases doesn't look exactly like the above depending on how the objects will be consumed by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
+Note that the implementation in most cases doesn't look exactly like the above depending on how the objects will be manipulated by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
 
 ### Error Handling
 
-My primary concern in managing errors in `space-shooter.c` is to structure interactions with OS APIs, since they're the only operations for which success or failure is outside my control. My strategy is to run as many of these operations as possible during initialization, so the rest of the game doesn't have to worry about them:
+My primary concern in managing errors in `space-shooter.c` is to structure interactions with OS APIs, since they're the only operations for which success or failure is outside my control. My strategy is to run these operations during initialization, so the rest of the game doesn't have to worry about them:
 - Acquire all OS and hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
 - Validate asset data during initialization.
 - Use static memory for game objects so allocations aren't required while the game is running.
@@ -134,7 +134,7 @@ GL* gl = initializeOpenGL(window);
 return SUCCESS;
 ```
 
-I manage these sequences using `goto` chains with labels based on the resources have been acquired and running in reverse order of the acquisitions:
+I manage these sequences using [goto chains](https://wiki.sei.cmu.edu/confluence/display/c/MEM12-C.+Consider+using+a+goto+chain+when+leaving+a+function+on+error+when+using+and+releasing+resources) with labels based on the resources have been acquired and running in reverse order of the acquisitions:
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -193,35 +193,35 @@ typedef {
 This allows the members of the mixin struct to be used directly, or the mixin struct can be referenced as a whole by name:
 
 ```c
-    void myStructFunction(MyStruct ms) {
-        // ...
-    }
+void myStructFunction(MyStruct ms) {
+    // ...
+}
 
-    MixedStruct mixedStruct = { .y = 2, .z = 3 };
-    mixedStruct.x = mixedStruct.y + mixedStruct.z;
-    myStructFunction(mixedStruct.myStruct);
+MixedStruct mixedStruct = { .y = 2, .z = 3 };
+mixedStruct.x = mixedStruct.y + mixedStruct.z;
+myStructFunction(mixedStruct.myStruct);
 ```
 ### Data Structures
 
 #### Sprite
 
-A `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and by the game layer for positioning and collision logic.
+The `Sprites_Sprite` struct ([sprites.h](./src/game/sprites.h)) represents a single sprite sheet, and contains data about dimensions, number of panels, panel dimensions, etc. It also contains the handle of the OpenGL texture used by the sprite sheet. This data is used by the rendering layer for drawing and by the game layer for positioning and collision logic.
 
 #### Renderer_List
 
-A `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will be drawn using a particular sprite sheet, such as position and current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify submitting it to the GPU as buffer data for instanced draw calls.
+The `Renderer_List` struct ([renderer.h](./src/game/renderer.h)) represents all per-entity attribute data that will be drawn using a particular sprite sheet, such as position and the current sprite panel. Per-entity data is stored as statically allocated flat arrays to simplify submitting it to the GPU as buffer data for instanced draw calls.
 
 #### Entities_List
 
-An `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all per-entity data used by the game. It contains a mixin of `Renderer_List`, which allows both the game and rendering layers to manipulate data, such as positions, that is relevant to both.
+The `Entities_List` struct ([entities.h](./src/game/entities.h)) represents all per-entity data used by the game. It contains a mixin of `Renderer_List`, which allows both the game and rendering layers to manipulate data, such as positions, that is relevant to both.
 
 #### Player
 
-The `Player` struct ([game.c](./src/game/game.c)) is a singleton that represents the player's current state. It contains a mixin of `Entities_List` so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
+The `Player` struct ([game.c](./src/game/game.c)) is a singleton that represents the player's current state. It contains a mixin of `Entities_List`, so it can be manipulated like any other game entity, as well as player-specific data like score and number of lives.
 
 #### Event and Sequence
 
-`space-shooter.c` uses a relatively simple event system inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c). The `Events_Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Events_Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Events_Event`s and metadata to manage them. See [Events](#events) for more details.
+`space-shooter.c` uses a simplified event system inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c). The `Events_Event` struct ([events.h](./src/game/events.h)) contains a delay in milliseconds, a duration in milliseconds, and an id used for checking whether it's currently active. The `Events_Sequence` struct ([events.h](./src/game/events.h)) contains an array of `Events_Event`s and metadata to manage them. See [Events](#events) for more details.
 
 
 The Platform Layer
@@ -229,11 +229,11 @@ The Platform Layer
 
 ### Window Management
 
-Window management in `space-shooter.c` involves standard usage of the relevant APIs ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two pieces of functionality that aren't well-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
+Window management in `space-shooter.c` involves standard usage of the relevant APIs ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two operations I found poorly-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
 
 #### Windows
 
-Hiding the cursor is straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I open a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
+Hiding the cursor on Windows is straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I open a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
 
 ```c
 HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
@@ -249,7 +249,7 @@ SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECH
 
 #### Linux
 
-I hide the cursor by creating a "blank" cursor:
+I hide the cursor on Linux by creating a "blank" cursor:
 
 ```c
 char hiddenCursorData = 0;
@@ -287,7 +287,7 @@ XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedi
 
 #### Windows
 
-Creating a modern OpenGL context in Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps are:
+Creating a modern OpenGL context on Windows is a [convoluted process](https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)). The steps are:
 1. Create a dummy window.
 2. Create a dummy OpenGL context.
 3. Get pointers to the `wglChoosePixelFormatARB` and `wglCreateContextAttribsARB` extension functions.
@@ -307,7 +307,7 @@ I also extracted the logic for loading OpenGL functions into a single-header lib
 
 #### Linux
 
-OpenGL context creation in Linux is also convoluted but doesn't require dummy context creation. The first step is to find a framebuffer configuration that satisfies the rendering requirements:
+OpenGL context creation on Linux is also convoluted but doesn't require dummy context creation. The first step is to find a framebuffer configuration that satisfies the rendering requirements:
 
 ```c
 int32_t numFBC = 0;
@@ -363,7 +363,6 @@ GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, Tru
 A complete example of the process is available [here](https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
 
 ```c
-
 void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
 void *fn = dlsym(sogl_libHandle, openGLFunctionName);
 ```
@@ -406,7 +405,7 @@ IXAudio2VoiceCallback callbacks = {
 
 #### Linux
 
-I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit audio to the device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread:
+I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread:
 
 ```c
 for (int32_t i = 0; i < numSamples; ++i) {
@@ -444,7 +443,7 @@ for (int32_t i = 0; i < mixer.count; ++i) {
 At the end of the audio thread loop, mixed audio is submitted to the device with a buffer size of 2048 frames (~50ms of audio):
 
 ```c
-    snd_pcm_writei(device, mixer.buffer, 2048)
+snd_pcm_writei(device, mixer.buffer, 2048)
 ```
 
 `snd_pcm_writei` blocks until the device requires data, so the audio thread will wake up approximately once every 50ms.
@@ -584,7 +583,7 @@ while (running) {
     int64_t elapsedCount = (perfCount.QuadPart - lastPerfCount.QuadPart) * SPACE_SHOOTER_SECOND;
     int64_t elapsedTime = elapsedCount / tickFrequency.QuadPart;
 
-    game_update(elapsedTime);
+    game_update((float) elapsedTime / SPACE_SHOOTER_MILLISECOND);
 
     lastPerfCount = perfCount;
 }
@@ -606,7 +605,7 @@ while (running) {
     int64_t time = timeSpec.tv_sec * SPACE_SHOOTER_SECOND + timeSpec.tv_nsec;
     int64_t elapsedTime = time - lastTime;
 
-    game_update(elapsedTime);
+    game_update((float) elapsedTime / SPACE_SHOOTER_MILLISECOND);
 
     lastTime = time;
 }
@@ -614,7 +613,7 @@ while (running) {
 
 ### High-resolution Sleep
 
-`space-shooter.c` uses vsync, if available, to control the frequency of the game loop. To avoid busy-looping when vsync isn't available, `space-shooter.c` will sleep if a frame runs under a minimum frame time of 3ms using the high-resolution sleep functions on each platform.
+`space-shooter.c` uses vsync, if available, to control the frequency of the game loop. To avoid busy-looping when vsync isn't available, `space-shooter.c` will sleep if a frame runs under a minimum frame time of 3ms using the high-resolution sleep function available on each platform.
 
 #### Windows
 
@@ -624,7 +623,7 @@ On Windows, the first step is to ensure the scheduler supports a granularity of 
 bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
 ```
 
-Then the game sleeps using [Sleep()](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
+If so, the game sleeps using [Sleep()](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
 
 ```c
 // Sleep if 1ms granularity is supported and the frame ran 
@@ -680,11 +679,11 @@ if (tickTime > TICK_DURATION) {
 }
 ```
 
-Essentially, the update functions "consume" the elapsed time in fixed time steps of 16ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all movement is linear, but I chose to leave it in after implementing it since it's not much more complex than the minimal approach of calling a state function once with the full elapsed time.
+Essentially, the update functions "consume" the elapsed time in fixed time steps of 16ms and run a partial step for any time left over. In all honesty, this is overkill for `space-shooter.c` since all movement is linear, but I chose to leave it in after implementing it since it's not much more complex than using a single variable time step for each frame.
 
 ### Events
 
-I implement a simple event system in `space-shooter.c` inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c), but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct:
+`space-shooter.c` uses an event system inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c) but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct:
 
 ```c
 typedef struct {
@@ -734,7 +733,7 @@ Events_Sequence loopingSequence = {
 Event sequences are managed using the following functions:
 - `events_start(Events_Sequence* sequence)`: Start a sequence.
 - `events_stop(Events_Sequence* sequence)`: Stop and reset a sequence.
-- `events_beforeFrame(Events_Sequence* sequence, float elapsedTime)`: Update a sequence based on elapsed time since last frame.
+- `events_beforeFrame(Events_Sequence* sequence, float elapsedTime)`: Update a sequence based on the elapsed time since the last frame.
 - `events_on(Events_Sequence* sequence, int32_t id)`: Check if the provided event `id` is currently active in a sequence.
 
 Usage might look like the following:
@@ -767,13 +766,11 @@ The Rendering Layer
 
 #### Interface
 
-To simplify calculations in the game layer, I define coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with (0, 0) at the top-left. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change when the window is resized. 
-
-`game_draw()` calls `renderer_beforeFrame()` once and then passes the `Renderer_List` mixin of each `Entity_List` to the rendering layer in a call `renderer_draw()`.
+To simplify calculations in the game layer, I define coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with the origin at the top-left corner. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change when the window is resized. `game_draw()` calls `renderer_beforeFrame()` once and then passes the `Renderer_List` mixin of each `Entity_List` to the rendering layer in calls to `renderer_draw()`.
 
 ### OpenGL Primitives
 
-In `renderer_draw()`, the arrays in the passed `Renderer_List` are submitted to the GL in buffers that are used as instance attributes, and the dimensions and texture handle for each `Renderer_List`'s sprite are submitted as uniforms. All objects represented in the `Renderer_List` are drawn in a single, instanced draw call, with each object represented as a quad sized to match the sprite panel. The values in `Renderer_List.positions` are interpreted as the top-left corner of the quad. The transformation between game and clip coordinates is done in the [vertex shader](./assets/shaders/vs.glsl):
+In `renderer_draw()`, the arrays of the `Renderer_List` are submitted to the GL in buffers that are used as instance attributes, and the dimensions and texture handle for each `Renderer_List`'s sprite are submitted as uniforms. All objects represented in a given `Renderer_List` are drawn in a single, instanced draw call, with each object represented as a quad sized to match the sprite panel. The values in `Renderer_List.positions` are interpreted as the top-left corner of the quad. The transformation between game and clip coordinates is done in the [vertex shader](./assets/shaders/vs.glsl):
 
 ```c
 vec2 clipOffset = pixelOffset * pixelClipSize - 1.0;
