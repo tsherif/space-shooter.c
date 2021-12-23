@@ -31,7 +31,7 @@
 //
 // - DEBUG_LOG(): Print a debug message.
 // - DEBUG_ASSERT(): If `condition` evaluates to false, print
-// 		a debug message and crash the program.
+//      a debug message and crash the program.
 //////////////////////////////////////////////////////////////////
 
 #ifdef SPACE_SHOOTER_DEBUG

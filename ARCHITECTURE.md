@@ -24,20 +24,20 @@ Architectural Overview
 At a high level, the architecture of `space-shooter.c` is composed of 3 layers:
 
 - The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and is responsible for:
-	- Opening a window
-	- Initializing OpenGL
-	- Playing audio
-	- Capturing user input
-	- File I/O
-	- Starting the game loop
+    - Opening a window
+    - Initializing OpenGL
+    - Playing audio
+    - Capturing user input
+    - File I/O
+    - Starting the game loop
 
 - The **game layer** is implemented in [game.c](./src/game/game.c) and is responsible for
-	- Initializing game resources
-	- Updating game state (player actions, collisions, score, etc.)
-	- Passing rendering data to the rendering layer based on the current game state
+    - Initializing game resources
+    - Updating game state (player actions, collisions, score, etc.)
+    - Passing rendering data to the rendering layer based on the current game state
 
 - The **rendering layer** is implemented in [renderer.c](./src/game/renderer.c) and is responsible for:
-	- Managing OpenGL state and drawing to the screen
+    - Managing OpenGL state and drawing to the screen
 
 The platform layer interacts with the game and rendering layers using an API inspired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
 - `platform_getInput(Game_Input* input)`: Get current input state.
@@ -81,8 +81,8 @@ I use object pools to manage objects that can exist in variable numbers in the g
 ```c
 // NOTE: This is not the actual implementation!
 typedef struct {
-	int32_t x;
-	int32_t y;
+    int32_t x;
+    int32_t y;
 } Object;
 
 Object objects[MAX_OBJECTS];
@@ -185,21 +185,21 @@ This struct can then be mixed into another struct:
 
 ```c
 typedef {
-	MY_STRUCT_MIXIN(myStruct);
-	int32_t z;
+    MY_STRUCT_MIXIN(myStruct);
+    int32_t z;
 } MixedStruct;
 ```
 
 This allows the members of the mixin struct to be used directly, or the mixin struct can be referenced as a whole by name:
 
 ```c
-	void myStructFunction(MyStruct ms) {
-		// ...
-	}
+    void myStructFunction(MyStruct ms) {
+        // ...
+    }
 
-	MixedStruct mixedStruct = { .y = 2, .z = 3 };
-	mixedStruct.x = mixedStruct.y + mixedStruct.z;
-	myStructFunction(mixedStruct.myStruct);
+    MixedStruct mixedStruct = { .y = 2, .z = 3 };
+    mixedStruct.x = mixedStruct.y + mixedStruct.z;
+    myStructFunction(mixedStruct.myStruct);
 ```
 ### Data Structures
 
@@ -268,7 +268,7 @@ Atom NET_WM_STATE_FULLSCREEN = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", 
 
 XEvent fullscreenEvent = {
     .xclient = {
-    	// ...
+        // ...
         .message_type = NET_WM_STATE,
         .data = {
             .l = {
@@ -294,7 +294,7 @@ Creating a modern OpenGL context in Windows is a [convoluted process](https://ww
 4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks)).
 5. Create the real window and context using the extension functions.
 
-I extracted this functionality into a single-header library, [create-opengl.window.h](./lib/create-opengl.window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
+I extracted this functionality into a single-header library, [create-opengl-window.h](./lib/create-opengl-window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
 
 ```c
 void *fn = (void *)wglGetProcAddress(openGLFunctionName);
@@ -392,15 +392,15 @@ One subtlety is defining the callbacks for a source voice, which in C++ is done 
 
 ```c
 IXAudio2VoiceCallback callbacks = {
-	.lpVtbl = &(IXAudio2VoiceCallbackVtbl) {
-	    .OnStreamEnd = OnStreamEnd,
-	    .OnVoiceProcessingPassEnd = OnVoiceProcessingPassEnd,
-	    .OnVoiceProcessingPassStart = OnVoiceProcessingPassStart,
-	    .OnBufferEnd = OnBufferEnd,
-	    .OnBufferStart = OnBufferStart,
-	    .OnLoopEnd = OnLoopEnd,
-	    .OnVoiceError = OnVoiceError
-	}
+    .lpVtbl = &(IXAudio2VoiceCallbackVtbl) {
+        .OnStreamEnd = OnStreamEnd,
+        .OnVoiceProcessingPassEnd = OnVoiceProcessingPassEnd,
+        .OnVoiceProcessingPassStart = OnVoiceProcessingPassStart,
+        .OnBufferEnd = OnBufferEnd,
+        .OnBufferStart = OnBufferStart,
+        .OnLoopEnd = OnLoopEnd,
+        .OnVoiceError = OnVoiceError
+    }
 };
 ```
 
@@ -444,7 +444,7 @@ for (int32_t i = 0; i < mixer.count; ++i) {
 At the end of the audio thread loop, mixed audio is submitted to the device with a buffer size of 2048 frames (~50ms of audio):
 
 ```c
-	snd_pcm_writei(device, mixer.buffer, 2048)
+    snd_pcm_writei(device, mixer.buffer, 2048)
 ```
 
 `snd_pcm_writei` blocks until the device requires data, so the audio thread will wake up approximately once every 50ms.
@@ -493,7 +493,7 @@ while (entry) {
         snprintf(path, PATH_MAX, "%s/%s", "/dev/input/by-id/", entry->d_name);
         int32_t gamepadFd = open(path, O_RDONLY | O_NONBLOCK);
 
-       	// Test gamepad capabilities 
+        // Test gamepad capabilities 
     }
     entry = readdir(inputDir);
 }
@@ -541,16 +541,16 @@ if (bytesRead >= 0) {
         struct input_event* event = events + i;
         switch (event->type) {
             case EV_ABS: {
-            	// int16_t data will be in event->value
+                // int16_t data will be in event->value
                 switch (event->code) {
                     case ABS_X: // Do something...
                     case ABS_Y: // Do something...
                 }
             } break;
             case EV_KEY: {
-            	// bool data will be in event->value
+                // bool data will be in event->value
                 switch (event->code) {
-                    case BTN_A: 	 // Do something...
+                    case BTN_A:      // Do something...
                     case BTN_START:  // Do something...
                     case BTN_SELECT: // Do something...
                 }
@@ -699,16 +699,16 @@ The `id` member is an `enum` representing an event used in the game, e.g. `EVENT
 ```c
 Events_Sequence sequence = {
     .events = {
-	    { 
-	        .delay = 1000.0f,
-	        .duration = 2000.0f,
-	        .id =  EVENTS_DISPLAY
-	    },
-	    {
-	        .duration = 2500.0f,
-	        .id = EVENTS_FADE
-	    }
-	},
+        { 
+            .delay = 1000.0f,
+            .duration = 2000.0f,
+            .id =  EVENTS_DISPLAY
+        },
+        {
+            .duration = 2500.0f,
+            .id = EVENTS_FADE
+        }
+    },
     .count = 2
 };
 ```
@@ -718,14 +718,14 @@ This defines a sequence that once started waits 1s, triggers the `EVENTS_DISPLAY
 ```c
 Events_Sequence loopingSequence = {
     .events = {
-	    { 
-	        .duration = 1000.0f,
-	        .id =  EVENTS_DISPLAY
-	    },
-	    {
-	        .duration = 1000.0f,
-	    }
-	},
+        { 
+            .duration = 1000.0f,
+            .id =  EVENTS_DISPLAY
+        },
+        {
+            .duration = 1000.0f,
+        }
+    },
     .count = 2,
     .loop = true
 };
@@ -756,7 +756,7 @@ Sequences also have a `complete` member that is set when the sequence finishes r
 events_beforeFrame(&sequence, elapsedTime);
 
 if (sequence->complete) {
-	// ... Do something
+    // ... Do something
 }
 ```
 

@@ -25,22 +25,22 @@
 #include "data.h"
 
 void data_freeBuffer(Data_Buffer* buffer) {
-	if (!buffer->data) {
-		return;
-	}
+    if (!buffer->data) {
+        return;
+    }
 
-	free(buffer->data);
-	buffer->data = NULL;
-	buffer->size = 0;
+    free(buffer->data);
+    buffer->data = NULL;
+    buffer->size = 0;
 }
 
 void data_freeImage(Data_Image* image) {
-	if (!image->data) {
-		return;
-	}
+    if (!image->data) {
+        return;
+    }
 
-	free(image->data);
-	image->data = NULL;
-	image->width = 0;
-	image->height = 0;
+    free(image->data);
+    image->data = NULL;
+    image->width = 0;
+    image->height = 0;
 }

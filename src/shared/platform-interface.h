@@ -41,14 +41,14 @@
 // - shoot: Whether a shoot input was received on this frame.
 // - lastShoot:Whether a shoot input was received on the last frame.
 // - keyboard: Whether this frame's input was from a keyboard. (Used
-// 		to modify input instructions for the player).
+//      to modify input instructions for the player).
 ////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-	float velocity[2];
-	bool shoot;
-	bool lastShoot;
-	bool keyboard;
+    float velocity[2];
+    bool shoot;
+    bool lastShoot;
+    bool keyboard;
 } Game_Input;
 
 /////////////////////////////////////////////////////////////////////////
@@ -57,10 +57,10 @@ typedef struct {
 //
 // - game_init(): Initialize game resources.
 // - game_update(): Update game state based on time elapsed since
-//		last frame.
+//      last frame.
 // - game_draw(): Draw current frame.
 // - game_resize(): Update rendering state to match the current window 
-//		size.
+//      size.
 // - game_close(): Release game resources.
 /////////////////////////////////////////////////////////////////////////
 
@@ -77,12 +77,12 @@ void game_close(void);
 // - platform_getInput(): Get current input state.
 // - platform_playSound(): Output sound to an audio device.
 // - platform_debugMessage(): Output a message intended for the developer 
-//		while debugging.
+//      while debugging.
 // - platform_userMessage(): Output a message intended for the end
-//		user.
+//      user.
 // - platform_loadFile(): Load contents of a file into memory. 
-//		Optionally, null-terminate if the data will be used as a 
-//		string.
+//      Optionally, null-terminate if the data will be used as a 
+//      string.
 ////////////////////////////////////////////////////////////////////////////
 
 void platform_getInput(Game_Input* input);

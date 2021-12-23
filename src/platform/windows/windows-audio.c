@@ -36,13 +36,13 @@
 #include "windows-audio.h"
 
 static WAVEFORMATEX AUDIO_SOURCE_FORMAT = {
-  .wFormatTag = WAVE_FORMAT_PCM,
-  .nChannels = SPACE_SHOOTER_AUDIO_CHANNELS,
-  .nSamplesPerSec = SPACE_SHOOTER_AUDIO_SAMPLE_RATE,
-  .nAvgBytesPerSec = SPACE_SHOOTER_AUDIO_SAMPLE_RATE * SPACE_SHOOTER_AUDIO_CHANNELS * (SPACE_SHOOTER_AUDIO_BPS / 8),
-  .nBlockAlign = 4,
-  .wBitsPerSample = SPACE_SHOOTER_AUDIO_BPS,
-  .cbSize = 0
+    .wFormatTag = WAVE_FORMAT_PCM,
+    .nChannels = SPACE_SHOOTER_AUDIO_CHANNELS,
+    .nSamplesPerSec = SPACE_SHOOTER_AUDIO_SAMPLE_RATE,
+    .nAvgBytesPerSec = SPACE_SHOOTER_AUDIO_SAMPLE_RATE * SPACE_SHOOTER_AUDIO_CHANNELS * (SPACE_SHOOTER_AUDIO_BPS / 8),
+    .nBlockAlign = 4,
+    .wBitsPerSample = SPACE_SHOOTER_AUDIO_BPS,
+    .cbSize = 0
 };
 
 typedef struct {

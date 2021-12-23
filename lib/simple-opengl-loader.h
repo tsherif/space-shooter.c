@@ -5992,19 +5992,19 @@ SOGL_FUNCTIONS_OVR_multiview
 
 #ifdef SOGL_IMPLEMENTATION_WIN32
 #ifdef SOGL_IMPLEMENTATION_X11
-	#error Only one of SOGL_IMPLEMENTATION_WIN32 or SOGL_IMPLEMENTATION_X11 can be used at a time.
+    #error Only one of SOGL_IMPLEMENTATION_WIN32 or SOGL_IMPLEMENTATION_X11 can be used at a time.
 #endif
 
 static HMODULE sogl_libHandle = NULL;
 
 void *sogl_loadOpenGLFunction(const char *name) {
-	typedef PROC (*wglGetProcAddressFP)(LPCSTR Arg1);
-	static wglGetProcAddressFP wglGetProcAddress = NULL;
+    typedef PROC (*wglGetProcAddressFP)(LPCSTR Arg1);
+    static wglGetProcAddressFP wglGetProcAddress = NULL;
 
-	if (!sogl_libHandle) {
-		sogl_libHandle = LoadLibraryA("opengl32.dll");
-		wglGetProcAddress = (wglGetProcAddressFP) GetProcAddress(sogl_libHandle, "wglGetProcAddress");
-	}
+    if (!sogl_libHandle) {
+        sogl_libHandle = LoadLibraryA("opengl32.dll");
+        wglGetProcAddress = (wglGetProcAddressFP) GetProcAddress(sogl_libHandle, "wglGetProcAddress");
+    }
     void *fn = (void *)wglGetProcAddress(name);
     if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3) || (fn == (void *) -1)) {
         fn = (void *) GetProcAddress(sogl_libHandle, name);
