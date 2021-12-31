@@ -49,6 +49,7 @@ typedef struct {
     bool shoot;
     bool lastShoot;
     bool keyboard;
+    bool fast_shoot;
 } Game_Input;
 
 /////////////////////////////////////////////////////////////////////////

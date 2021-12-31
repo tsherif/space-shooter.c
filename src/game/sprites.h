@@ -159,5 +159,6 @@ extern Sprites_Sprite sprites_enemyBullet;
 extern Sprites_Sprite sprites_explosion;
 extern Sprites_Sprite sprites_text;
 extern Sprites_Sprite sprites_whitePixel;
+extern Sprites_Sprite sprite_rocket;
 
 #endif

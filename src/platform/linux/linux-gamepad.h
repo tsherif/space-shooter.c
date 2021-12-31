@@ -54,6 +54,7 @@ typedef struct {
     bool startButton;
     bool backButton;
     bool keyboard;
+    bool fast_shoot;
 } Linux_Gamepad;
 
 //////////////////////////////////////////////////////////////////

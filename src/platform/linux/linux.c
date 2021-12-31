@@ -342,6 +342,7 @@ int32_t main(int32_t argc, char const *argv[]) {
                 case XK_space: gamepad.aButton = down; break;
                 case XK_Escape: gamepad.backButton = down; break;
                 case XK_f: gamepad.startButton = down; break;
+                case XK_a: gamepad.fast_shoot = down; break;
             }
 
             if (keyboardDirections.left) {
@@ -441,6 +442,7 @@ void platform_getInput(Game_Input* input) {
     input->velocity[1] = gamepad.stickY;
     input->shoot = gamepad.aButton;
     input->keyboard = gamepad.keyboard;
+    input->fast_shoot = gamepad.fast_shoot;
 }
 
 void platform_debugMessage(const char* message) {

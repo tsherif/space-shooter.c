@@ -1,18 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // The MIT License (MIT)
-// 
+//
 // Copyright (c) 2021 Tarek Sherif
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
 // the Software without restriction, including without limitation the rights to
 // use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
 // the Software, and to permit persons to whom the Software is furnished to do so,
 // subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
@@ -43,7 +43,7 @@
 #define TICK_DURATION 16.6667f
 #define COLLISION_SCALE 0.7f   // Scale factor on collision boxes when detecting collisions
 #define TIME_PER_ANIMATION 100.0f // Time per frame of a sprite animation
-#define SCORE_TEXT_LENGTH 5 
+#define SCORE_TEXT_LENGTH 5
 
 //////////////////////////////////
 //  Player constants
@@ -51,11 +51,14 @@
 
 #define PLAYER_VELOCITY 0.075f
 #define PLAYER_BULLET_VELOCITY (-0.2f)
+#define PLAYER_FAST_BULET_VELOCITY (-0.8f)
 #define PLAYER_BULLET_THROTTLE 100.0f
 #define PLAYER_DEAD_TIME 2000.0f
 #define PLAYER_INVINCIBLE_TIME 2000.0f
 #define PLAYER_INVINCIBLE_ALPHA 0.5f
 #define PLAYER_NUM_LIVES 3
+#define PLAYER_NUM_FAST_SHOOT 10
+
 
 //////////////////////////////////
 //  Enemy constants
@@ -100,7 +103,7 @@
 #define INITIAL_LEVEL_SCORE_THRESHOLD 50
 #define LEVEL_WARP 0.2f
 #define LEVEL_WARP_STAR_PROBABILITY_MULTIPLIER 16.0f
-#define LEVEL_TITLE_BUFFER_SIZE 32 
+#define LEVEL_TITLE_BUFFER_SIZE 32
 #define BASE_TITLE_LENGTH 7
 #define BASE_NEXT_LEVEL_TEXT_LENGTH 20
 
@@ -115,6 +118,7 @@ typedef struct {
     float invincibleTimer;
     int32_t score;
     int32_t lives;
+    int32_t num_fast_shoot;
 } Player;
 
 typedef struct {
@@ -148,8 +152,9 @@ static struct {
     Entities_List stars;
     Entities_List text;
     Entities_List lives;
+    Entities_List rockets;
 } entities = {
-    .player = { .sprite = &sprites_player, .lives = PLAYER_NUM_LIVES },
+    .player = { .sprite = &sprites_player, .lives = PLAYER_NUM_LIVES , .num_fast_shoot = PLAYER_NUM_FAST_SHOOT},
     .smallEnemies = { .sprite = &sprites_smallEnemy },
     .mediumEnemies = { .sprite = &sprites_mediumEnemy },
     .largeEnemies = { .sprite = &sprites_largeEnemy },
@@ -158,7 +163,8 @@ static struct {
     .explosions = { .sprite = &sprites_explosion },
     .stars = { .sprite = &sprites_whitePixel },
     .text = { .sprite = &sprites_text },
-    .lives = { .sprite = &sprites_player }
+    .lives = { .sprite = &sprites_player },
+    .rockets = {.sprite = &sprite_rocket}
 };
 
 static struct {
@@ -214,7 +220,7 @@ static bool loadTexture(const char* fileName, uint32_t *texture) {
     Data_Image image = { 0 };
 
     bool result = platform_loadFile(fileName, &imageData, false) && utils_bmpToImage(&imageData, &image);
-    
+
     *texture = renderer_createTexture(image.data, image.width, image.height);
     data_freeBuffer(&imageData);
     data_freeImage(&image);
@@ -247,19 +253,36 @@ static void transitionLevel(void) {
 //  Player helpers
 //////////////////////////////////
 
-static void firePlayerBullet(float x, float y) {
-    if (
-        entities.player.bulletThrottle > 0.0f || 
-        entities.player.deadTimer > 0.0f
-    ) {
+static void firePlayerBullet(float x, float y , bool shoot , bool shoot_fast) {
+    if (entities.player.bulletThrottle > 0.0f || entities.player.deadTimer > 0.0f)
+    {
         return;
     }
 
-    entities_spawn(&entities.playerBullets, &(Entities_InitOptions) {
-        .x = x, 
-        .y = y, 
-        .vy = PLAYER_BULLET_VELOCITY
-    });
+    if (shoot_fast == true)
+    {
+        entities_spawn(&entities.playerBullets, &(Entities_InitOptions) {
+            .x = x - 1,
+            .y = y,
+            .vy = PLAYER_FAST_BULET_VELOCITY,
+        });
+        entities_spawn(&entities.playerBullets, &(Entities_InitOptions) {
+            .x = x + 1,
+            .y = y,
+           .vy = PLAYER_FAST_BULET_VELOCITY
+        });
+
+        entities.player.num_fast_shoot--;
+    }
+    else if (shoot == true)
+    {
+        entities_spawn(&entities.playerBullets, &(Entities_InitOptions) {
+            .x = x,
+            .y = y,
+            .vy = PLAYER_BULLET_VELOCITY,
+        });
+    }
+
     platform_playSound(&gameData.sounds.playerBullet, false);
     entities.player.bulletThrottle = PLAYER_BULLET_THROTTLE;
 }
@@ -284,24 +307,25 @@ static bool checkPlayerBulletCollision(
             position[0] + enemyCollisionBox->max[0],
             position[1] + enemyCollisionBox->max[1]
         };
-        
+
         if (utils_boxCollision(bulletMin, bulletMax, enemyMin, enemyMax, COLLISION_SCALE)) {
             hit = true;
             --enemies->health[i];
             if (enemies->health[i] == 0) {
                 entities_spawn(&entities.explosions, &(Entities_InitOptions) {
-                    .x = position[0] + explosionXOffset, 
+                    .x = position[0] + explosionXOffset,
                     .y = position[1] + explosionYOffset
                 });
                 platform_playSound(&gameData.sounds.explosion, false);
                 enemies->dead[i] = true;
                 entities.player.score += points;
+                entities.player.num_fast_shoot += 2;
             } else {
                 platform_playSound(&gameData.sounds.enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
             }
-        }    
-    } 
+        }
+    }
 
     return hit;
 }
@@ -318,17 +342,17 @@ static bool checkPlayerCollision(float playerMin[2], float playerMax[2], Entitie
         float entityMax[] = {
             position[0] + collisionBox->max[0],
             position[1] + collisionBox->max[1]
-        };      
+        };
         if (utils_boxCollision(playerMin, playerMax, entityMin, entityMax, COLLISION_SCALE)) {
             playerHit = true;
             if (opts) {
                 entities_spawn(&entities.explosions, &(Entities_InitOptions) {
                     .x = position[0] + opts->xOffset,
-                    .y = position[1] + opts->yOffset 
-                });     
+                    .y = position[1] + opts->yOffset
+                });
             }
             list->dead[i] = true;
-        }   
+        }
     }
 
     return playerHit;
@@ -379,12 +403,12 @@ static void updateEntities(Entities_List* list, float elapsedTime, float offscre
 
 static void updateAnimations(void) {
     if (gameState.animationTime > TIME_PER_ANIMATION) {
-        entities_updateAnimations(&entities.player.entity);  
-        entities_updateAnimations(&entities.playerBullets);  
+        entities_updateAnimations(&entities.player.entity);
+        entities_updateAnimations(&entities.playerBullets);
         entities_updateAnimations(&entities.smallEnemies);
         entities_updateAnimations(&entities.mediumEnemies);
         entities_updateAnimations(&entities.largeEnemies);
-        entities_updateAnimations(&entities.enemyBullets);  
+        entities_updateAnimations(&entities.enemyBullets);
         entities_updateAnimations(&entities.explosions);
 
         gameState.animationTime = 0.0f;
@@ -392,11 +416,11 @@ static void updateAnimations(void) {
 }
 
 static void filterDeadEntities(void) {
-    entities_filterDead(&entities.playerBullets);  
+    entities_filterDead(&entities.playerBullets);
     entities_filterDead(&entities.smallEnemies);
     entities_filterDead(&entities.mediumEnemies);
     entities_filterDead(&entities.largeEnemies);
-    entities_filterDead(&entities.enemyBullets);  
+    entities_filterDead(&entities.enemyBullets);
     entities_filterDead(&entities.explosions);
     entities_filterDead(&entities.stars);
 }
@@ -405,11 +429,11 @@ static void updateStars(float elapsedTime) {
     if (utils_randomRange(0.0f, 1.0f) < STAR_PROBABILITY * levelState.starProbabilityMultiplier * elapsedTime) {
         float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&entities.stars, &(Entities_InitOptions) {
-            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
-            .y = -sprites_whitePixel.panelDims[1], 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]),
+            .y = -sprites_whitePixel.panelDims[1],
             .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
             .transparency = utils_lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
-        }); 
+        });
     }
 
     updateEntities(&entities.stars, elapsedTime, 0.0f);
@@ -422,9 +446,9 @@ static void updateStars(float elapsedTime) {
 static void livesToEntities(void) {
     entities.lives.count = 0;
     for (int32_t i = 0; i < entities.player.lives; ++i) {
-        entities_spawn(&entities.lives, &(Entities_InitOptions) { 
+        entities_spawn(&entities.lives, &(Entities_InitOptions) {
             .x = 12.5f + i * (entities.player.sprite->panelDims[0] * 0.55f + 0.5f),
-            .y = GAME_HEIGHT - 32.0f, 
+            .y = GAME_HEIGHT - 32.0f,
             .scale = 0.45f
         });
     }
@@ -434,11 +458,29 @@ static void updateScoreDisplay() {
     utils_uintToString(entities.player.score, gameState.scoreText, SCORE_TEXT_LENGTH);
     entities_fromText(&entities.text, gameState.scoreText, &(Entities_FromTextOptions) {
         .x = 10.0f,
-        .y = GAME_HEIGHT - 20.0f, 
+        .y = GAME_HEIGHT - 20.0f,
         .scale = 0.4f
     });
 }
 
+static void updateNumOfRocketsDisplay() {
+    utils_uintToString(entities.player.num_fast_shoot, gameState.scoreText, SCORE_TEXT_LENGTH);
+    entities_fromText(&entities.text, gameState.scoreText, &(Entities_FromTextOptions) {
+        .x = 10.0f,
+        .y = GAME_HEIGHT - 175.0f,
+        .scale = 0.4f
+    });
+
+    entities.rockets.count = 0;
+    if (gameState.state != GAME_OVER)
+    {
+        entities_spawn(&entities.rockets, &(Entities_InitOptions) {
+            .x = 50,
+            .y = GAME_HEIGHT - 175.0f,
+            .scale = 15.0f
+        });
+    }
+}
 //////////////////////////////////
 //  Entitity simulation functions
 //////////////////////////////////
@@ -449,17 +491,17 @@ static void simWorld(float elapsedTime) {
     // Spawn new enemies
     if (utils_randomRange(0.0f, 1.0f) < levelState.smallEnemySpawnProbability * elapsedTime) {
         entities_spawn(&entities.smallEnemies, &(Entities_InitOptions) {
-            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]), 
-            .y = -sprites_smallEnemy.panelDims[1], 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_smallEnemy.panelDims[0]),
+            .y = -sprites_smallEnemy.panelDims[1],
             .vy = SMALL_ENEMY_VELOCITY,
             .health = SMALL_ENEMY_HEALTH
-        }); 
+        });
     }
 
     if (utils_randomRange(0.0f, 1.0f) < levelState.mediumEnemySpawnProbability * elapsedTime) {
         entities_spawn(&entities.mediumEnemies, &(Entities_InitOptions) {
-            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]), 
-            .y = -sprites_mediumEnemy.panelDims[1], 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_mediumEnemy.panelDims[0]),
+            .y = -sprites_mediumEnemy.panelDims[1],
             .vy = MEDIUM_ENEMY_VELOCITY,
             .health = MEDIUM_ENEMY_HEALTH
         });
@@ -467,8 +509,8 @@ static void simWorld(float elapsedTime) {
 
     if (utils_randomRange(0.0f, 1.0f) < levelState.largeEnemySpawnProbability * elapsedTime) {
         entities_spawn(&entities.largeEnemies, &(Entities_InitOptions) {
-            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]), 
-            .y = -sprites_largeEnemy.panelDims[1], 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_largeEnemy.panelDims[0]),
+            .y = -sprites_largeEnemy.panelDims[1],
             .vy = LARGE_ENEMY_VELOCITY,
             .health = LARGE_ENEMY_HEALTH
         });
@@ -493,12 +535,24 @@ static void simWorld(float elapsedTime) {
             position[0] + playerBulletCollisionBox->max[0],
             position[1] + playerBulletCollisionBox->max[1]
         };
-        
+
         if (checkPlayerBulletCollision(bulletMin, bulletMax, &entities.smallEnemies, SPRITES_SMALL_ENEMY_EXPLOSION_X_OFFSET, SPRITES_SMALL_ENEMY_EXPLOSION_Y_OFFSET, SMALL_ENEMY_POINTS) ||
             checkPlayerBulletCollision(bulletMin, bulletMax, &entities.mediumEnemies, SPRITES_MEDIUM_ENEMY_EXPLOSION_X_OFFSET, SPRITES_MEDIUM_ENEMY_EXPLOSION_Y_OFFSET, MEDIUM_ENEMY_POINTS) ||
             checkPlayerBulletCollision(bulletMin, bulletMax, &entities.largeEnemies, SPRITES_LARGE_ENEMY_EXPLOSION_X_OFFSET, SPRITES_LARGE_ENEMY_EXPLOSION_Y_OFFSET, LARGE_ENEMY_POINTS)) {
             entities.playerBullets.dead[i] = true;
-        }  
+        }
+    }
+}
+
+bool fastShoot()
+{
+    if (gameState.input.fast_shoot && entities.player.num_fast_shoot > 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -510,8 +564,8 @@ static void simPlayer(float elapsedTime) {
     player->velocity[0] = PLAYER_VELOCITY * gameState.input.velocity[0];
     player->velocity[1] = -PLAYER_VELOCITY * gameState.input.velocity[1];
 
-    if (gameState.input.shoot && !gameState.input.lastShoot) {
-        firePlayerBullet(player->position[0] + SPRITES_PLAYER_BULLET_X_OFFSET, player->position[1] + SPRITES_PLAYER_BULLET_Y_OFFSET);
+    if ((gameState.input.shoot || fastShoot()) && !gameState.input.lastShoot) {
+        firePlayerBullet(player->position[0] + SPRITES_PLAYER_BULLET_X_OFFSET, player->position[1] + SPRITES_PLAYER_BULLET_Y_OFFSET , gameState.input.shoot , gameState.input.fast_shoot);
     }
 
     if (player->velocity[0] < -1.0f) {
@@ -604,7 +658,7 @@ static void simPlayer(float elapsedTime) {
         if (bulletHit || smallEnemyHit || mediumEnemyHit || largeEnemyHit) {
             entities_spawn(&entities.explosions, &(Entities_InitOptions) {
                 .x = player->position[0] + SPRITES_PLAYER_EXPLOSION_X_OFFSET,
-                .y = player->position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
+                .y = player->position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET
             });
 
             platform_playSound(&gameData.sounds.explosion, false);
@@ -612,10 +666,8 @@ static void simPlayer(float elapsedTime) {
             player->position[1] = GAME_HEIGHT - player->sprite->panelDims[0] * 3.0f;
             player->deadTimer = PLAYER_DEAD_TIME;
             --player->lives;
-        } 
+        }
     }
-
-       
 }
 
 //////////////////////////////////
@@ -629,7 +681,7 @@ static void titleScreen(float elapsedTime) {
     events_beforeFrame(&events_instructionSequence, elapsedTime);
 
     platform_getInput(&gameState.input);
-    
+
     updateStars(elapsedTime);
 
     entities.text.count = 0;
@@ -645,7 +697,7 @@ static void titleScreen(float elapsedTime) {
     if (events_on(&events_titleSequence, EVENTS_DISPLAY)) {
         entities_fromText(&entities.text, "space-shooter.c", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 62.0f, 
+            .y = 62.0f,
             .scale = 0.75f
         });
     }
@@ -653,7 +705,7 @@ static void titleScreen(float elapsedTime) {
     if (events_on(&events_titleSequence, EVENTS_FADE)) {
         entities_fromText(&entities.text, "space-shooter.c", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 127.0f,
-            .y = 62.0f, 
+            .y = 62.0f,
             .scale = 0.75f,
             .transparency = events_titleSequence.alpha
         });
@@ -662,7 +714,7 @@ static void titleScreen(float elapsedTime) {
     if (events_on(&events_subtitleSequence, EVENTS_DISPLAY)) {
         entities_fromText(&entities.text, "by Tarek Sherif", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
-            .y = 85.0f, 
+            .y = 85.0f,
             .scale = 0.4f
         });
     }
@@ -670,7 +722,7 @@ static void titleScreen(float elapsedTime) {
     if (events_on(&events_subtitleSequence, EVENTS_FADE)) {
         entities_fromText(&entities.text, "by Tarek Sherif", &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 64.0f,
-            .y = 85.0f, 
+            .y = 85.0f,
             .scale = 0.4f,
             .transparency = events_subtitleSequence.alpha
         });
@@ -683,7 +735,7 @@ static void titleScreen(float elapsedTime) {
         float movementXOffset = gameState.input.keyboard ? 62.0f : 62.0f;
         entities_fromText(&entities.text, movementText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - movementXOffset,
-            .y = yBase, 
+            .y = yBase,
             .scale = 0.3f
         });
 
@@ -691,7 +743,7 @@ static void titleScreen(float elapsedTime) {
         float shootXOffset = gameState.input.keyboard ? 58.0f : 42.0f;
         entities_fromText(&entities.text, shootText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - shootXOffset,
-            .y = yBase + 13.0f, 
+            .y = yBase + 13.0f,
             .scale = 0.3f
         });
 
@@ -699,7 +751,7 @@ static void titleScreen(float elapsedTime) {
         float fullscreenXOffset = gameState.input.keyboard ? 82.0f : 97.0f;
         entities_fromText(&entities.text, fullscreenText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
-            .y = yBase + 26.0f, 
+            .y = yBase + 26.0f,
             .scale = 0.3f
         });
 
@@ -707,7 +759,7 @@ static void titleScreen(float elapsedTime) {
         float quitXOffset = gameState.input.keyboard ? 47.0f : 50.0f;
         entities_fromText(&entities.text, quitText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - quitXOffset,
-            .y = yBase + 39.0f, 
+            .y = yBase + 39.0f,
             .scale = 0.3f
         });
     }
@@ -735,7 +787,7 @@ static void levelTransition(float elapsedTime) {
     if (events_on(&events_levelTransitionSequence, EVENTS_DISPLAY)) {
         entities_fromText(&entities.text, levelState.title, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - 62.0f,
-            .y = 64.0f, 
+            .y = 64.0f,
             .scale = 0.75f
         });
 
@@ -743,7 +795,7 @@ static void levelTransition(float elapsedTime) {
         xOffset += (levelState.nextLevelTextLength - BASE_NEXT_LEVEL_TEXT_LENGTH) * 3.0f;
         entities_fromText(&entities.text, levelState.nextLevelText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - xOffset,
-            .y = 88.0f, 
+            .y = 88.0f,
             .scale = 0.25f
         });
     }
@@ -771,14 +823,14 @@ static void levelTransition(float elapsedTime) {
 
 static void mainGame(float elapsedTime) {
     entities.text.count = 0;
-    
+
     simWorld(elapsedTime);
     livesToEntities();
 
     Player* player = &entities.player;
 
     if (player->bulletThrottle > 0.0f) {
-        player->bulletThrottle -= elapsedTime; 
+        player->bulletThrottle -= elapsedTime;
     }
 
     if (player->lives > 0) {
@@ -789,7 +841,7 @@ static void mainGame(float elapsedTime) {
                 player->alpha[0] = PLAYER_INVINCIBLE_ALPHA;
             }
         } else {
-            simPlayer(elapsedTime);           
+            simPlayer(elapsedTime);
         }
 
         if (player->score >= levelState.scoreThreshold) {
@@ -806,6 +858,7 @@ static void mainGame(float elapsedTime) {
     }
 
     updateScoreDisplay();
+    updateNumOfRocketsDisplay();
     updateAnimations();
     filterDeadEntities();
 }
@@ -836,7 +889,7 @@ static void gameOver(float elapsedTime) {
             .x = GAME_WIDTH / 2.0f - xOffset,
             .y = 104.0f,
             .scale = 0.4f
-        }); 
+        });
     }
 
     updateScoreDisplay();
@@ -889,7 +942,7 @@ static void simulate(float elapsedTime) {
 bool game_init(void) {
     // Init subsystems
     utils_init();
-    
+
     if (!renderer_init(GAME_WIDTH, GAME_HEIGHT)) {
         platform_userMessage("FATAL ERROR: Unable to initialize renderer.");
         return false;
@@ -903,7 +956,8 @@ bool game_init(void) {
         !loadTexture("assets/sprites/enemy-big.bmp", &sprites_largeEnemy.texture) ||
         !loadTexture("assets/sprites/explosion.bmp", &sprites_explosion.texture) ||
         !loadTexture("assets/sprites/pixelspritefont32.bmp", &sprites_text.texture) ||
-        !loadTexture("assets/sprites/laser-bolts.bmp", &sprites_playerBullet.texture)
+        !loadTexture("assets/sprites/laser-bolts.bmp", &sprites_playerBullet.texture) ||
+        !loadTexture("assets/sprites/rocket-v2.bmp" , &sprite_rocket.texture)
     ) {
         platform_userMessage("FATAL ERROR: Unable to load textures.");
         return false;
@@ -911,7 +965,7 @@ bool game_init(void) {
 
     sprites_whitePixel.texture = renderer_createTexture(gameData.whitePixel, 1, 1);
 
-    // Shared texture    
+    // Shared texture
     sprites_enemyBullet.texture = sprites_playerBullet.texture;
 
     if (!renderer_validate()) {
@@ -942,8 +996,8 @@ bool game_init(void) {
     for (int32_t i = 0; i < 40; ++i) {
         float t = utils_randomRange(0.0f, 1.0f);
         entities_spawn(&entities.stars, &(Entities_InitOptions) {
-            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]), 
-            .y = utils_randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]), 
+            .x = utils_randomRange(0.0f, GAME_WIDTH - sprites_whitePixel.panelDims[0]),
+            .y = utils_randomRange(0.0f, GAME_HEIGHT - sprites_whitePixel.panelDims[1]),
             .vy = utils_lerp(STARS_MIN_VELOCITY, STARS_MAX_VELOCITY, t),
             .transparency = utils_lerp(STARS_MIN_TRANSPARENCY, STARS_MAX_TRANSPARENCY, 1.0f - t)
         });
@@ -960,7 +1014,7 @@ bool game_init(void) {
 
 ////////////////////////////////////////////////////////////
 // Fixed time step + sim any time left at
-// end of frame. 
+// end of frame.
 // References:
 // - https://www.gafferongames.com/post/fix_your_timestep/
 // - https://www.youtube.com/watch?v=jTzIDmjkLQo
@@ -976,7 +1030,7 @@ void game_update(float elapsedTime) {
 
     if (gameState.tickTime > TICK_DURATION) {
         while (gameState.tickTime > TICK_DURATION) {
-            simulate(TICK_DURATION);    
+            simulate(TICK_DURATION);
             gameState.tickTime -= TICK_DURATION;
         }
 
@@ -1007,6 +1061,7 @@ void game_draw(void) {
     renderer_draw(&entities.playerBullets.renderList);
     renderer_draw(&entities.text.renderList);
     renderer_draw(&entities.lives.renderList);
+    renderer_draw(&entities.rockets.renderList);
 }
 
 void game_close(void) {

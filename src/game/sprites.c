@@ -267,3 +267,8 @@ Sprites_Sprite sprites_whitePixel = {
     .panelDims = { 1, 1 },
     .sheetDims = { 1.0f, 1.0f },
 };
+
+Sprites_Sprite sprite_rocket = {
+    .panelDims = { 1,1 },
+    .sheetDims = { 1.0f , 1.0f },
+};

@@ -67,6 +67,7 @@ static struct {
     bool startButton;
     bool backButton;
     bool keyboard;
+    bool fast_shoot;
 } gamepad;
 
 static struct {
@@ -220,6 +221,7 @@ static LRESULT CALLBACK messageHandler(HWND window, UINT message, WPARAM wParam,
                 case VK_SPACE: gamepad.aButton = down; break;
                 case VK_ESCAPE: gamepad.backButton = down; break;
                 case 'F': gamepad.startButton = down; break;
+                case 'A': gamepad.fast_shoot = down; break;
             }
 
             if (keyboardDirections.left) {
@@ -424,6 +426,7 @@ void platform_getInput(Game_Input* input) {
     input->velocity[0] = gamepad.stickX;
     input->velocity[1] = gamepad.stickY;
     input->shoot = gamepad.aButton;
+    input->fast_shoot = gamepad.fast_shoot;
     input->keyboard = gamepad.keyboard;
 }
 
