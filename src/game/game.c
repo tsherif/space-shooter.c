@@ -353,7 +353,7 @@ static void fireEnemyBullet(float x, float y) {
 //  General entity helpers
 //////////////////////////////////
 
-// offscreenBuffer is how far off the screen an entitiy needs to be before being killed.
+// offscreenBuffer is how far off the screen an entity needs to be before being killed.
 //   Used so enemies can fire while partially offscreen.
 static void updateEntities(Entities_List* list, float elapsedTime, float offscreenBuffer) {
     for (int32_t i = 0; i < list->count; ++i) {
