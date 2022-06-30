@@ -41,7 +41,7 @@
 // - currentSpritePanel: 2D index of current sprite panel
 // - scale: multiplicative scaling factor for entity sprite
 // - alpha: blending alpha
-// - whiteOut: boolean indicating entitiy should be drawn all white 
+// - whiteOut: boolean indicating entity should be drawn all white 
 //      (used to indicate damage on enemies)
 // - sprite: sprite sheet used to draw these entities
 // - count: number of currently active entities

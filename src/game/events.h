@@ -30,7 +30,7 @@
 // be orchestrated in time, e.g. the title intro sequence or 
 // transitioning between levels. Rather than using callbacks,
 // event sequences are polled for currently active events
-// and logic can condionally execute based on those events.
+// and logic can conditionally execute based on those events.
 //
 // Note that only one event can be active at a time per sequence.
 //////////////////////////////////////////////////////////////////////
