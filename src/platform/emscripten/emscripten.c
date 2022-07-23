@@ -10,7 +10,138 @@
 #include "../../shared/debug.h"
 
 double lastTime = 0.0;
-EM_BOOL loop(double time, void *userData) {
+
+static struct {
+    float stickX;
+    float stickY;
+    bool aButton;
+    bool startButton;
+    bool backButton;
+    bool keyboard;
+} gamepad;
+
+static struct {
+    bool left;
+    bool right;
+    bool up;
+    bool down;
+} keyboardDirections;
+
+static bool strEquals(const char* s1, const char* s2, int32_t n) {
+    for (int32_t i = 0; i < n; ++i) {
+        if (s1[i] != s2[i]) {
+            return false;
+        }
+
+        if (s1[i] == '\0' || s2[i] == '\0') {
+            return s1[i] == '\0' && s2[i] == '\0';
+        }
+    }
+
+    return true;
+}
+
+static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
+        keyboardDirections.left = true;
+    }
+
+    if (strEquals(keyEvent->code, "ArrowRight", 32)) {
+        keyboardDirections.right = true;
+    }
+
+    if (strEquals(keyEvent->code, "ArrowUp", 32)) {
+        keyboardDirections.up = true;
+    }
+
+    if (strEquals(keyEvent->code, "ArrowDown", 32)) {
+        keyboardDirections.down = true;
+    }
+
+    if (strEquals(keyEvent->code, "Space", 32)) {
+        gamepad.aButton = true;
+    }
+
+    if (strEquals(keyEvent->code, "Escape", 32)) {
+        gamepad.backButton = true;
+    }
+
+    if (strEquals(keyEvent->code, "KeyF", 32)) {
+        gamepad.startButton = true;
+    }
+
+    if (keyboardDirections.left) {
+        gamepad.stickX = -1.0f;
+    } else if (keyboardDirections.right) {
+        gamepad.stickX = 1.0f;
+    } else {
+        gamepad.stickX = 0.0f;
+    }
+
+    if (keyboardDirections.down) {
+        gamepad.stickY = -1.0f;
+    } else if (keyboardDirections.up) {
+        gamepad.stickY = 1.0f;
+    } else {
+        gamepad.stickY = 0.0f;
+    }
+
+    gamepad.keyboard = true;
+
+    return EM_TRUE;
+}
+
+static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
+        keyboardDirections.left = false;
+    }
+    
+    if (strEquals(keyEvent->code, "ArrowRight", 32)) {
+        keyboardDirections.right = false;
+    }
+    
+    if (strEquals(keyEvent->code, "ArrowUp", 32)) {
+        keyboardDirections.up = false;
+    }
+    
+    if (strEquals(keyEvent->code, "ArrowDown", 32)) {
+        keyboardDirections.down = false;
+    }
+    
+    if (strEquals(keyEvent->code, "Space", 32)) {
+        gamepad.aButton = false;
+    }
+    
+    if (strEquals(keyEvent->code, "Escape", 32)) {
+        gamepad.backButton = false;
+    }
+    
+    if (strEquals(keyEvent->code, "KeyF", 32)) {
+        gamepad.startButton = false;
+    }
+
+    if (keyboardDirections.left) {
+        gamepad.stickX = -1.0f;
+    } else if (keyboardDirections.right) {
+        gamepad.stickX = 1.0f;
+    } else {
+        gamepad.stickX = 0.0f;
+    }
+
+    if (keyboardDirections.down) {
+        gamepad.stickY = -1.0f;
+    } else if (keyboardDirections.up) {
+        gamepad.stickY = 1.0f;
+    } else {
+        gamepad.stickY = 0.0f;
+    }
+
+    gamepad.keyboard = true;
+
+    return EM_TRUE;
+}
+
+static EM_BOOL loop(double time, void *userData) {
     if (lastTime == 0.0) {
         lastTime = time;
     }
@@ -43,7 +174,10 @@ int32_t main() {
         goto EXIT_GAME;
     }
 
-     game_resize((int32_t) windowWidth, (int32_t) windowHeight);
+    game_resize((int32_t) windowWidth, (int32_t) windowHeight);
+
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp);
 
     emscripten_request_animation_frame_loop(loop, NULL);
 
@@ -55,8 +189,13 @@ int32_t main() {
 
 
 void platform_getInput(Game_Input* input) {
-
+    input->lastShoot = input->shoot;
+    input->velocity[0] = gamepad.stickX;
+    input->velocity[1] = gamepad.stickY;
+    input->shoot = gamepad.aButton;
+    input->keyboard = gamepad.keyboard;
 }
+
 void platform_playSound(Data_Buffer* sound, bool loop) {
 
 }
@@ -132,4 +271,4 @@ bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTermi
     
     ERROR_NO_RESOURCES:
     return false;
-} 
+}
