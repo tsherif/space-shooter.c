@@ -11,6 +11,10 @@ debug: assets
 release: assets 
 	$(CC) $(CFLAGS) $(RELEASE_FLAGS) $(SOURCE_FILES) $(LDLIBS)
 
+emscripten: assets
+	emcc -Wno-null-dereference -g -DSPACE_SHOOTER_DEBUG --preload-file "./assets" -sINITIAL_MEMORY=59965440 -o build/space-shooter.js src/shared/*.c src/game/*.c src/platform/emscripten/*.c -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2
+	cp src/platform/emscripten/index.html build/index.html
+
 assets:
 	rm -rf build
 	mkdir build

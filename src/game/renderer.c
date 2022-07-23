@@ -22,8 +22,10 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 #include <malloc.h>
+#include <GLES3/gl3.h>
 #include "renderer.h"
-#include "../../lib/simple-opengl-loader.h"
+// #include "../../lib/simple-opengl-loader.h"
+
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
 #include "../shared/debug.h"
