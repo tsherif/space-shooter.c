@@ -89,6 +89,8 @@ void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
     }
 }
 
+#include <stdio.h>
+
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
 bool utils_bmpToImage(Data_Buffer* imageData, Data_Image* image) {
     uint32_t imageOffset   = *(uint32_t *) (imageData->data + 10);
@@ -198,6 +200,8 @@ bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
     }
 
     memcpy(sound->data, soundData->data + dataOffset + 8, dataSize);
+
+    printf("wave parse: %p: %d\n", sound->data, sound->size);
 
     return true;
 }

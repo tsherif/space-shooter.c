@@ -8,6 +8,7 @@
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "../../shared/debug.h"
+#include "emscripten-audio.h"
 
 double lastTime = 0.0;
 
@@ -149,6 +150,7 @@ static EM_BOOL loop(double time, void *userData) {
     float dt = time - lastTime;
     lastTime = time;
 
+    emscripten_updateAudio();
     game_update(dt);
     game_draw();
 
@@ -170,6 +172,8 @@ int32_t main() {
     gl = emscripten_webgl_create_context("#canvas", &attrs);
     emscripten_webgl_make_context_current(gl);
 
+    emscripten_initAudio();
+
     if (!game_init()) {
         goto EXIT_GAME;
     }
@@ -182,8 +186,6 @@ int32_t main() {
     emscripten_request_animation_frame_loop(loop, NULL);
 
     EXIT_GAME:
-    game_close();
-
     return 0;
 }
 
@@ -194,10 +196,6 @@ void platform_getInput(Game_Input* input) {
     input->velocity[1] = gamepad.stickY;
     input->shoot = gamepad.aButton;
     input->keyboard = gamepad.keyboard;
-}
-
-void platform_playSound(Data_Buffer* sound, bool loop) {
-
 }
 
 void platform_debugMessage(const char* message) {
@@ -214,6 +212,7 @@ void platform_userMessage(const char* message) {
     platform_debugMessage(message);
 }
 
+#include <stdio.h>
 
 bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
