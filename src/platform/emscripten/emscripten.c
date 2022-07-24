@@ -63,6 +63,15 @@ static EM_BOOL loop(double time, void *userData) {
     return EM_TRUE;
 }
 
+EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData) {
+    windowState.width = uiEvent->windowInnerWidth;
+    windowState.height = uiEvent->windowInnerHeight;
+    game_resize(windowState.width, windowState.height);
+    emscripten_set_canvas_element_size("#canvas", (double) windowState.width, (double) windowState.height);
+
+    return EM_TRUE;
+}
+
 static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
     bool keyProcessed = EM_FALSE;
 
@@ -194,6 +203,7 @@ static EM_BOOL onInitialKeyDown(int eventType, const EmscriptenKeyboardEvent *ke
     emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL);
     emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
     emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp); 
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
 
     emscripten_set_element_css_size("#start-text", 0.0, 0.0);
 
@@ -214,8 +224,6 @@ int32_t main() {
     emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
     windowState.width = (int32_t) windowWidth;
     windowState.height = (int32_t) windowHeight;
-
-    printf("%f %f\n", windowWidth, windowHeight);
 
     emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
     gl = emscripten_webgl_create_context("#canvas", &attrs);
