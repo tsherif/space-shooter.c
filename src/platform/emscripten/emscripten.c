@@ -10,6 +10,12 @@
 #include "../../shared/debug.h"
 #include "emscripten-audio.h"
 
+static struct {
+    int32_t width;
+    int32_t height;
+    bool fullscreen;
+} windowState;
+
 double lastTime = 0.0;
 
 static struct {
@@ -42,106 +48,6 @@ static bool strEquals(const char* s1, const char* s2, int32_t n) {
     return true;
 }
 
-static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
-        keyboardDirections.left = true;
-    }
-
-    if (strEquals(keyEvent->code, "ArrowRight", 32)) {
-        keyboardDirections.right = true;
-    }
-
-    if (strEquals(keyEvent->code, "ArrowUp", 32)) {
-        keyboardDirections.up = true;
-    }
-
-    if (strEquals(keyEvent->code, "ArrowDown", 32)) {
-        keyboardDirections.down = true;
-    }
-
-    if (strEquals(keyEvent->code, "Space", 32)) {
-        gamepad.aButton = true;
-    }
-
-    if (strEquals(keyEvent->code, "Escape", 32)) {
-        gamepad.backButton = true;
-    }
-
-    if (strEquals(keyEvent->code, "KeyF", 32)) {
-        gamepad.startButton = true;
-    }
-
-    if (keyboardDirections.left) {
-        gamepad.stickX = -1.0f;
-    } else if (keyboardDirections.right) {
-        gamepad.stickX = 1.0f;
-    } else {
-        gamepad.stickX = 0.0f;
-    }
-
-    if (keyboardDirections.down) {
-        gamepad.stickY = -1.0f;
-    } else if (keyboardDirections.up) {
-        gamepad.stickY = 1.0f;
-    } else {
-        gamepad.stickY = 0.0f;
-    }
-
-    gamepad.keyboard = true;
-
-    return EM_TRUE;
-}
-
-static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
-        keyboardDirections.left = false;
-    }
-    
-    if (strEquals(keyEvent->code, "ArrowRight", 32)) {
-        keyboardDirections.right = false;
-    }
-    
-    if (strEquals(keyEvent->code, "ArrowUp", 32)) {
-        keyboardDirections.up = false;
-    }
-    
-    if (strEquals(keyEvent->code, "ArrowDown", 32)) {
-        keyboardDirections.down = false;
-    }
-    
-    if (strEquals(keyEvent->code, "Space", 32)) {
-        gamepad.aButton = false;
-    }
-    
-    if (strEquals(keyEvent->code, "Escape", 32)) {
-        gamepad.backButton = false;
-    }
-    
-    if (strEquals(keyEvent->code, "KeyF", 32)) {
-        gamepad.startButton = false;
-    }
-
-    if (keyboardDirections.left) {
-        gamepad.stickX = -1.0f;
-    } else if (keyboardDirections.right) {
-        gamepad.stickX = 1.0f;
-    } else {
-        gamepad.stickX = 0.0f;
-    }
-
-    if (keyboardDirections.down) {
-        gamepad.stickY = -1.0f;
-    } else if (keyboardDirections.up) {
-        gamepad.stickY = 1.0f;
-    } else {
-        gamepad.stickY = 0.0f;
-    }
-
-    gamepad.keyboard = true;
-
-    return EM_TRUE;
-}
-
 static EM_BOOL loop(double time, void *userData) {
     if (lastTime == 0.0) {
         lastTime = time;
@@ -157,6 +63,145 @@ static EM_BOOL loop(double time, void *userData) {
     return EM_TRUE;
 }
 
+static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    bool keyProcessed = EM_FALSE;
+
+    if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
+        keyboardDirections.left = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (strEquals(keyEvent->code, "ArrowRight", 32)) {
+        keyboardDirections.right = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (strEquals(keyEvent->code, "ArrowUp", 32)) {
+        keyboardDirections.up = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (strEquals(keyEvent->code, "ArrowDown", 32)) {
+        keyboardDirections.down = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (strEquals(keyEvent->code, "Space", 32)) {
+        gamepad.aButton = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (strEquals(keyEvent->code, "Escape", 32)) {
+        gamepad.backButton = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (strEquals(keyEvent->code, "KeyF", 32)) {
+        gamepad.startButton = true;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (keyboardDirections.left) {
+        gamepad.stickX = -1.0f;
+    } else if (keyboardDirections.right) {
+        gamepad.stickX = 1.0f;
+    } else {
+        gamepad.stickX = 0.0f;
+    }
+
+    if (keyboardDirections.down) {
+        gamepad.stickY = -1.0f;
+    } else if (keyboardDirections.up) {
+        gamepad.stickY = 1.0f;
+    } else {
+        gamepad.stickY = 0.0f;
+    }
+
+    gamepad.keyboard = true;
+
+    return keyProcessed;
+}
+
+static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    bool keyProcessed = EM_FALSE;
+
+    if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
+        keyboardDirections.left = false;
+        keyProcessed = EM_TRUE;
+    }
+    
+    if (strEquals(keyEvent->code, "ArrowRight", 32)) {
+        keyboardDirections.right = false;
+        keyProcessed = EM_TRUE;
+    }
+    
+    if (strEquals(keyEvent->code, "ArrowUp", 32)) {
+        keyboardDirections.up = false;
+        keyProcessed = EM_TRUE;
+    }
+    
+    if (strEquals(keyEvent->code, "ArrowDown", 32)) {
+        keyboardDirections.down = false;
+        keyProcessed = EM_TRUE;
+    }
+    
+    if (strEquals(keyEvent->code, "Space", 32)) {
+        gamepad.aButton = false;
+        keyProcessed = EM_TRUE;
+    }
+    
+    if (strEquals(keyEvent->code, "Escape", 32)) {
+        gamepad.backButton = false;
+        keyProcessed = EM_TRUE;
+    }
+    
+    if (strEquals(keyEvent->code, "KeyF", 32)) {
+        gamepad.startButton = false;
+        keyProcessed = EM_TRUE;
+    }
+
+    if (keyboardDirections.left) {
+        gamepad.stickX = -1.0f;
+    } else if (keyboardDirections.right) {
+        gamepad.stickX = 1.0f;
+    } else {
+        gamepad.stickX = 0.0f;
+    }
+
+    if (keyboardDirections.down) {
+        gamepad.stickY = -1.0f;
+    } else if (keyboardDirections.up) {
+        gamepad.stickY = 1.0f;
+    } else {
+        gamepad.stickY = 0.0f;
+    }
+
+    gamepad.keyboard = true;
+
+    return keyProcessed;
+}
+
+static EM_BOOL onInitialKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    emscripten_initAudio();
+
+    if (!game_init()) {
+        goto EXIT_GAME;
+    }
+
+    game_resize(windowState.width, windowState.height);
+    emscripten_request_animation_frame_loop(loop, NULL);
+
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp); 
+
+    emscripten_set_element_css_size("#start-text", 0.0, 0.0);
+
+    EXIT_GAME:
+    return EM_TRUE;
+}
+
+#include <stdio.h>
 int32_t main() {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = 0;
     EmscriptenWebGLContextAttributes attrs = {
@@ -166,26 +211,18 @@ int32_t main() {
 
     double windowWidth = 0.0;
     double windowHeight = 0.0;
-    emscripten_get_element_css_size("body", &windowWidth, &windowHeight);
-    emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
+    emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
+    windowState.width = (int32_t) windowWidth;
+    windowState.height = (int32_t) windowHeight;
 
+    printf("%f %f\n", windowWidth, windowHeight);
+
+    emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
     gl = emscripten_webgl_create_context("#canvas", &attrs);
     emscripten_webgl_make_context_current(gl);
 
-    emscripten_initAudio();
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onInitialKeyDown);
 
-    if (!game_init()) {
-        goto EXIT_GAME;
-    }
-
-    game_resize((int32_t) windowWidth, (int32_t) windowHeight);
-
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp);
-
-    emscripten_request_animation_frame_loop(loop, NULL);
-
-    EXIT_GAME:
     return 0;
 }
 
@@ -211,8 +248,6 @@ void platform_debugMessage(const char* message) {
 void platform_userMessage(const char* message) {
     platform_debugMessage(message);
 }
-
-#include <stdio.h>
 
 bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
