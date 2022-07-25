@@ -22,7 +22,8 @@ static struct {
     bool fullscreen;
 } windowState;
 
-double lastTime;
+bool running = false;
+float lastTime = 0.0f;
 int32_t gamepadIndex = -1;
 
 static struct {
@@ -87,24 +88,11 @@ static EM_BOOL loop(double time, void *userData) {
                 gamepad.keyboard = false;
             }
         }
-    } else {
-        emscripten_sample_gamepad_data();
-        int32_t numGamepads = emscripten_get_num_gamepads();
-        EmscriptenGamepadEvent gamepadState = { 0 };
-        for (int32_t i = 0; i < numGamepads; ++i) {
-            emscripten_get_gamepad_status(i, &gamepadState);
-            printf("connected: %d\n", gamepadState.connected);
-            if (gamepadState.connected) {
-                gamepadIndex = i;
-                gamepad.keyboard = false;
-                break;
-            }
-        } 
     }
 
 
-    if (lastTime == 0.0) {
-        lastTime = time;
+    if (lastTime == 0.0f) {
+        lastTime = (float) time;
     }
 
     float dt = time - lastTime;
@@ -117,7 +105,7 @@ static EM_BOOL loop(double time, void *userData) {
     return EM_TRUE;
 }
 
-EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData) {
+static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData) {
     windowState.width = uiEvent->windowInnerWidth;
     windowState.height = uiEvent->windowInnerHeight;
     game_resize(windowState.width, windowState.height);
@@ -126,7 +114,62 @@ EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData
     return EM_TRUE;
 }
 
+static void initialize(void) {
+    emscripten_initAudio();
+
+    if (!game_init()) {
+        return;
+    }
+
+    game_resize(windowState.width, windowState.height);
+    emscripten_request_animation_frame_loop(loop, NULL);
+
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
+
+    emscripten_set_element_css_size("#start-text", 0.0, 0.0);
+
+    running = true;
+}
+
+static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+    if (!running) {
+        initialize();
+    }
+
+    if (gamepadIndex == -1) {
+        gamepadIndex = gamepadEvent->index;
+    }
+
+    return EM_TRUE;
+}
+
+static EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+    if (!running) {
+        initialize();
+    }
+
+    if (gamepadIndex == gamepadEvent->index) {
+        gamepadIndex = -1;
+        emscripten_sample_gamepad_data();
+        int32_t numGamepads = emscripten_get_num_gamepads();
+        EmscriptenGamepadEvent gamepadState = { 0 };
+        for (int32_t i = 0; i < numGamepads; ++i) {
+            emscripten_get_gamepad_status(i, &gamepadState);
+            if (gamepadState.connected) {
+                gamepadIndex = i;
+                break;
+            }
+        } 
+    }
+
+    return EM_TRUE;
+}
+
 static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    if (!running) {
+        initialize();
+    }
+
     bool keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -186,6 +229,10 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
 }
 
 static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    if (!running) {
+        initialize();
+    }
+
     bool keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -244,27 +291,6 @@ static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, v
     return keyProcessed;
 }
 
-static EM_BOOL onInitialKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    emscripten_initAudio();
-
-    if (!game_init()) {
-        goto EXIT_GAME;
-    }
-
-    game_resize(windowState.width, windowState.height);
-    emscripten_request_animation_frame_loop(loop, NULL);
-
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL);
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp); 
-    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
-
-    emscripten_set_element_css_size("#start-text", 0.0, 0.0);
-
-    EXIT_GAME:
-    return EM_TRUE;
-}
-
 int32_t main() {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = 0;
     EmscriptenWebGLContextAttributes attrs = {
@@ -282,23 +308,10 @@ int32_t main() {
     gl = emscripten_webgl_create_context("#canvas", &attrs);
     emscripten_webgl_make_context_current(gl);
 
-    gamepad.keyboard = true;
-    emscripten_sample_gamepad_data();
-    int32_t numGamepads = emscripten_get_num_gamepads();
-    printf("numGamepads: %d\n", numGamepads);
-    EmscriptenGamepadEvent gamepadState = { 0 };
-    for (int32_t i = 0; i < numGamepads; ++i) {
-        emscripten_get_gamepad_status(i, &gamepadState);
-        if (gamepadState.connected) {
-            gamepadIndex = i;
-            gamepad.keyboard = false;
-            break;
-        }
-    }
-    printf("gamepadIndex: %d\n", gamepadIndex);
-
-
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onInitialKeyDown);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp); 
+    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, onGamepadConnected);
+    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, onGamepadDisconnected);
 
     return 0;
 }
