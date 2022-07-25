@@ -10,13 +10,20 @@
 #include "../../shared/debug.h"
 #include "emscripten-audio.h"
 
+#define GAMEPAD_HORIZONTAL_AXIS 0
+#define GAMEPAD_VERTICAL_AXIS 1
+#define GAMEPAD_A_BUTTON 0
+#define GAMEPAD_START_BUTTON 9
+#define GAMEPAD_BACK_BUTTON 8
+
 static struct {
     int32_t width;
     int32_t height;
     bool fullscreen;
 } windowState;
 
-double lastTime = 0.0;
+double lastTime;
+int32_t gamepadIndex = -1;
 
 static struct {
     float stickX;
@@ -48,7 +55,54 @@ static bool strEquals(const char* s1, const char* s2, int32_t n) {
     return true;
 }
 
+
+#include <stdio.h>
 static EM_BOOL loop(double time, void *userData) {
+    if (gamepadIndex > -1) {
+        emscripten_sample_gamepad_data();
+        EmscriptenGamepadEvent gamepadState = { 0 };
+        emscripten_get_gamepad_status(gamepadIndex, &gamepadState);
+        if (gamepadState.connected) {
+            float stickX = (float) gamepadState.axis[GAMEPAD_HORIZONTAL_AXIS];
+            float stickY = (float) -gamepadState.axis[GAMEPAD_VERTICAL_AXIS];
+
+            if (stickX > -0.1f && stickX < 0.1f) {
+                stickX = 0.0f;
+            }
+
+            if (stickY > -0.1f && stickY < 0.1f) {
+                stickY = 0.0f;
+            }
+
+            bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
+            bool startButton = gamepadState.digitalButton[GAMEPAD_START_BUTTON];
+            bool backButton = gamepadState.digitalButton[GAMEPAD_BACK_BUTTON];
+
+            if (!gamepad.keyboard || stickX != 0.0f || stickY != 0.0f || aButton || startButton || backButton) {
+                gamepad.stickX = stickX;
+                gamepad.stickY = stickY;
+                gamepad.aButton = aButton;
+                gamepad.startButton = startButton;
+                gamepad.backButton = backButton;
+                gamepad.keyboard = false;
+            }
+        }
+    } else {
+        emscripten_sample_gamepad_data();
+        int32_t numGamepads = emscripten_get_num_gamepads();
+        EmscriptenGamepadEvent gamepadState = { 0 };
+        for (int32_t i = 0; i < numGamepads; ++i) {
+            emscripten_get_gamepad_status(i, &gamepadState);
+            printf("connected: %d\n", gamepadState.connected);
+            if (gamepadState.connected) {
+                gamepadIndex = i;
+                gamepad.keyboard = false;
+                break;
+            }
+        } 
+    }
+
+
     if (lastTime == 0.0) {
         lastTime = time;
     }
@@ -211,7 +265,6 @@ static EM_BOOL onInitialKeyDown(int eventType, const EmscriptenKeyboardEvent *ke
     return EM_TRUE;
 }
 
-#include <stdio.h>
 int32_t main() {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = 0;
     EmscriptenWebGLContextAttributes attrs = {
@@ -228,6 +281,22 @@ int32_t main() {
     emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
     gl = emscripten_webgl_create_context("#canvas", &attrs);
     emscripten_webgl_make_context_current(gl);
+
+    gamepad.keyboard = true;
+    emscripten_sample_gamepad_data();
+    int32_t numGamepads = emscripten_get_num_gamepads();
+    printf("numGamepads: %d\n", numGamepads);
+    EmscriptenGamepadEvent gamepadState = { 0 };
+    for (int32_t i = 0; i < numGamepads; ++i) {
+        emscripten_get_gamepad_status(i, &gamepadState);
+        if (gamepadState.connected) {
+            gamepadIndex = i;
+            gamepad.keyboard = false;
+            break;
+        }
+    }
+    printf("gamepadIndex: %d\n", gamepadIndex);
+
 
     emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onInitialKeyDown);
 
