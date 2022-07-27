@@ -14,13 +14,12 @@
 #define GAMEPAD_VERTICAL_AXIS 1
 #define GAMEPAD_A_BUTTON 0
 #define GAMEPAD_START_BUTTON 9
-#define GAMEPAD_BACK_BUTTON 8
 
 static struct {
     int32_t width;
     int32_t height;
     bool fullscreen;
-} windowState;
+} windowState = {};
 
 bool running = false;
 float lastTime = 0.0f;
@@ -30,8 +29,7 @@ static struct {
     float stickX;
     float stickY;
     bool aButton;
-    bool startButton;
-    bool backButton;
+    bool fKey;     // Fullscreen via gamepad not widely supported, see: https://bugzilla.mozilla.org/show_bug.cgi?id=1740573
     bool keyboard;
 } gamepad;
 
@@ -57,7 +55,6 @@ static bool strEquals(const char* s1, const char* s2, int32_t n) {
 }
 
 
-#include <stdio.h>
 static EM_BOOL loop(double time, void *userData) {
     if (gamepadIndex > -1) {
         emscripten_sample_gamepad_data();
@@ -76,20 +73,15 @@ static EM_BOOL loop(double time, void *userData) {
             }
 
             bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
-            bool startButton = gamepadState.digitalButton[GAMEPAD_START_BUTTON];
-            bool backButton = gamepadState.digitalButton[GAMEPAD_BACK_BUTTON];
 
-            if (!gamepad.keyboard || stickX != 0.0f || stickY != 0.0f || aButton || startButton || backButton) {
+            if (!gamepad.keyboard || stickX != 0.0f || stickY != 0.0f || aButton) {
                 gamepad.stickX = stickX;
                 gamepad.stickY = stickY;
                 gamepad.aButton = aButton;
-                gamepad.startButton = startButton;
-                gamepad.backButton = backButton;
                 gamepad.keyboard = false;
             }
         }
     }
-
 
     if (lastTime == 0.0f) {
         lastTime = (float) time;
@@ -170,7 +162,8 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
         initialize();
     }
 
-    bool keyProcessed = EM_FALSE;
+    EM_BOOL keyProcessed = EM_FALSE;
+    bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
         keyboardDirections.left = true;
@@ -197,13 +190,21 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
         keyProcessed = EM_TRUE;
     }
 
-    if (strEquals(keyEvent->code, "Escape", 32)) {
-        gamepad.backButton = true;
-        keyProcessed = EM_TRUE;
-    }
-
     if (strEquals(keyEvent->code, "KeyF", 32)) {
-        gamepad.startButton = true;
+        if (windowState.fullscreen) {
+            emscripten_exit_fullscreen();
+            windowState.fullscreen = false;
+        } else {
+            emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, & (EmscriptenFullscreenStrategy) {
+                .scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
+                .canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF,
+                .filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_DEFAULT
+            });
+            windowState.fullscreen = true;
+        }
+
+        gamepad.fKey = true;
+        fKey = true;
         keyProcessed = EM_TRUE;
     }
 
@@ -223,7 +224,9 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
         gamepad.stickY = 0.0f;
     }
 
-    gamepad.keyboard = true;
+    if (keyProcessed == EM_TRUE && !fKey) {
+        gamepad.keyboard = true;
+    }
 
     return keyProcessed;
 }
@@ -233,7 +236,8 @@ static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, v
         initialize();
     }
 
-    bool keyProcessed = EM_FALSE;
+    EM_BOOL keyProcessed = EM_FALSE;
+    bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
         keyboardDirections.left = false;
@@ -258,15 +262,11 @@ static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, v
     if (strEquals(keyEvent->code, "Space", 32)) {
         gamepad.aButton = false;
         keyProcessed = EM_TRUE;
-    }
-    
-    if (strEquals(keyEvent->code, "Escape", 32)) {
-        gamepad.backButton = false;
-        keyProcessed = EM_TRUE;
-    }
+    } 
     
     if (strEquals(keyEvent->code, "KeyF", 32)) {
-        gamepad.startButton = false;
+        gamepad.fKey = false;
+        fKey = true;
         keyProcessed = EM_TRUE;
     }
 
@@ -286,7 +286,9 @@ static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, v
         gamepad.stickY = 0.0f;
     }
 
-    gamepad.keyboard = true;
+    if (keyProcessed == EM_TRUE && !fKey) {
+        gamepad.keyboard = true;
+    }
 
     return keyProcessed;
 }
