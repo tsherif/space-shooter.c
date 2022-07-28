@@ -21,17 +21,17 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _EMSCRIPTEN_AUDIO_H_
-#define _EMSCRIPTEN_AUDIO_H_
+#ifndef _WEB_AUDIO_H_
+#define _WEB_AUDIO_H_
 
 //////////////////////////////////////////////////////////////////////////////
-// Initialization and cleanup functions for emscripten audio.
+// Initialization and update functions for web audio.
 //
-// - emscripten_initAudio(): Initialize audio.
-// - emscripten_updateAudio(): Update sources that have finished playing.
+// - web_initAudio(): Initialize audio.
+// - web_updateAudio(): Update sources that have finished playing.
 //////////////////////////////////////////////////////////////////////////////
 
-bool emscripten_initAudio(void);
-void emscripten_updateAudio(void);
+bool web_initAudio(void);
+void web_updateAudio(void);
 
 #endif

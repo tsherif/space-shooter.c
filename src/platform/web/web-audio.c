@@ -5,7 +5,7 @@
 #include "../../shared/debug.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
-#include "emscripten-audio.h"
+#include "web-audio.h"
 
 typedef struct {
     ALuint source;
@@ -20,7 +20,7 @@ static struct {
     AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
 } audio;
 
-bool emscripten_initAudio(void) {
+bool web_initAudio(void) {
     ALenum err;
 
     audio.device = alcOpenDevice(0);
@@ -43,7 +43,7 @@ bool emscripten_initAudio(void) {
     return true;
 }
 
-void emscripten_updateAudio(void) {
+void web_updateAudio(void) {
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (audio.channels[i].inUse) {
             ALint value;

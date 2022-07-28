@@ -8,7 +8,7 @@
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "../../shared/debug.h"
-#include "emscripten-audio.h"
+#include "web-audio.h"
 
 #define GAMEPAD_HORIZONTAL_AXIS 0
 #define GAMEPAD_VERTICAL_AXIS 1
@@ -90,7 +90,7 @@ static EM_BOOL loop(double time, void *userData) {
     float dt = time - lastTime;
     lastTime = time;
 
-    emscripten_updateAudio();
+    web_updateAudio();
     game_update(dt);
     game_draw();
 
@@ -107,7 +107,7 @@ static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *u
 }
 
 static void initialize(void) {
-    emscripten_initAudio();
+    web_initAudio();
 
     if (!game_init(& (Game_InitOptions) {
         .keyboardFullscreenInstructions = true,

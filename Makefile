@@ -11,13 +11,15 @@ debug: assets
 release: assets 
 	$(CC) $(CFLAGS) $(RELEASE_FLAGS) $(SOURCE_FILES) $(LDLIBS)
 
-emscripten: assets
-	emcc $(DEBUG_FLAGS) -DSPACE_SHOOTER_OPENGLES --preload-file "./assets" -sINITIAL_MEMORY=59965440 -o build/space-shooter.js src/shared/*.c src/game/*.c src/platform/emscripten/*.c -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2
-	cp src/platform/emscripten/index.html build/index.html
+web: clean
+	emcc $(DEBUG_FLAGS) -DSPACE_SHOOTER_OPENGLES --preload-file "./assets" -sINITIAL_MEMORY=59965440 -o build/space-shooter.js src/shared/*.c src/game/*.c src/platform/web/*.c -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2
+	cp src/platform/web/index.html build/index.html
 
-assets:
+assets: clean
+	cp -r assets build/assets
+
+clean:
 	rm -rf build
 	mkdir build
-	cp -r assets build/assets
 	
 .PHONY: debug release assets
