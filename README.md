@@ -6,14 +6,14 @@ A cross-platform, top-down 2D space shooter written in C using only system libra
 
 Dependencies
 ------------
-- Window management: Win32 (Windows), Xlib (Linux)
-- Rendering: OpenGL
-- Audio: XAudio2 (Windows), ALSA/pthread (Linux)
-- Gamepad: XInput (Windows), evdev (Linux)
+- Base: Win32 (Windows), Xlib (Linux), Emscripten (Web)
+- Rendering: OpenGL 3.3 (Windows/Linux), OpenGL ES 3.0 (Web)
+- Audio: XAudio2 (Windows), ALSA/pthread (Linux), OpenAL (Web)
+- Gamepad: XInput (Windows), evdev (Linux), Web Gamepad (Web)
 
 Description
 -----------
-`space-shooter.c` is a cross-platform, top-down 2D space shooter written in standard C11 using only system libraries (with system libraries defined as anything included in the C standard library or supported operating systems). `space-shooter.c` has been tested on Windows 10 and Ubuntu Linux 16.04. This project drew heavy inspiration from [Handmade Hero](https://handmadehero.org/) and [pacman.c](https://github.com/floooh/pacman.c).
+`space-shooter.c` is a cross-platform, top-down 2D space shooter written in standard C11 using only system libraries (with system libraries defined as anything included in the C standard library or supported operating systems). `space-shooter.c` has been tested on Windows 10, Ubuntu Linux 16.04, Chrome 103 and Firefox 103. This project drew heavy inspiration from [Handmade Hero](https://handmadehero.org/) and [pacman.c](https://github.com/floooh/pacman.c).
 
 The design and architecture of `space-shooter.c` is described [here](./ARCHITECTURE.md).
 
@@ -29,8 +29,13 @@ Windows
 Linux
 - Make sure development headers for the Linux kernel, Xlib, glx and ALSA are installed.
     - E.g. on Ubuntu, run the following: `sudo apt install linux-libc-dev libx11-dev mesa-common-dev libasound2-dev`  
-- Run `make` for a debug build or `make release` for an optimized build.
+- Run `make linux-debug` for a debug build or `make linux-release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
+
+Web
+- Make sure [emscripten](https://emscripten.org/) is installed.  
+- Run `make web-debug` for a debug build or `make web-release` for an optimized build.
+- Serve the `build/` directory from a local web server (e.g. `python -m SimpleHTTPServer`) and open the page in Chrome or Firefox.
 
 What About Mac?
 ---------------
