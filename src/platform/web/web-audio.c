@@ -21,8 +21,6 @@ static struct {
 } audio;
 
 bool web_initAudio(void) {
-    ALenum err;
-
     audio.device = alcOpenDevice(0);
     audio.ctx = alcCreateContext(audio.device, 0);
     alcMakeContextCurrent(audio.ctx);
@@ -59,9 +57,6 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
     if (!audio.device) {
         return;
     }
-
-    ALenum err;
-    alGetError();
 
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {

@@ -1,18 +1,30 @@
-CFLAGS=-std=c11 -Wall -Wno-unused-result -fno-common -DSOGL_MAJOR_VERSION=3 -DSOGL_MINOR_VERSION=3 -D_POSIX_C_SOURCE=199309L -o build/space-shooter
+CFLAGS=-std=c11 -Wall -Wno-unused-result -fno-common 
+SOURCE_FILES=src/shared/*.c src/game/*.c
 DEBUG_FLAGS=-g -DSPACE_SHOOTER_DEBUG
 RELEASE_FLAGS=-O3
-SOURCE_FILES=src/shared/*.c src/game/*.c src/platform/linux/*.c
-CC=gcc
-LDLIBS=-lX11 -ldl -lGL -lm -lpthread -lasound
 
-debug: assets
-	$(CC) $(CFLAGS) $(DEBUG_FLAGS) $(SOURCE_FILES) $(LDLIBS)
+LINUX_CC=gcc
+LINUX_CFLAGS=-DSOGL_MAJOR_VERSION=3 -DSOGL_MINOR_VERSION=3 -D_POSIX_C_SOURCE=199309L -o build/space-shooter
+LINUX_SOURCE_FILES=src/platform/linux/*.c
+LINUX_LDLIBS=-lX11 -ldl -lGL -lm -lpthread -lasound
 
-release: assets 
-	$(CC) $(CFLAGS) $(RELEASE_FLAGS) $(SOURCE_FILES) $(LDLIBS)
+WEB_CC=emcc
+WEB_CFLAGS=-DSPACE_SHOOTER_OPENGLES -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2 --preload-file "./assets" -sINITIAL_MEMORY=59965440 -o build/space-shooter.js
+WEB_SOURCE_FILES=src/platform/web/*.c
+WEB_LDLIBS=-lopenal
 
-web: clean
-	emcc $(DEBUG_FLAGS) -DSPACE_SHOOTER_OPENGLES --preload-file "./assets" -sINITIAL_MEMORY=59965440 -o build/space-shooter.js src/shared/*.c src/game/*.c src/platform/web/*.c -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2
+linux-debug: assets
+	$(LINUX_CC) $(DEBUG_FLAGS) $(CFLAGS) $(LINUX_CFLAGS) $(SOURCE_FILES) $(LINUX_SOURCE_FILES) $(LINUX_LDLIBS)
+
+linux-release: assets 
+	$(LINUX_CC) $(RELEASE_FLAGS) $(CFLAGS) $(LINUX_CFLAGS) $(SOURCE_FILES) $(LINUX_SOURCE_FILES) $(LINUX_LDLIBS)
+
+web-debug: clean
+	$(WEB_CC) $(DEBUG_FLAGS) $(CFLAGS) $(WEB_CFLAGS) $(SOURCE_FILES) $(WEB_SOURCE_FILES) $(WEB_LDLIBS)
+	cp src/platform/web/index.html build/index.html
+
+web-release: clean
+	$(WEB_CC) $(RELEASE_FLAGS) $(CFLAGS) $(WEB_CFLAGS) $(SOURCE_FILES) $(WEB_SOURCE_FILES) $(WEB_LDLIBS)
 	cp src/platform/web/index.html build/index.html
 
 assets: clean
