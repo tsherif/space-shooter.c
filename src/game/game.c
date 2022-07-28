@@ -123,15 +123,19 @@ typedef struct {
 } PlayerCollisionExplosionOptions;
 
 static struct {
+    Game_Input input;
     enum {
         TITLE_SCREEN,
         LEVEL_TRANSITION,
         MAIN_GAME,
         GAME_OVER
     } state;
-    Game_Input input;
     float tickTime;
     float animationTime;
+    struct {
+        bool keyboardFullscreenInstructions;
+        bool hideQuitInstructions;
+    } titleScreenOptions;
     char scoreText[SCORE_TEXT_LENGTH];
 } gameState = {
     .state = TITLE_SCREEN
@@ -695,21 +699,24 @@ static void titleScreen(float elapsedTime) {
             .scale = 0.3f
         });
 
-        const char* fullscreenText = gameState.input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
-        float fullscreenXOffset = gameState.input.keyboard ? 82.0f : 97.0f;
+        bool keyboardFullscreenInstructions = gameState.input.keyboard || gameState.titleScreenOptions.keyboardFullscreenInstructions;
+        const char* fullscreenText = keyboardFullscreenInstructions ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
+        float fullscreenXOffset = keyboardFullscreenInstructions ? 82.0f : 97.0f;
         entities_fromText(&entities.text, fullscreenText, &(Entities_FromTextOptions) {
             .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
             .y = yBase + 26.0f, 
             .scale = 0.3f
         });
 
-        const char* quitText = gameState.input.keyboard ? "'ESC' to quit" : "'Back' to quit";
-        float quitXOffset = gameState.input.keyboard ? 47.0f : 50.0f;
-        entities_fromText(&entities.text, quitText, &(Entities_FromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - quitXOffset,
-            .y = yBase + 39.0f, 
-            .scale = 0.3f
-        });
+        if (!gameState.titleScreenOptions.hideQuitInstructions) {
+            const char* quitText = gameState.input.keyboard ? "'ESC' to quit" : "'Back' to quit";
+            float quitXOffset = gameState.input.keyboard ? 47.0f : 50.0f;
+            entities_fromText(&entities.text, quitText, &(Entities_FromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - quitXOffset,
+                .y = yBase + 39.0f, 
+                .scale = 0.3f
+            });
+        }
     }
 
     if (events_titleSequence.complete && events_subtitleSequence.complete) {
@@ -886,7 +893,13 @@ static void simulate(float elapsedTime) {
 //  Platform interface functions
 //////////////////////////////////
 
-bool game_init(void) {
+bool game_init(Game_InitOptions* opts) {
+
+    if (opts) {
+        gameState.titleScreenOptions.keyboardFullscreenInstructions = opts->keyboardFullscreenInstructions;
+        gameState.titleScreenOptions.hideQuitInstructions = opts->hideQuitInstructions;
+    }
+
     // Init subsystems
     utils_init();
     

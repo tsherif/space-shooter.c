@@ -302,7 +302,7 @@ int32_t WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine
     }
 
 
-    if (!game_init()) {
+    if (!game_init(NULL)) {
         goto EXIT_GAME;
     }
 

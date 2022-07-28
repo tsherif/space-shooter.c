@@ -32,6 +32,20 @@
 #include <stdint.h>
 #include "data.h"
 
+///////////////////////////////////////////////////////////////////////////////
+// Game_InitOptions can be used to customize parts of initialization.
+//
+// Members:
+// - keyboardFullscreenInstructions: Show keyboard controls for fullscreen
+//      even if gamepad is attached.
+// - hideQuitInstructions: Don't show quit instructions.
+///////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+    bool keyboardFullscreenInstructions;
+    bool hideQuitInstructions;
+} Game_InitOptions;
+
 ////////////////////////////////////////////////////////////////////////
 // Game_Input represents input from the platform layer into the game.
 //
@@ -64,7 +78,7 @@ typedef struct {
 // - game_close(): Release game resources.
 /////////////////////////////////////////////////////////////////////////
 
-bool game_init(void);
+bool game_init(Game_InitOptions* opts);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);

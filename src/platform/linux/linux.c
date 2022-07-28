@@ -290,7 +290,7 @@ int32_t main(int32_t argc, char const *argv[]) {
 
     linux_detectGamepad(); 
 
-    if (!game_init()) {
+    if (!game_init(NULL)) {
         goto EXIT_GAME;
     }
 

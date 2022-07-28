@@ -109,7 +109,10 @@ static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *u
 static void initialize(void) {
     emscripten_initAudio();
 
-    if (!game_init()) {
+    if (!game_init(& (Game_InitOptions) {
+        .keyboardFullscreenInstructions = true,
+        .hideQuitInstructions = true
+    })) {
         return;
     }
 
