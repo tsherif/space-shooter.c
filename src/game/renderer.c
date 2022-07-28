@@ -21,11 +21,18 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////////
 
-#include <malloc.h>
+#ifdef SPACE_SHOOTER_OPENGLES
 #include <GLES3/gl3.h>
-#include "renderer.h"
-// #include "../../lib/simple-opengl-loader.h"
+#define VS_PREAMBLE "#version 300 es\n"
+#define FS_PREAMBLE "#version 300 es\nprecision highp float;\n"
+#else
+#include "../../lib/simple-opengl-loader.h"
+#define VS_PREAMBLE "#version 330\n"
+#define FS_PREAMBLE "#version 330\n"
+#endif
 
+#include <malloc.h>
+#include "renderer.h"
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
 #include "../shared/debug.h"
@@ -76,8 +83,13 @@ bool renderer_init(int worldWidth, int worldHeight) {
         return false;
     }
 
+    const char* vertexShaderParts[2] = {
+        VS_PREAMBLE,
+        (const char*) vsSource.data
+    };
+
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, (const char **) &vsSource.data, NULL);
+    glShaderSource(vertexShader, 2, vertexShaderParts, NULL);
     glCompileShader(vertexShader);
 
     data_freeBuffer(&vsSource);
@@ -86,9 +98,14 @@ bool renderer_init(int worldWidth, int worldHeight) {
         DEBUG_LOG("renderer_init: Unable to load fragment shader.");
         return false;
     }
+
+    const char* fragmentShaderParts[2] = {
+        FS_PREAMBLE,
+        (const char*) fsSource.data
+    };
         
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, (const char **) &fsSource.data, NULL);
+    glShaderSource(fragmentShader, 2, fragmentShaderParts, NULL);
     glCompileShader(fragmentShader);
 
     data_freeBuffer(&fsSource);
