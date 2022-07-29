@@ -9,7 +9,7 @@ Dependencies
 - Base: Win32 (Windows), Xlib (Linux), Emscripten (Web)
 - Rendering: OpenGL 3.3 (Windows/Linux), OpenGL ES 3.0 (Web)
 - Audio: XAudio2 (Windows), ALSA/pthread (Linux), OpenAL (Web)
-- Gamepad: XInput (Windows), evdev (Linux), Web Gamepad (Web)
+- Gamepad: XInput (Windows), evdev (Linux), Emscripten (Web)
 
 Description
 -----------

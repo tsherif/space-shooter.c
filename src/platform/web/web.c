@@ -21,7 +21,6 @@ static struct {
     bool fullscreen;
 } windowState = {};
 
-bool running = false;
 float lastTime = 0.0f;
 int32_t gamepadIndex = -1;
 
@@ -106,31 +105,7 @@ static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *u
     return EM_TRUE;
 }
 
-static void initialize(void) {
-    web_initAudio();
-
-    if (!game_init(& (Game_InitOptions) {
-        .keyboardFullscreenInstructions = true,
-        .hideQuitInstructions = true
-    })) {
-        return;
-    }
-
-    game_resize(windowState.width, windowState.height);
-    emscripten_request_animation_frame_loop(loop, NULL);
-
-    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
-
-    emscripten_set_element_css_size("#start-text", 0.0, 0.0);
-
-    running = true;
-}
-
 static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
-    if (!running) {
-        initialize();
-    }
-
     if (gamepadIndex == -1) {
         gamepadIndex = gamepadEvent->index;
     }
@@ -139,10 +114,6 @@ static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *g
 }
 
 static EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
-    if (!running) {
-        initialize();
-    }
-
     if (gamepadIndex == gamepadEvent->index) {
         gamepadIndex = -1;
         emscripten_sample_gamepad_data();
@@ -161,10 +132,6 @@ static EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent
 }
 
 static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    if (!running) {
-        initialize();
-    }
-
     EM_BOOL keyProcessed = EM_FALSE;
     bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
 
@@ -235,10 +202,6 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
 }
 
 static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    if (!running) {
-        initialize();
-    }
-
     EM_BOOL keyProcessed = EM_FALSE;
     bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
 
@@ -296,6 +259,43 @@ static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, v
     return keyProcessed;
 }
 
+static void initialize(void) {
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL); 
+    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, NULL);
+    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, NULL);
+
+    web_initAudio();
+
+    if (!game_init(& (Game_InitOptions) {
+        .keyboardFullscreenInstructions = true,
+        .hideQuitInstructions = true
+    })) {
+        return;
+    }
+
+    game_resize(windowState.width, windowState.height);
+    emscripten_request_animation_frame_loop(loop, NULL);
+
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp); 
+    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, onGamepadConnected);
+    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, onGamepadDisconnected);
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
+
+    emscripten_set_element_css_size("#start-text", 0.0, 0.0);
+}
+
+static EM_BOOL onGamepadInitialize(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+    initialize();
+    return onGamepadConnected(eventType, gamepadEvent, userData);
+}
+
+static EM_BOOL onKeyboardInitialize(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    initialize();
+    return onKeyDown(eventType, keyEvent, userData);
+}
+
 int32_t main() {
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = 0;
     EmscriptenWebGLContextAttributes attrs = {
@@ -313,10 +313,10 @@ int32_t main() {
     gl = emscripten_webgl_create_context("#canvas", &attrs);
     emscripten_webgl_make_context_current(gl);
 
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp); 
-    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, onGamepadConnected);
-    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, onGamepadDisconnected);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyboardInitialize);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyboardInitialize); 
+    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, onGamepadInitialize);
+    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, onGamepadInitialize);
 
     return 0;
 }
