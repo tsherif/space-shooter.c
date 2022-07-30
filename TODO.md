@@ -1,5 +1,5 @@
 - [ ] Web support
-    - [ ] Share posix utils with linux
+    - [x] Share posix utils with linux
     - [ ] Error handling
     - [ ] In game "Press key to start" screen
     - [ ] Check that C assert function works (maybe abort would be better?)
