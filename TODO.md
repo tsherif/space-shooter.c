@@ -3,6 +3,7 @@
     - [ ] Error handling
     - [ ] In game "Press key to start" screen
     - [ ] Check that C assert function works (maybe abort would be better?)
+    - [ ] Figure out proper gamepad deadzone
 - [x] Document design
 - [x] Audio format constants should be in constants.h
 - [x] More comments
