@@ -1,6 +1,7 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <stdint.h>
+#include <math.h>
 #include "../../shared/constants.h"
 #include "../../shared/platform-interface.h"
 
@@ -203,14 +204,22 @@ void platform_getInput(Game_Input* input) {
         EmscriptenGamepadEvent gamepadState = { 0 };
         emscripten_get_gamepad_status(gamepad.index, &gamepadState);
         if (gamepadState.connected) {
-            float stickX = (float) gamepadState.axis[GAMEPAD_HORIZONTAL_AXIS];
-            float stickY = (float) -gamepadState.axis[GAMEPAD_VERTICAL_AXIS];
+            float stickX = 0.0f;
+            float stickY = 0.0f;
+            float x = (float) gamepadState.axis[GAMEPAD_HORIZONTAL_AXIS];
+            float y = (float) gamepadState.axis[GAMEPAD_VERTICAL_AXIS];
 
-            if (stickX > -0.1f && stickX < 0.1f) {
+            float mag = (float) sqrt(x * x + y * y);
+            x /= mag;
+            y /= mag;
+
+            if (mag > SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE_FLOAT) {
+                mag -= SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE_FLOAT;
+                mag /= 1.0f - SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE_FLOAT;
+                stickX = x * mag;
+                stickY = -y * mag;
+            } else {
                 stickX = 0.0f;
-            }
-
-            if (stickY > -0.1f && stickY < 0.1f) {
                 stickY = 0.0f;
             }
 

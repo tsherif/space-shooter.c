@@ -56,5 +56,6 @@
 
 // From XInput: https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput#dead-zone
 #define SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE  7849
+#define SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE_FLOAT  (SPACE_SHOOTER_GAMEPAD_STICK_DEADZONE / 32767.0f)
 
 #endif

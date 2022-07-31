@@ -1,10 +1,10 @@
 - [ ] Web support
     - [x] Share posix utils with linux
     - [ ] Error handling
-    - [ ] Split out graphics and audio init 
+    - [x] Split out graphics and audio init 
     - [ ] In game "Press key to start" screen
     - [x] Check that C assert function works (maybe abort would be better?)
-    - [ ] Figure out proper gamepad deadzone
+    - [x] Figure out proper gamepad deadzone
     - [ ] Update architecture doc
 - [x] Document design
 - [x] Audio format constants should be in constants.h

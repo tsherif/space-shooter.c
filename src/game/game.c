@@ -966,7 +966,7 @@ bool game_init(Game_InitOptions* opts) {
 
     events_start(&events_titleControlSequence);
 
-    if (opts && !opts->noMusic) {
+    if (!opts || !opts->noMusic) {
         platform_playSound(&gameData.sounds.music, true);
     }
 
