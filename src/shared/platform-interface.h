@@ -43,6 +43,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
+    bool showInputToStartScreen;
     bool keyboardFullscreenInstructions;
     bool hideQuitInstructions;
     bool noMusic;

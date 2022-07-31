@@ -126,6 +126,7 @@ static struct {
     Game_Input input;
     enum {
         TITLE_SCREEN,
+        INPUT_TO_START_SCREEN,
         LEVEL_TRANSITION,
         MAIN_GAME,
         GAME_OVER
@@ -725,9 +726,38 @@ static void titleScreen(float elapsedTime) {
         events_stop(&events_subtitleSequence);
     }
 
-    if (gameState.input.shoot || events_instructionSequence.complete) {
+    if ((gameState.input.shoot && !gameState.input.lastShoot) || events_instructionSequence.complete) {
         entities.text.count = 0;
         transitionLevel();
+    }
+
+    updateAnimations();
+    filterDeadEntities();
+}
+
+static void inputToStartScreen(float elapsedTime) {
+    platform_getInput(&gameState.input);
+    
+    updateStars(elapsedTime);
+
+    entities.text.count = 0;
+
+    float yBase = 66.0f;
+
+    entities_fromText(&entities.text, "Press 'Space' key or ", &(Entities_FromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 48.0f,
+        .y = yBase, 
+        .scale = 0.2f
+    });
+
+    entities_fromText(&entities.text, "'A' button to start", &(Entities_FromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 46.0f,
+        .y = yBase + 8.0f, 
+        .scale = 0.2f
+    });
+
+    if (gameState.input.shoot && !gameState.input.lastShoot) {
+        gameState.state = TITLE_SCREEN;
     }
 
     updateAnimations();
@@ -879,6 +909,7 @@ static void simulate(float elapsedTime) {
 
     switch(gameState.state) {
         case TITLE_SCREEN: titleScreen(elapsedTime); break;
+        case INPUT_TO_START_SCREEN: inputToStartScreen(elapsedTime); break;
         case LEVEL_TRANSITION: levelTransition(elapsedTime); break;
         case MAIN_GAME: mainGame(elapsedTime); break;
         case GAME_OVER: gameOver(elapsedTime); break;
@@ -898,6 +929,10 @@ bool game_init(Game_InitOptions* opts) {
     if (opts) {
         gameState.titleScreenOptions.keyboardFullscreenInstructions = opts->keyboardFullscreenInstructions;
         gameState.titleScreenOptions.hideQuitInstructions = opts->hideQuitInstructions;
+
+        if (opts->showInputToStartScreen) {
+            gameState.state = INPUT_TO_START_SCREEN;
+        }
     }
 
     // Init subsystems
@@ -967,7 +1002,7 @@ bool game_init(Game_InitOptions* opts) {
     events_start(&events_titleControlSequence);
 
     if (!opts || !opts->noMusic) {
-        platform_playSound(&gameData.sounds.music, true);
+        game_startMusic();
     }
 
     return true;

@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "../../shared/constants.h"
 #include "../../shared/platform-interface.h"
-#include "web-audio.h"
 #include "web-input.h"
+#include "web-audio.h"
 
 static struct {
     int32_t width;
@@ -38,47 +38,6 @@ static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *u
     return EM_TRUE;
 }
 
-
-
-static void initialize(void) {
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, NULL); 
-    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, NULL);
-    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, NULL);
-
-    web_initAudio();
-
-    if (!game_init(& (Game_InitOptions) {
-        .keyboardFullscreenInstructions = true,
-        .hideQuitInstructions = true,
-        .noMusic = true
-    })) {
-        return;
-    }
-
-    game_startMusic();
-    game_resize(windowState.width, windowState.height);
-    emscripten_request_animation_frame_loop(loop, NULL);
-
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyDown);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyUp); 
-    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, web_onGamepadConnected);
-    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, web_onGamepadDisconnected);
-    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
-
-    emscripten_set_element_css_size("#start-text", 0.0, 0.0);
-}
-
-static EM_BOOL onGamepadInitialize(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
-    initialize();
-    return web_onGamepadConnected(eventType, gamepadEvent, userData);
-}
-
-static EM_BOOL onKeyboardInitialize(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    initialize();
-    return web_onKeyDown(eventType, keyEvent, userData);
-}
-
 int32_t main() {
     double windowWidth = 0.0;
     double windowHeight = 0.0;
@@ -93,10 +52,22 @@ int32_t main() {
     });
     emscripten_webgl_make_context_current(gl);
 
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyboardInitialize);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyboardInitialize); 
-    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, onGamepadInitialize);
-    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, onGamepadInitialize);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyUp); 
+    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, web_onGamepadConnected);
+    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, web_onGamepadDisconnected);
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
+
+    if (!game_init(& (Game_InitOptions) {
+        .showInputToStartScreen = true,
+        .keyboardFullscreenInstructions = true,
+        .hideQuitInstructions = true,
+        .noMusic = true
+    })) {
+        return 1;
+    }
+    game_resize(windowState.width, windowState.height);
+    emscripten_request_animation_frame_loop(loop, NULL);
 
     return 0;
 }

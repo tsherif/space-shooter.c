@@ -4,6 +4,7 @@
 #include <math.h>
 #include "../../shared/constants.h"
 #include "../../shared/platform-interface.h"
+#include "web-audio.h"
 
 #define GAMEPAD_HORIZONTAL_AXIS 0
 #define GAMEPAD_VERTICAL_AXIS 1
@@ -28,7 +29,9 @@ static struct {
     bool down;
 } keyboardDirections;
 
-bool fullscreen;
+bool audioInitialized = false;
+bool musicStarted = false;
+bool fullscreen = false;
 
 static bool strEquals(const char* s1, const char* s2, int32_t n) {
     for (int32_t i = 0; i < n; ++i) {
@@ -44,7 +47,16 @@ static bool strEquals(const char* s1, const char* s2, int32_t n) {
     return true;
 }
 
+static void initializeAudio(void) {
+    web_initAudio();
+    audioInitialized = true;
+}
+
 EM_BOOL web_onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+    if (!audioInitialized) {
+        initializeAudio();
+    }
+
     if (gamepad.index == -1) {
         gamepad.index = gamepadEvent->index;
     }
@@ -71,6 +83,10 @@ EM_BOOL web_onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *g
 }
 
 EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    if (!audioInitialized) {
+        initializeAudio();
+    }
+
     EM_BOOL keyProcessed = EM_FALSE;
     bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
 
@@ -165,6 +181,11 @@ EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void
     }
     
     if (strEquals(keyEvent->code, "Space", 32)) {
+        if (!musicStarted) {
+            game_startMusic();
+            musicStarted = true;
+        }
+
         gamepad.aButton = false;
         keyProcessed = EM_TRUE;
     } 
@@ -224,6 +245,11 @@ void platform_getInput(Game_Input* input) {
             }
 
             bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
+
+            if (aButton && !musicStarted) {
+                game_startMusic();
+                musicStarted = true;
+            }
 
             if (!gamepad.keyboard || stickX != 0.0f || stickY != 0.0f || aButton) {
                 gamepad.stickX = stickX;
