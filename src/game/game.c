@@ -943,8 +943,6 @@ bool game_init(Game_InitOptions* opts) {
     }
 
     // Init game
-    platform_playSound(&gameData.sounds.music, true);
-
     entities_spawn(&entities.player.entity, & (Entities_InitOptions) {
         .x = (GAME_WIDTH - entities.player.sprite->panelDims[0]) / 2,
         .y = GAME_HEIGHT - entities.player.sprite->panelDims[1] * 2.0f
@@ -968,7 +966,15 @@ bool game_init(Game_InitOptions* opts) {
 
     events_start(&events_titleControlSequence);
 
+    if (opts && !opts->noMusic) {
+        platform_playSound(&gameData.sounds.music, true);
+    }
+
     return true;
+}
+
+void game_startMusic(void) {
+    platform_playSound(&gameData.sounds.music, true); 
 }
 
 ////////////////////////////////////////////////////////////

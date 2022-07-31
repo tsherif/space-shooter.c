@@ -50,11 +50,13 @@ static void initialize(void) {
 
     if (!game_init(& (Game_InitOptions) {
         .keyboardFullscreenInstructions = true,
-        .hideQuitInstructions = true
+        .hideQuitInstructions = true,
+        .noMusic = true
     })) {
         return;
     }
 
+    game_startMusic();
     game_resize(windowState.width, windowState.height);
     emscripten_request_animation_frame_loop(loop, NULL);
 

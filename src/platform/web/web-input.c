@@ -1,6 +1,7 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <stdint.h>
+#include "../../shared/constants.h"
 #include "../../shared/platform-interface.h"
 
 #define GAMEPAD_HORIZONTAL_AXIS 0

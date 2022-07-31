@@ -24,7 +24,7 @@
 #ifndef _DEBUG_H_
 #define _DEBUG_H_
 
-#include <assert.h>
+#include <stdlib.h>
 #include "platform-interface.h"
 
 //////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@
 
 #ifdef SPACE_SHOOTER_DEBUG
 #define DEBUG_LOG(message) platform_debugMessage(message)
-#define DEBUG_ASSERT(condition, message) if (!(condition)) { DEBUG_LOG(message); assert(condition);}
+#define DEBUG_ASSERT(condition, message) if (!(condition)) { DEBUG_LOG(message); abort();}
 #else
 #define DEBUG_LOG(message)
 #define DEBUG_ASSERT(condition, message)

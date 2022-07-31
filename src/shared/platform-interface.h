@@ -39,11 +39,13 @@
 // - keyboardFullscreenInstructions: Show keyboard controls for fullscreen
 //      even if gamepad is attached.
 // - hideQuitInstructions: Don't show quit instructions.
+// - noMusic: Don't start music.
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     bool keyboardFullscreenInstructions;
     bool hideQuitInstructions;
+    bool noMusic;
 } Game_InitOptions;
 
 ////////////////////////////////////////////////////////////////////////
@@ -70,6 +72,8 @@ typedef struct {
 // implemented by the game layer.
 //
 // - game_init(): Initialize game resources.
+// - game_startMusic(): Start music, if not done in init
+//      (i.e. for web after user interation).
 // - game_update(): Update game state based on time elapsed since
 //      last frame.
 // - game_draw(): Draw current frame.
@@ -79,6 +83,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////
 
 bool game_init(Game_InitOptions* opts);
+void game_startMusic(void);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
