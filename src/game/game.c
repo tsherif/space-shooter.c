@@ -744,16 +744,10 @@ static void inputToStartScreen(float elapsedTime) {
 
     float yBase = 66.0f;
 
-    entities_fromText(&entities.text, "Press 'Space' key or ", &(Entities_FromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 48.0f,
+    entities_fromText(&entities.text, "Press 'Space' key to start", &(Entities_FromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 92.0f,
         .y = yBase, 
-        .scale = 0.2f
-    });
-
-    entities_fromText(&entities.text, "'A' button to start", &(Entities_FromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 46.0f,
-        .y = yBase + 8.0f, 
-        .scale = 0.2f
+        .scale = 0.3f
     });
 
     if (gameState.input.shoot && !gameState.input.lastShoot) {
