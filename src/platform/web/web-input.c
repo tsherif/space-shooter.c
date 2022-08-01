@@ -30,7 +30,7 @@ static struct {
 } keyboardDirections;
 
 bool audioInitialized = false;
-bool musicStarted = false;
+bool gameStarted = false;
 bool fullscreen = false;
 
 static bool strEquals(const char* s1, const char* s2, int32_t n) {
@@ -89,6 +89,7 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
 
     EM_BOOL keyProcessed = EM_FALSE;
     bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
+    bool startingGame = false; // Don't set gamepad to keyboard if the starting game.
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
         keyboardDirections.left = true;
@@ -111,6 +112,11 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
     }
 
     if (strEquals(keyEvent->code, "Space", 32)) {
+        if (!gameStarted) {
+            game_startMusic();
+            gameStarted = true;
+            startingGame = true;
+        }
         gamepad.aButton = true;
         keyProcessed = EM_TRUE;
     }
@@ -149,7 +155,7 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
         gamepad.stickY = 0.0f;
     }
 
-    if (keyProcessed == EM_TRUE && !fKey) {
+    if (keyProcessed == EM_TRUE && !fKey && !startingGame) {
         gamepad.keyboard = true;
     }
 
@@ -158,7 +164,6 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
 
 EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
     EM_BOOL keyProcessed = EM_FALSE;
-    bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
         keyboardDirections.left = false;
@@ -181,18 +186,12 @@ EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void
     }
     
     if (strEquals(keyEvent->code, "Space", 32)) {
-        if (!musicStarted) {
-            game_startMusic();
-            musicStarted = true;
-        }
-
         gamepad.aButton = false;
         keyProcessed = EM_TRUE;
     } 
     
     if (strEquals(keyEvent->code, "KeyF", 32)) {
         gamepad.fKey = false;
-        fKey = true;
         keyProcessed = EM_TRUE;
     }
 
@@ -212,15 +211,11 @@ EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void
         gamepad.stickY = 0.0f;
     }
 
-    if (keyProcessed == EM_TRUE && !fKey) {
-        gamepad.keyboard = true;
-    }
-
     return keyProcessed;
 }
 
 void platform_getInput(Game_Input* input) {
-    if (gamepad.index > -1) {
+    if (gamepad.index > -1 && gameStarted) {
         emscripten_sample_gamepad_data();
         EmscriptenGamepadEvent gamepadState = { 0 };
         emscripten_get_gamepad_status(gamepad.index, &gamepadState);
@@ -245,11 +240,6 @@ void platform_getInput(Game_Input* input) {
             }
 
             bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
-
-            if (aButton && !musicStarted) {
-                game_startMusic();
-                musicStarted = true;
-            }
 
             if (!gamepad.keyboard || stickX != 0.0f || stickY != 0.0f || aButton) {
                 gamepad.stickX = stickX;

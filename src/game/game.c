@@ -745,7 +745,7 @@ static void inputToStartScreen(float elapsedTime) {
     float yBase = 66.0f;
 
     entities_fromText(&entities.text, "Press 'Space' key to start", &(Entities_FromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 92.0f,
+        .x = GAME_WIDTH / 2.0f - 90.0f,
         .y = yBase, 
         .scale = 0.3f
     });
