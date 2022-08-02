@@ -88,8 +88,6 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
     }
 
     EM_BOOL keyProcessed = EM_FALSE;
-    bool fKey = false; // Don't set gamepad to keyboard if the f key was hit.
-    bool startingGame = false; // Don't set gamepad to keyboard if the starting game.
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
         keyboardDirections.left = true;
@@ -112,11 +110,6 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
     }
 
     if (strEquals(keyEvent->code, "Space", 32)) {
-        if (!gameStarted) {
-            game_startMusic();
-            gameStarted = true;
-            startingGame = true;
-        }
         gamepad.aButton = true;
         keyProcessed = EM_TRUE;
     }
@@ -135,7 +128,6 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
         }
 
         gamepad.fKey = true;
-        fKey = true;
         keyProcessed = EM_TRUE;
     }
 
@@ -155,7 +147,7 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
         gamepad.stickY = 0.0f;
     }
 
-    if (keyProcessed == EM_TRUE && !fKey && !startingGame) {
+    if (keyProcessed == EM_TRUE && !gamepad.fKey && gameStarted) {
         gamepad.keyboard = true;
     }
 
@@ -163,6 +155,10 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
 }
 
 EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+    if (!audioInitialized) {
+        initializeAudio();
+    }
+
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -215,7 +211,18 @@ EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void
 }
 
 void platform_getInput(Game_Input* input) {
-    if (gamepad.index > -1 && gameStarted) {
+    if (!gameStarted) {
+        input->shoot = gamepad.aButton;
+
+        if (input->shoot) {
+            game_startMusic();
+            gameStarted = true;
+        }
+
+        return;
+    }
+
+    if (gamepad.index > -1) {
         emscripten_sample_gamepad_data();
         EmscriptenGamepadEvent gamepadState = { 0 };
         emscripten_get_gamepad_status(gamepad.index, &gamepadState);
