@@ -44,8 +44,7 @@
 
 typedef struct {
     bool showInputToStartScreen;
-    bool keyboardFullscreenInstructions;
-    bool hideQuitInstructions;
+    bool hideSystemInstructions;
     bool noMusic;
 } Game_InitOptions;
 

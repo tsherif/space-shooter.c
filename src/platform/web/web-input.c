@@ -83,10 +83,6 @@ EM_BOOL web_onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *g
 }
 
 EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    if (!audioInitialized) {
-        initializeAudio();
-    }
-
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -110,6 +106,9 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
     }
 
     if (strEquals(keyEvent->code, "Space", 32)) {
+        if (!audioInitialized) {
+            initializeAudio();
+        }
         gamepad.aButton = true;
         keyProcessed = EM_TRUE;
     }
@@ -155,10 +154,6 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
 }
 
 EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-    if (!audioInitialized) {
-        initializeAudio();
-    }
-
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {

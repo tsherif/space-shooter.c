@@ -6,9 +6,8 @@
     - [x] Check that C assert function works (maybe abort would be better?)
     - [x] Figure out proper gamepad deadzone
     - [ ] Update architecture doc
-    - [ ] Gamepad start audio on Firefox?
     - [x] ~~Separate GameInput.startButton to handle start screen~~ Fix start screen logic
-    - [ ] Move fullscreen toggle instructions to start screen
+    - [x] Move fullscreen toggle instructions to start screen
 - [x] Document design
 - [x] Audio format constants should be in constants.h
 - [x] More comments

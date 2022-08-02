@@ -133,10 +133,7 @@ static struct {
     } state;
     float tickTime;
     float animationTime;
-    struct {
-        bool keyboardFullscreenInstructions;
-        bool hideQuitInstructions;
-    } titleScreenOptions;
+    bool hideSystemInstructions;
     char scoreText[SCORE_TEXT_LENGTH];
 } gameState = {
     .state = TITLE_SCREEN
@@ -682,7 +679,7 @@ static void titleScreen(float elapsedTime) {
     }
 
     if (events_on(&events_instructionSequence, EVENTS_DISPLAY)) {
-        float yBase = 57.0f;
+        float yBase = gameState.hideSystemInstructions ? 62.0f : 57.0f;
 
         const char* movementText = gameState.input.keyboard ? "Arrow keys to move" : "Left stick to move";
         float movementXOffset = gameState.input.keyboard ? 62.0f : 62.0f;
@@ -698,18 +695,17 @@ static void titleScreen(float elapsedTime) {
             .x = GAME_WIDTH / 2.0f - shootXOffset,
             .y = yBase + 13.0f, 
             .scale = 0.3f
-        });
+        });        
 
-        bool keyboardFullscreenInstructions = gameState.input.keyboard || gameState.titleScreenOptions.keyboardFullscreenInstructions;
-        const char* fullscreenText = keyboardFullscreenInstructions ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
-        float fullscreenXOffset = keyboardFullscreenInstructions ? 82.0f : 97.0f;
-        entities_fromText(&entities.text, fullscreenText, &(Entities_FromTextOptions) {
-            .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
-            .y = yBase + 26.0f, 
-            .scale = 0.3f
-        });
+        if (!gameState.hideSystemInstructions) {
+            const char* fullscreenText = gameState.input.keyboard ? "'F' to toggle fullscreen" : "'Start' to toggle fullscreen";
+            float fullscreenXOffset = gameState.input.keyboard ? 82.0f : 97.0f;
+            entities_fromText(&entities.text, fullscreenText, &(Entities_FromTextOptions) {
+                .x = GAME_WIDTH / 2.0f - fullscreenXOffset,
+                .y = yBase + 26.0f, 
+                .scale = 0.3f
+            });
 
-        if (!gameState.titleScreenOptions.hideQuitInstructions) {
             const char* quitText = gameState.input.keyboard ? "'ESC' to quit" : "'Back' to quit";
             float quitXOffset = gameState.input.keyboard ? 47.0f : 50.0f;
             entities_fromText(&entities.text, quitText, &(Entities_FromTextOptions) {
@@ -742,11 +738,17 @@ static void inputToStartScreen(float elapsedTime) {
 
     entities.text.count = 0;
 
-    float yBase = 66.0f;
+    float yBase = 62.0f;
 
     entities_fromText(&entities.text, "Press 'Space' key to start", &(Entities_FromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 90.0f,
+        .x = GAME_WIDTH / 2.0f - 87.0f,
         .y = yBase, 
+        .scale = 0.3f
+    });
+
+    entities_fromText(&entities.text, "'F' to toggle fullscreen", &(Entities_FromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 82.0f,
+        .y = yBase + 13.0f, 
         .scale = 0.3f
     });
 
@@ -921,8 +923,7 @@ static void simulate(float elapsedTime) {
 bool game_init(Game_InitOptions* opts) {
 
     if (opts) {
-        gameState.titleScreenOptions.keyboardFullscreenInstructions = opts->keyboardFullscreenInstructions;
-        gameState.titleScreenOptions.hideQuitInstructions = opts->hideQuitInstructions;
+        gameState.hideSystemInstructions = opts->hideSystemInstructions;
 
         if (opts->showInputToStartScreen) {
             gameState.state = INPUT_TO_START_SCREEN;

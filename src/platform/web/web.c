@@ -60,8 +60,7 @@ int32_t main() {
 
     if (!game_init(& (Game_InitOptions) {
         .showInputToStartScreen = true,
-        .keyboardFullscreenInstructions = true,
-        .hideQuitInstructions = true,
+        .hideSystemInstructions = true,
         .noMusic = true
     })) {
         return 1;
