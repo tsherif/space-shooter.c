@@ -25,17 +25,11 @@
 #define _WEB_INPUT_H_
 
 //////////////////////////////////////////////////////////////////////////////
-// Callbacks for input handling.
+// Set up input input handling.
 //
-// - web_onGamepadConnected(): Process gamepad connection.
-// - web_onGamepadDisconnected(): Process gamepad disconnection.
-// - web_onKeyDown(): Process key down event.
-// - web_onKeyUp(): Process key up event.
+// - web_initInputHandlers: Set up gamepad and keyboard input handlers.
 //////////////////////////////////////////////////////////////////////////////
 
-EM_BOOL web_onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData);
-EM_BOOL web_onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData);
-EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData);
-EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData);
+void web_initInputHandlers(void);
 
 #endif

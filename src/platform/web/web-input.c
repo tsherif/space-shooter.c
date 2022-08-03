@@ -4,6 +4,7 @@
 #include <math.h>
 #include "../../shared/constants.h"
 #include "../../shared/platform-interface.h"
+#include "../../shared/debug.h"
 #include "web-audio.h"
 
 #define GAMEPAD_HORIZONTAL_AXIS 0
@@ -29,9 +30,9 @@ static struct {
     bool down;
 } keyboardDirections;
 
-bool audioInitialized = false;
-bool gameStarted = false;
-bool fullscreen = false;
+static bool audioInitialized = false;
+static bool gameStarted = false;
+static bool fullscreen = false;
 
 static bool strEquals(const char* s1, const char* s2, int32_t n) {
     for (int32_t i = 0; i < n; ++i) {
@@ -54,7 +55,7 @@ static void initializeAudio(void) {
     audioInitialized = true; // Don't want to keep trying if it fails.
 }
 
-EM_BOOL web_onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
     if (gamepad.index == -1) {
         gamepad.index = gamepadEvent->index;
     }
@@ -62,7 +63,7 @@ EM_BOOL web_onGamepadConnected(int eventType, const EmscriptenGamepadEvent *game
     return EM_TRUE;
 }
 
-EM_BOOL web_onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+static EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
     if (gamepad.index == gamepadEvent->index) {
         gamepad.index = -1;
         emscripten_sample_gamepad_data();
@@ -80,7 +81,7 @@ EM_BOOL web_onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *g
     return EM_TRUE;
 }
 
-EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -151,7 +152,7 @@ EM_BOOL web_onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent, vo
     return keyProcessed;
 }
 
-EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -201,6 +202,19 @@ EM_BOOL web_onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void
     }
 
     return keyProcessed;
+}
+
+void web_initInputHandlers(void) {
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, onKeyUp);
+    
+    if (
+        emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, onGamepadConnected) != EMSCRIPTEN_RESULT_SUCCESS || 
+        emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, onGamepadDisconnected)  != EMSCRIPTEN_RESULT_SUCCESS
+    ) {
+        DEBUG_LOG("Gamepad not supported.");
+        gamepad.keyboard = true;
+    }
 }
 
 void platform_getInput(Game_Input* input) {

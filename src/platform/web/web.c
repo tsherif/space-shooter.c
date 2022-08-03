@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "../../shared/constants.h"
 #include "../../shared/platform-interface.h"
+#include "../../shared/debug.h"
 #include "web-input.h"
 #include "web-audio.h"
 
@@ -11,8 +12,7 @@ static struct {
     int32_t height;
 } windowState = {};
 
-float lastTime = 0.0f;
-
+static float lastTime = 0.0f;
 
 static EM_BOOL loop(double time, void *userData) {
     if (lastTime == 0.0f) {
@@ -33,19 +33,27 @@ static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *u
     windowState.width = uiEvent->windowInnerWidth;
     windowState.height = uiEvent->windowInnerHeight;
     game_resize(windowState.width, windowState.height);
-    emscripten_set_canvas_element_size("#canvas", (double) windowState.width, (double) windowState.height);
+
+    EMSCRIPTEN_RESULT result = emscripten_set_canvas_element_size("#canvas", (double) windowState.width, (double) windowState.height);
+    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
 
     return EM_TRUE;
 }
 
 int32_t main() {
+    EMSCRIPTEN_RESULT result = EMSCRIPTEN_RESULT_SUCCESS;
+    
     double windowWidth = 0.0;
     double windowHeight = 0.0;
-    emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
+    result = emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
+    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to get window size.");
+
     windowState.width = (int32_t) windowWidth;
     windowState.height = (int32_t) windowHeight;
 
-    emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
+    result = emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
+    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
+
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", & (EmscriptenWebGLContextAttributes) {
         .majorVersion = 2,
         .minorVersion = 0
@@ -56,12 +64,10 @@ int32_t main() {
         return 1;
     }
 
-    emscripten_webgl_make_context_current(gl);
+    result = emscripten_webgl_make_context_current(gl);
+    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to activate WebGL context.");
 
-    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyDown);
-    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyUp); 
-    emscripten_set_gamepadconnected_callback(NULL, EM_FALSE, web_onGamepadConnected);
-    emscripten_set_gamepaddisconnected_callback(NULL, EM_FALSE, web_onGamepadDisconnected);
+    web_initInputHandlers();
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
 
     if (!game_init(& (Game_InitOptions) {
