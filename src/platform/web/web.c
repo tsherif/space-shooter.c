@@ -50,6 +50,12 @@ int32_t main() {
         .majorVersion = 2,
         .minorVersion = 0
     });
+
+    if (gl == 0) {
+        platform_userMessage("Failed to initialize WebGL.");
+        return 1;
+    }
+
     emscripten_webgl_make_context_current(gl);
 
     emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, EM_FALSE, web_onKeyDown);
@@ -65,8 +71,13 @@ int32_t main() {
     })) {
         return 1;
     }
+
     game_resize(windowState.width, windowState.height);
     emscripten_request_animation_frame_loop(loop, NULL);
 
     return 0;
 }
+
+EM_JS(void, platform_userMessage, (const char* message), {
+    alert(UTF8ToString(message));
+})

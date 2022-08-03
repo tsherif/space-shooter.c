@@ -15,10 +15,6 @@ void platform_debugMessage(const char* message) {
     write(STDERR_FILENO, "\n", 1);
 }
 
-void platform_userMessage(const char* message) {
-    platform_debugMessage(message);
-}
-
 bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate) {
     int32_t fd = open(fileName, O_RDONLY);
     uint8_t* data = 0;

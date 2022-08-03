@@ -48,15 +48,13 @@ static bool strEquals(const char* s1, const char* s2, int32_t n) {
 }
 
 static void initializeAudio(void) {
-    web_initAudio();
-    audioInitialized = true;
+    if (!web_initAudio()) {
+        platform_userMessage("Failed to initialize audio.");
+    }
+    audioInitialized = true; // Don't want to keep trying if it fails.
 }
 
 EM_BOOL web_onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
-    if (!audioInitialized) {
-        initializeAudio();
-    }
-
     if (gamepad.index == -1) {
         gamepad.index = gamepadEvent->index;
     }

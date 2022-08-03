@@ -22,8 +22,21 @@ static struct {
 
 bool web_initAudio(void) {
     audio.device = alcOpenDevice(0);
+
+    if (!audio.device) {
+        goto ERROR_NO_RESOURCES;
+    }
+
     audio.ctx = alcCreateContext(audio.device, 0);
-    alcMakeContextCurrent(audio.ctx);
+    if (!audio.ctx) {
+        goto ERROR_DEVICE;
+    }
+
+    if (alcMakeContextCurrent(audio.ctx) == ALC_FALSE) {
+        goto ERROR_CONTEXT;
+    }
+
+    alGetError();
 
     ALuint sources[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS] = { 0 };
     alGenSources(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, sources);
@@ -31,6 +44,9 @@ bool web_initAudio(void) {
     ALuint buffers[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS] = { 0 };
     alGenBuffers(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, buffers);
 
+    if (alGetError() != AL_NO_ERROR) {
+        goto ERROR_BUFFERS;
+    }
 
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         audio.channels[i].source = sources[i];
@@ -38,10 +54,33 @@ bool web_initAudio(void) {
         alSourcei(sources[i], AL_BUFFER, buffers[i]);
     }
 
+    if (alGetError() != AL_NO_ERROR) {
+        goto ERROR_BUFFERS;
+    }
+
     return true;
+
+    ERROR_BUFFERS:
+    alDeleteSources(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, sources);
+    alDeleteBuffers(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, buffers);
+
+    ERROR_CONTEXT:
+    alcDestroyContext(audio.ctx);
+    audio.ctx = 0;
+
+    ERROR_DEVICE:
+    alcCloseDevice(audio.device);
+    audio.device = 0;
+
+    ERROR_NO_RESOURCES:
+    return false;
 }
 
 void web_updateAudio(void) {
+    if (!audio.device) {
+        return;
+    }
+
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (audio.channels[i].inUse) {
             ALint value;

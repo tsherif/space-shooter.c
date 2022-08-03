@@ -439,3 +439,7 @@ void platform_getInput(Game_Input* input) {
     input->shoot = gamepad.aButton;
     input->keyboard = gamepad.keyboard;
 }
+
+void platform_userMessage(const char* message) {
+    platform_debugMessage(message);
+}

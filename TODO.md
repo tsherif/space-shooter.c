@@ -8,6 +8,7 @@
     - [ ] Update architecture doc
     - [x] ~~Separate GameInput.startButton to handle start screen~~ Fix start screen logic
     - [x] Move fullscreen toggle instructions to start screen
+    - [ ] Figure out min memory requirements
 - [x] Document design
 - [x] Audio format constants should be in constants.h
 - [x] More comments
