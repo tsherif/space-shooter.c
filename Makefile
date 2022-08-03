@@ -9,7 +9,7 @@ LINUX_SOURCE_FILES=src/platform/linux/*.c
 LINUX_LDLIBS=-lX11 -ldl -lGL -lm -lpthread -lasound
 
 WEB_CC=emcc
-WEB_CFLAGS=-DSPACE_SHOOTER_OPENGLES -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2 --preload-file "./assets" -sINITIAL_MEMORY=59965440 -o build/space-shooter.js
+WEB_CFLAGS=-DSPACE_SHOOTER_OPENGLES -sMAX_WEBGL_VERSION=2 -sMIN_WEBGL_VERSION=2 --preload-file "./assets" -sINITIAL_MEMORY=59179008 -o build/space-shooter.js
 WEB_DEBUG_FLAGS=-fdebug-compilation-dir=".."
 WEB_SOURCE_FILES=src/platform/web/*.c
 WEB_LDLIBS=-lopenal
