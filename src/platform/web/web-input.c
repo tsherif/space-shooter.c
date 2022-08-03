@@ -55,6 +55,29 @@ static void initializeAudio(void) {
     audioInitialized = true; // Don't want to keep trying if it fails.
 }
 
+static void findGamepad(void) {
+    gamepad.index = -1;
+    
+    if (emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS) {
+        gamepad.keyboard = true;
+        return;
+    }
+    
+    int32_t numGamepads = emscripten_get_num_gamepads();
+    for (int32_t i = 0; i < numGamepads; ++i) {
+        EmscriptenGamepadEvent gamepadState = { 0 };
+        if (
+            emscripten_get_gamepad_status(i, &gamepadState) == EMSCRIPTEN_RESULT_SUCCESS && 
+            gamepadState.connected
+        ) {
+            gamepad.index = i;
+            break;
+        }
+    }
+
+    gamepad.keyboard = gamepad.index = -1;
+}
+
 static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
     if (gamepad.index == -1) {
         gamepad.index = gamepadEvent->index;
@@ -65,17 +88,7 @@ static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *g
 
 static EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
     if (gamepad.index == gamepadEvent->index) {
-        gamepad.index = -1;
-        emscripten_sample_gamepad_data();
-        int32_t numGamepads = emscripten_get_num_gamepads();
-        EmscriptenGamepadEvent gamepadState = { 0 };
-        for (int32_t i = 0; i < numGamepads; ++i) {
-            emscripten_get_gamepad_status(i, &gamepadState);
-            if (gamepadState.connected) {
-                gamepad.index = i;
-                break;
-            }
-        } 
+        findGamepad();   
     }
 
     return EM_TRUE;
@@ -230,10 +243,12 @@ void platform_getInput(Game_Input* input) {
     }
 
     if (gamepad.index > -1) {
-        emscripten_sample_gamepad_data();
         EmscriptenGamepadEvent gamepadState = { 0 };
-        emscripten_get_gamepad_status(gamepad.index, &gamepadState);
-        if (gamepadState.connected) {
+        if (
+            emscripten_sample_gamepad_data() == EMSCRIPTEN_RESULT_SUCCESS &&
+            emscripten_get_gamepad_status(gamepad.index, &gamepadState) == EMSCRIPTEN_RESULT_SUCCESS &&
+            gamepadState.connected
+        ) {
             float stickX = 0.0f;
             float stickY = 0.0f;
             float x = (float) gamepadState.axis[GAMEPAD_HORIZONTAL_AXIS];
@@ -261,6 +276,8 @@ void platform_getInput(Game_Input* input) {
                 gamepad.aButton = aButton;
                 gamepad.keyboard = false;
             }
+        } else {
+            findGamepad();
         }
     }
 
