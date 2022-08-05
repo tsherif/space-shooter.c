@@ -30,8 +30,10 @@ static struct {
     bool down;
 } keyboardDirections;
 
-static bool audioInitialized = false;
-static bool gameStarted = false;
+static struct {
+    bool audio;
+    bool game;
+} initState;
 
 static bool strEquals(const char* s1, const char* s2, int32_t n) {
     for (int32_t i = 0; i < n; ++i) {
@@ -51,7 +53,7 @@ static void initializeAudio(void) {
     if (!web_initAudio()) {
         platform_userMessage("Failed to initialize audio.");
     }
-    audioInitialized = true; // Don't want to keep trying if it fails.
+    initState.audio = true; // Don't want to keep trying if it fails.
 }
 
 static void findGamepad(void) {
@@ -117,7 +119,7 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
     }
 
     if (strEquals(keyEvent->code, "Space", 32)) {
-        if (!audioInitialized) {
+        if (!initState.audio) {
             initializeAudio();
         }
         gamepad.aButton = true;
@@ -164,7 +166,7 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
         gamepad.stickY = 0.0f;
     }
 
-    if (keyProcessed == EM_TRUE && !gamepad.fKey && gameStarted) {
+    if (keyProcessed == EM_TRUE && !gamepad.fKey && initState.game) {
         gamepad.keyboard = true;
     }
 
@@ -237,12 +239,12 @@ void web_initInputHandlers(void) {
 }
 
 void platform_getInput(Game_Input* input) {
-    if (!gameStarted) {
+    if (!initState.game) {
         input->shoot = gamepad.aButton;
 
         if (input->shoot) {
             game_startMusic();
-            gameStarted = true;
+            initState.game = true;
         }
 
         return;

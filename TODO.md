@@ -1,11 +1,11 @@
 - [ ] Web support
     - [x] Share posix utils with linux
-    - [ ] Error handling
+    - [x] Error handling
         - [x] WebGL
         - [x] Audio
         - [x] HTML/CSS
         - [x] Gamepad
-        - [ ] Fullscreen
+        - [x] Fullscreen
     - [x] Split out graphics and audio init 
     - [x] In game "Press key to start" screen
     - [x] Check that C assert function works (maybe abort would be better?)

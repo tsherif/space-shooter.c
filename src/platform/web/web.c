@@ -8,19 +8,18 @@
 #include "web-audio.h"
 
 static struct {
-    int32_t width;
-    int32_t height;
-} windowState = {};
-
-static float lastTime = 0.0f;
+    int32_t windowWidth;
+    int32_t windowHeight;
+    float lastFrameTime;
+} state = {};
 
 static EM_BOOL loop(double time, void *userData) {
-    if (lastTime == 0.0f) {
-        lastTime = (float) time;
+    if (state.lastFrameTime == 0.0f) {
+        state.lastFrameTime = (float) time;
     }
 
-    float dt = time - lastTime;
-    lastTime = time;
+    float dt = time - state.lastFrameTime;
+    state.lastFrameTime = time;
 
     web_updateAudio();
     game_update(dt);
@@ -30,11 +29,11 @@ static EM_BOOL loop(double time, void *userData) {
 }
 
 static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData) {
-    windowState.width = uiEvent->windowInnerWidth;
-    windowState.height = uiEvent->windowInnerHeight;
-    game_resize(windowState.width, windowState.height);
+    state.windowWidth = uiEvent->windowInnerWidth;
+    state.windowHeight = uiEvent->windowInnerHeight;
+    game_resize(state.windowWidth, state.windowHeight);
 
-    EMSCRIPTEN_RESULT result = emscripten_set_canvas_element_size("#canvas", (double) windowState.width, (double) windowState.height);
+    EMSCRIPTEN_RESULT result = emscripten_set_canvas_element_size("#canvas", (double) state.windowWidth, (double) state.windowHeight);
     DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
 
     return EM_TRUE;
@@ -48,8 +47,8 @@ int32_t main() {
     result = emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
     DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to get window size.");
 
-    windowState.width = (int32_t) windowWidth;
-    windowState.height = (int32_t) windowHeight;
+    state.windowWidth = (int32_t) windowWidth;
+    state.windowHeight = (int32_t) windowHeight;
 
     result = emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
     DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
@@ -78,7 +77,7 @@ int32_t main() {
         return 1;
     }
 
-    game_resize(windowState.width, windowState.height);
+    game_resize(state.windowWidth, state.windowHeight);
     emscripten_request_animation_frame_loop(loop, NULL);
 
     return 0;
