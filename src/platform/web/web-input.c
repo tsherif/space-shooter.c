@@ -32,7 +32,6 @@ static struct {
 
 static bool audioInitialized = false;
 static bool gameStarted = false;
-static bool fullscreen = false;
 
 static bool strEquals(const char* s1, const char* s2, int32_t n) {
     for (int32_t i = 0; i < n; ++i) {
@@ -126,16 +125,23 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
     }
 
     if (strEquals(keyEvent->code, "KeyF", 32)) {
-        if (fullscreen) {
-            emscripten_exit_fullscreen();
-            fullscreen = false;
-        } else {
-            emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, & (EmscriptenFullscreenStrategy) {
-                .scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
-                .canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF,
-                .filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_DEFAULT
-            });
-            fullscreen = true;
+        EMSCRIPTEN_RESULT result = EMSCRIPTEN_RESULT_SUCCESS;
+        EmscriptenFullscreenChangeEvent status = { 0 };
+        result = emscripten_get_fullscreen_status(&status);
+        if (result == EMSCRIPTEN_RESULT_SUCCESS) {
+            if (status.isFullscreen) {
+                emscripten_exit_fullscreen();
+            } else {
+                result = emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, & (EmscriptenFullscreenStrategy) {
+                    .scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
+                    .canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF,
+                    .filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_NEAREST
+                }); 
+            }
+        }
+
+        if (result != EMSCRIPTEN_RESULT_SUCCESS) {
+            platform_userMessage("Fullscreen not supported.");
         }
 
         gamepad.fKey = true;

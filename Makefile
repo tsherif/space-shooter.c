@@ -1,4 +1,4 @@
-CFLAGS=-std=c11 -Wall -Wno-unused-result -fno-common 
+CFLAGS=-std=c11 -Wall -Werror -Wno-unused-result -fno-common 
 SOURCE_FILES=src/shared/*.c src/platform/posix/*.c src/game/*.c
 DEBUG_FLAGS=-g -DSPACE_SHOOTER_DEBUG
 RELEASE_FLAGS=-O3
