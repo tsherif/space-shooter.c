@@ -11,7 +11,7 @@ The Architecture of space-shooter.c
 Introduction
 ------------
 
-In developing `space-shooter.c`, I iterated a several times on how to organize the different parts and learned to use some more-or-less poorly-documented OS APIs on both Windows and Linux. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
+In developing `space-shooter.c`, I iterated several times on how to organize the different parts and learned to use some more-or-less poorly-documented APIs on Windows, Linux and the Web. This document is intended as a record of that process and to hopefully serve as a reference for others doing similar work. I'll note that none of this is intended as a definitive description of how any of this **should** be done. I'm not a professional C programmer, nor a professional game programmer. I read about the APIs, wrote code and solved problems as they arose, and this is where I ended up. 
 
 Throughout the text, I link to the references I used in building `space-shooter.c`, but I'll call out a few that were especially invaluable:
 - [Handmade Hero](https://handmadehero.org/) is an incredibly generous resource on many levels, but I think its most important effect on me was simply demystifying low-level OS APIs.
@@ -23,8 +23,8 @@ Architectural Overview
 
 At a high level, the architecture of `space-shooter.c` is composed of 3 layers:
 
-- The **platform layer** is implemented in the [platform/windows](./src/platform/windows/) and [platform/linux](./src/platform/linux/) directories and is responsible for:
-    - Opening a window.
+- The **platform layer** is implemented in the [platform/windows](./src/platform/windows/), [platform/linux](./src/platform/linux/) and [platform/web](./src/platform/web/) directories and is responsible for:
+    - Initializing a drawing surface (i.e. window or canvas).
     - Initializing OpenGL.
     - Playing audio.
     - Capturing user input.
@@ -48,6 +48,7 @@ The platform layer interacts with the game and rendering layers using an API ins
 
 Once the platform layer initializes system resources, it calls into the game layer using the following lifecycle functions:
 - `game_init()`: Initialize game resources.
+- `game_startMusic()`: Start playing background music.
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw()`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match the current window size.
@@ -113,12 +114,12 @@ Note that the implementation in most cases doesn't look exactly like the above d
 
 ### Error Handling
 
-My primary concern in managing errors in `space-shooter.c` is to structure interactions with OS APIs, since they're the only operations for which success or failure is outside my control. My strategy is to run these operations during initialization, so the rest of the game doesn't have to worry about them:
-- Acquire all OS and hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
+My primary concern in managing errors in `space-shooter.c` is to structure interactions with platform APIs, since they're the only operations for which success or failure is outside my control. My strategy is to run these operations during initialization, so the rest of the game doesn't have to worry about them:
+- Acquire all platform and hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
 - Validate asset data during initialization.
 - Use static memory for game objects so allocations aren't required while the game is running.
 
-The OS operations themselves require structure in situations where a sequence of dependent resources is acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
+The platform operations themselves require structure in situations where a sequence of dependent resources is acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -227,9 +228,9 @@ The `Player` struct ([game.c](./src/game/game.c)) is a singleton that represents
 The Platform Layer
 ------------------
 
-### Window Management
+### The Drawing Surface
 
-Window management in `space-shooter.c` involves standard usage of the relevant APIs ([Win32](https://docs.microsoft.com/en-us/windows/win32/) and [Xlib](https://tronche.com/gui/x/xlib/)), but there are two operations I found poorly-documented on one or both platforms: hiding the mouse cursor and displaying a fullscreen window.
+Managing the drawing surface in `space-shooter.c` involves standard usage of the relevant APIs ([Win32](https://docs.microsoft.com/en-us/windows/win32/), [Xlib](https://tronche.com/gui/x/xlib/), and [emscripten](https://emscripten.org/docs/api_reference/html5.h.html)), but there are two operations I found poorly-documented on one platform or another: hiding the mouse cursor and displaying a fullscreen window.
 
 #### Windows
 
@@ -283,6 +284,39 @@ XEvent fullscreenEvent = {
 XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedirectMask, &fullscreenEvent);
 ```
 
+#### Web
+
+Hiding the cursor on the Web is straightforward using the [CSS cursor property](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor) on the canvas elevent.
+
+Entering fullscreen mode on the Web is somewhat awkward for a few reasons:
+- Browser policy that fullscreen can only be entered a user input callback. 
+- The [Web Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API) uses polling (see below), so there are no user input callbacks that can be used for this purpose.
+- Implementations of the Web Fullscreen API vary across browsers.
+
+I addressed these problems by making the following design and architectural changes specific to the Web:
+- Keyboard input is used to toggle fullscreen even when a gamepad is being used to play.
+- The logic for entering/exiting fullscreen is run in the keyboard event handler, rather than in the game loop as it is for the other platforms.
+
+With those constraints in mind, I implemented the fullscreen controls using the relevant [emscripten API](https://emscripten.org/docs/api_reference/html5.h.html#fullscreen) calls:
+
+```c
+// NOTE: error checks removed for clarity!
+if (strEquals(keyEvent->code, "KeyF", 32)) {
+    EmscriptenFullscreenChangeEvent status = { 0 };
+    emscripten_get_fullscreen_status(&status)
+    if (status.isFullscreen) {
+        emscripten_exit_fullscreen();
+    } else {
+        emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, & (EmscriptenFullscreenStrategy) {
+            .scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
+            .canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF,
+            .filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_NEAREST
+        }); 
+    }
+}
+``` 
+
+
 ### Initializing OpenGL
 
 #### Windows
@@ -303,7 +337,7 @@ if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3
 }
 ```
 
-I also extracted the logic for loading OpenGL functions into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
+I also extracted the logic for loading OpenGL functions on Windows and Linux into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
 
 #### Linux
 
@@ -367,7 +401,27 @@ void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
 void *fn = dlsym(sogl_libHandle, openGLFunctionName);
 ```
 
-As mentioned above, I extracted the logic for loading OpenGL functions into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
+As mentioned above, I extracted the logic for loading OpenGL functions on Windows and Linux into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
+
+#### Web
+
+For the Web, WebGL context creation is straightforward using the appropriate emscripten API calls:
+
+```c
+EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", & (EmscriptenWebGLContextAttributes) {
+    .majorVersion = 2,
+    .minorVersion = 0
+});
+
+emscripten_webgl_make_context_current(gl);
+```
+
+I require a WebGL 2 context because the GLSL 3.3 versions of the shaders compile as GLSL ES 3.0 with almost no changes, while compiling to GLSL ES 1.0 would require, for example, changes to keywords and additional logic to determine attribute locations. The only modifications required the compile the shaders as GLSL ES 3.0 were the version directives and precision qualifiers:
+
+```c
+#version 300 es
+precision highp float;
+```
 
 ### Audio
 

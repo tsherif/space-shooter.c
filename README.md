@@ -1,6 +1,6 @@
 space-shooter.c
 ===============
-A cross-platform, top-down 2D space shooter written in C using only system libraries.
+A cross-platform, top-down 2D space shooter written in C using only platform libraries.
 
 ![gif](./space-shooter.c.gif)
 
@@ -13,7 +13,7 @@ Dependencies
 
 Description
 -----------
-`space-shooter.c` is a cross-platform, top-down 2D space shooter written in standard C11 using only system libraries (with system libraries defined as anything included in the C standard library or supported operating systems). `space-shooter.c` has been tested on Windows 10, Ubuntu Linux 16.04, Chrome 103 and Firefox 103. This project drew heavy inspiration from [Handmade Hero](https://handmadehero.org/) and [pacman.c](https://github.com/floooh/pacman.c).
+`space-shooter.c` is a cross-platform, top-down 2D space shooter written in standard C11 using only platform libraries (with platform libraries defined as anything included in the C standard library or supported platforms). `space-shooter.c` has been tested on Windows 10, Ubuntu Linux 16.04, Chrome 103 and Firefox 103. This project drew heavy inspiration from [Handmade Hero](https://handmadehero.org/) and [pacman.c](https://github.com/floooh/pacman.c).
 
 The design and architecture of `space-shooter.c` is described [here](./ARCHITECTURE.md).
 
@@ -33,7 +33,7 @@ Linux
 - Run `./space-shooter` from the `build/` directory.
 
 Web
-- Make sure [emscripten](https://emscripten.org/) is installed.  
+- Make sure [Make](https://www.gnu.org/software/make/) and [emscripten](https://emscripten.org/) are installed.  
 - Run `make web-debug` for a debug build or `make web-release` for an optimized build.
 - Serve the `build/` directory from a local web server (e.g. `python -m SimpleHTTPServer`) and open the page in Chrome or Firefox.
 
