@@ -331,7 +331,7 @@ Creating a modern OpenGL context on Windows is a [convoluted process](https://ww
 I extracted this functionality into a single-header library, [create-opengl-window.h](./lib/create-opengl-window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
 
 ```c
-void *fn = (void *)wglGetProcAddress(openGLFunctionName);
+void *fn = (void *) wglGetProcAddress(openGLFunctionName);
 if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3) || (fn == (void *) -1)) {
     fn = (void *) GetProcAddress(sogl_libHandle, openGLFunctionName);
 }
@@ -416,7 +416,7 @@ EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", 
 emscripten_webgl_make_context_current(gl);
 ```
 
-I require a WebGL 2 context because the GLSL 3.3 versions of the shaders compile as GLSL ES 3.0 with almost no changes, while compiling to GLSL ES 1.0 would require, for example, changes to keywords and additional logic to determine attribute locations. The only modifications required the compile the shaders as GLSL ES 3.0 were the version directives and precision qualifiers:
+I require a WebGL 2 context because the GLSL 3.3 versions of the shaders compile as GLSL ES 3.0 with almost no changes, while compiling to GLSL ES 1.0 would require, for example, changes to keywords and additional logic to determine attribute locations. The only modifications required to the compile the shaders as GLSL ES 3.0 were the version directives and precision qualifiers:
 
 ```c
 #version 300 es
@@ -427,9 +427,7 @@ precision highp float;
 
 #### Windows
 
-I implement Windows audio ([windows-audio.c](./src/platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. The `space-shooter.c` audio graph is composed of 32 source voices connected directly to a single master voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. The voice is then released using its `onBufferEnd` callback.
-
-Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that), but the process is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
+I implement Windows audio ([windows-audio.c](./src/platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that), but the process is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
 
 ```c++
 xaudio->CreateMasteringVoice(xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
@@ -457,9 +455,53 @@ IXAudio2VoiceCallback callbacks = {
 };
 ```
 
+The `space-shooter.c` audio graph is composed of 32 source voices connected directly to a single master voice. A source voice, its buffer and whether it's in use are managed by a simple `AudioStream` struct:
+
+```c
+typedef struct {
+    IXAudio2SourceVoice* voice;
+    XAUDIO2_BUFFER buffer;
+    bool inUse;
+} AudioStream;
+```
+
+This struct is also used as the context for the associated buffer, so it can be referenced in audio callbacks (see below).
+
+```c
+audioStrean.buffer.pContext = &audioStream;
+```
+
+When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. 
+
+```c
+void platform_playSound(Data_Buffer* sound, bool loop) {
+    for (int32_t i = 0; i < 32; ++i) {
+        if (!audio.channels[i].inUse) {
+            XAUDIO2_BUFFER* buffer = &audio.channels[i].buffer;
+            buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
+            buffer->AudioBytes = sound->size;
+            buffer->pAudioData = sound->data;
+            IXAudio2SourceVoice_Start(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
+            IXAudio2SourceVoice_SubmitSourceBuffer(audio.channels[i].voice, buffer, NULL);
+            audio.channels[i].inUse = true;
+            break;
+        }
+    }
+}
+```
+
+The voice is then released using its `onBufferEnd` callback. The `pBufferContext` passed here is the address of `AudioStream` struct containing the buffer, and which the buffer's `pContext` member was set to above.
+
+```c
+void WINAPI OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
+    AudioStream* channel = (AudioStream*) pBufferContext;
+    channel->inUse = false;
+}
+```
+
 #### Linux
 
-I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread:
+I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread.
 
 ```c
 for (int32_t i = 0; i < numSamples; ++i) {
@@ -494,13 +536,49 @@ for (int32_t i = 0; i < mixer.count; ++i) {
 }
 ```
 
-At the end of the audio thread loop, mixed audio is submitted to the device with a buffer size of 2048 frames (~50ms of audio):
+At the end of the audio thread loop, mixed audio is submitted to the device with a buffer size of 2048 frames (~50ms of audio).
 
 ```c
 snd_pcm_writei(device, mixer.buffer, 2048)
 ```
 
 `snd_pcm_writei` blocks until the device requires data, so the audio thread will wake up approximately once every 50ms.
+
+
+#### Web
+
+I implement audio for the Web using [OpenAL](https://www.openal.org/), which models audio as a graph similar to XAudio2. I create 32 sources, each with an associated buffer, and all connected to the default listener. Similarly to the XAudio2 implementation, when a sound is played, the first available source is found and marked as in-use, and the audio data is submitted to the associated buffer.
+
+```c
+void platform_playSound(Data_Buffer* sound, bool loop) {
+    for (int32_t i = 0; i < 32; ++i) {
+        if (!audio.channels[i].inUse) {
+            AudioStream* channel = audio.channels + i; 
+            alBufferData(channel->buffer, AL_FORMAT_STEREO16, sound->data, sound->size, 44100);
+            alSourcei(channel->source, AL_LOOPING, loop ? AL_TRUE : AL_FALSE); 
+            alSourcePlay(channel->source);
+            channel->inUse = true;
+            break;
+        }
+    }
+}
+```
+
+However, since OpenAL provides no callback API to signal when a sound has finished playing, I created a function `web_updateAudio`, called on each frame, that queries state of each source currently marked as in-use and makes it available if it is no longer playing.
+
+```c
+void web_updateAudio(void) {
+    for (int32_t i = 0; i < 32; ++i) {
+        if (audio.channels[i].inUse) {
+            ALint value;
+            alGetSourcei(audio.channels[i].source, AL_SOURCE_STATE, &value);
+            if (value != AL_PLAYING) {
+                audio.channels[i].inUse = false;
+            }
+        }
+    }
+}
+```
 
 ### Gamepad Support
 
