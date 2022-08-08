@@ -33,7 +33,7 @@ Linux
 - Run `./space-shooter` from the `build/` directory.
 
 Web
-- Make sure [Make](https://www.gnu.org/software/make/) and [emscripten](https://emscripten.org/) are installed.  
+- Make sure [make](https://www.gnu.org/software/make/) and [emscripten](https://emscripten.org/) are installed.  
 - Run `make web-debug` for a debug build or `make web-release` for an optimized build.
 - Serve the `build/` directory from a local web server (e.g. `python -m SimpleHTTPServer`) and open the page in Chrome or Firefox.
 

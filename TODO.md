@@ -1,4 +1,5 @@
 - [ ] Web support
+    - [ ] Preload audio data to avoid creating buffers unnecessarily 
     - [x] Share posix utils with linux
     - [x] Error handling
         - [x] WebGL
