@@ -72,7 +72,7 @@ int32_t main() {
     if (!game_init(& (Game_InitOptions) {
         .showInputToStartScreen = true,
         .hideSystemInstructions = true,
-        .noMusic = true
+        .noAudio = true
     })) {
         return 1;
     }

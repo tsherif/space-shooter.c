@@ -243,7 +243,7 @@ void platform_getInput(Game_Input* input) {
         input->shoot = gamepad.aButton;
 
         if (input->shoot) {
-            game_startMusic();
+            game_initAudio();
             initState.game = true;
         }
 

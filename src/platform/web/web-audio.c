@@ -18,6 +18,8 @@ static struct {
     ALCdevice *device;
     ALCcontext *ctx;
     AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
+    ALuint soundBuffers[SPACE_SHOOTER_AUDIO_MAX_SOUNDS];
+    int32_t soundBufferCount;
 } audio;
 
 bool web_initAudio(void) {
@@ -41,28 +43,15 @@ bool web_initAudio(void) {
     ALuint sources[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS] = { 0 };
     alGenSources(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, sources);
 
-    ALuint buffers[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS] = { 0 };
-    alGenBuffers(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, buffers);
-
     if (alGetError() != AL_NO_ERROR) {
-        goto ERROR_BUFFERS;
+        goto ERROR_CONTEXT;
     }
 
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         audio.channels[i].source = sources[i];
-        audio.channels[i].buffer = buffers[i];
-        alSourcei(sources[i], AL_BUFFER, buffers[i]);
-    }
-
-    if (alGetError() != AL_NO_ERROR) {
-        goto ERROR_BUFFERS;
     }
 
     return true;
-
-    ERROR_BUFFERS:
-    alDeleteSources(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, sources);
-    alDeleteBuffers(SPACE_SHOOTER_AUDIO_MIXER_CHANNELS, buffers);
 
     ERROR_CONTEXT:
     alcDestroyContext(audio.ctx);
@@ -92,15 +81,48 @@ void web_updateAudio(void) {
     }
 }
 
-void platform_playSound(Data_Buffer* sound, bool loop) {
+int32_t platform_registerSound(Data_Buffer* sound) {
+    DEBUG_ASSERT(audio.soundBufferCount < SPACE_SHOOTER_AUDIO_MAX_SOUNDS, "Attempting to register too many sounds.");
+
+    alGetError();
+
+    int32_t id = audio.soundBufferCount;
+    alGenBuffers(1, audio.soundBuffers + id);
+
+    if (alGetError() != AL_NO_ERROR) {
+        goto ERROR_NO_RESOURCES;
+    }
+
+    alBufferData(audio.soundBuffers[id], AL_FORMAT_STEREO16, sound->data, sound->size, SPACE_SHOOTER_AUDIO_SAMPLE_RATE);
+
+    if (alGetError() != AL_NO_ERROR) {
+        goto ERROR_BUFFER;
+    }
+
+    ++audio.soundBufferCount;
+
+    return id;
+
+    ERROR_BUFFER:
+    alDeleteBuffers(1, audio.soundBuffers + id);
+
+    ERROR_NO_RESOURCES:
+    return -1;
+}
+
+void platform_playSound(int32_t id, bool loop) {
     if (!audio.device) {
         return;
     }
 
+    DEBUG_ASSERT(id >= 0 && id < audio.soundBufferCount, "Invalid sound ID.");
+
+    ALuint buffer = audio.soundBuffers[id];
+
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
             AudioStream* channel = audio.channels + i; 
-            alBufferData(channel->buffer, AL_FORMAT_STEREO16, sound->data, sound->size, SPACE_SHOOTER_AUDIO_SAMPLE_RATE);
+            alSourcei(channel->source, AL_BUFFER, buffer);
             alSourcei(channel->source, AL_LOOPING, loop ? AL_TRUE : AL_FALSE); 
             alSourcePlay(channel->source);
             channel->inUse = true;

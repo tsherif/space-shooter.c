@@ -39,13 +39,13 @@
 // - keyboardFullscreenInstructions: Show keyboard controls for fullscreen
 //      even if gamepad is attached.
 // - hideQuitInstructions: Don't show quit instructions.
-// - noMusic: Don't start music.
+// - noAudio: Don't initialize audio.
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     bool showInputToStartScreen;
     bool hideSystemInstructions;
-    bool noMusic;
+    bool noAudio;
 } Game_InitOptions;
 
 ////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ typedef struct {
 // implemented by the game layer.
 //
 // - game_init(): Initialize game resources.
-// - game_startMusic(): Start music, if not done in init
+// - game_initAudio(): Initialize audio, if not done in init
 //      (i.e. for web after user interation).
 // - game_update(): Update game state based on time elapsed since
 //      last frame.
@@ -83,7 +83,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////
 
 bool game_init(Game_InitOptions* opts);
-void game_startMusic(void);
+void game_initAudio(void);
 void game_update(float elapsedTime); // In milliseconds
 void game_draw(void);
 void game_resize(int width, int height);
@@ -105,7 +105,8 @@ void game_close(void);
 ////////////////////////////////////////////////////////////////////////////
 
 void platform_getInput(Game_Input* input);
-void platform_playSound(Data_Buffer* sound, bool loop);
+int32_t platform_registerSound(Data_Buffer* sound);
+void platform_playSound(int32_t id, bool loop);
 void platform_debugMessage(const char* message);
 void platform_userMessage(const char* message);
 bool platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate);

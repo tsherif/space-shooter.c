@@ -170,6 +170,13 @@ static struct {
         Data_Buffer enemyBullet;
         Data_Buffer explosion;
         Data_Buffer enemyHit;
+    } soundData;
+    struct {
+        int32_t music;
+        int32_t playerBullet;
+        int32_t enemyBullet;
+        int32_t explosion;
+        int32_t enemyHit;
     } sounds;
     uint8_t whitePixel[4];
 } gameData = {
@@ -208,6 +215,7 @@ static bool loadSound(const char* fileName, Data_Buffer* sound) {
     Data_Buffer soundData = { 0 };
     bool result = platform_loadFile(fileName, &soundData, false) && utils_wavToSound(&soundData, sound);
     data_freeBuffer(&soundData);
+
     return result;
 }
 
@@ -262,7 +270,7 @@ static void firePlayerBullet(float x, float y) {
         .y = y, 
         .vy = PLAYER_BULLET_VELOCITY
     });
-    platform_playSound(&gameData.sounds.playerBullet, false);
+    platform_playSound(gameData.sounds.playerBullet, false);
     entities.player.bulletThrottle = PLAYER_BULLET_THROTTLE;
 }
 
@@ -295,11 +303,11 @@ static bool checkPlayerBulletCollision(
                     .x = position[0] + explosionXOffset, 
                     .y = position[1] + explosionYOffset
                 });
-                platform_playSound(&gameData.sounds.explosion, false);
+                platform_playSound(gameData.sounds.explosion, false);
                 enemies->dead[i] = true;
                 entities.player.score += points;
             } else {
-                platform_playSound(&gameData.sounds.enemyHit, false);
+                platform_playSound(gameData.sounds.enemyHit, false);
                 enemies->whiteOut[i] = ENEMY_WHITEOUT_TIME;
             }
         }    
@@ -348,7 +356,7 @@ static void fireEnemyBullet(float x, float y) {
         .vy = (dy / d) * ENEMY_BULLET_SPEED
     });
 
-    platform_playSound(&gameData.sounds.enemyBullet, false);
+    platform_playSound(gameData.sounds.enemyBullet, false);
 }
 
 //////////////////////////////////
@@ -609,7 +617,7 @@ static void simPlayer(float elapsedTime) {
                 .y = player->position[1] + SPRITES_PLAYER_EXPLOSION_Y_OFFSET 
             });
 
-            platform_playSound(&gameData.sounds.explosion, false);
+            platform_playSound(gameData.sounds.explosion, false);
             player->position[0] = GAME_WIDTH / 2 - player->sprite->panelDims[0] / 2;
             player->position[1] = GAME_HEIGHT - player->sprite->panelDims[0] * 3.0f;
             player->deadTimer = PLAYER_DEAD_TIME;
@@ -962,16 +970,6 @@ bool game_init(Game_InitOptions* opts) {
         return false;
     }
 
-    if (
-        !loadSound("assets/audio/music.wav", &gameData.sounds.music) ||
-        !loadSound("assets/audio/Laser_002.wav", &gameData.sounds.playerBullet) ||
-        !loadSound("assets/audio/Hit_Hurt2.wav", &gameData.sounds.enemyBullet) ||
-        !loadSound("assets/audio/Explode1.wav", &gameData.sounds.explosion) ||
-        !loadSound("assets/audio/Jump1.wav", &gameData.sounds.enemyHit)
-    ) {
-        platform_userMessage("Unable to load all audio.");
-    }
-
     // Init game
     entities_spawn(&entities.player.entity, & (Entities_InitOptions) {
         .x = (GAME_WIDTH - entities.player.sprite->panelDims[0]) / 2,
@@ -996,15 +994,41 @@ bool game_init(Game_InitOptions* opts) {
 
     events_start(&events_titleControlSequence);
 
-    if (!opts || !opts->noMusic) {
-        game_startMusic();
+    if (!opts || !opts->noAudio) {
+        game_initAudio();
     }
 
     return true;
 }
 
-void game_startMusic(void) {
-    platform_playSound(&gameData.sounds.music, true); 
+void game_initAudio(void) {
+    if (
+        !loadSound("assets/audio/music.wav", &gameData.soundData.music) ||
+        !loadSound("assets/audio/Laser_002.wav", &gameData.soundData.playerBullet) ||
+        !loadSound("assets/audio/Hit_Hurt2.wav", &gameData.soundData.enemyBullet) ||
+        !loadSound("assets/audio/Explode1.wav", &gameData.soundData.explosion) ||
+        !loadSound("assets/audio/Jump1.wav", &gameData.soundData.enemyHit)
+    ) {
+        platform_userMessage("Unable to load all audio.");
+    }
+
+    gameData.sounds.music = platform_registerSound(&gameData.soundData.music);
+    gameData.sounds.playerBullet = platform_registerSound(&gameData.soundData.playerBullet);
+    gameData.sounds.enemyBullet = platform_registerSound(&gameData.soundData.enemyBullet);
+    gameData.sounds.explosion = platform_registerSound(&gameData.soundData.explosion);
+    gameData.sounds.enemyHit = platform_registerSound(&gameData.soundData.enemyHit);
+
+    if (
+        gameData.sounds.music == -1 ||
+        gameData.sounds.playerBullet == -1 ||
+        gameData.sounds.enemyBullet == -1 ||
+        gameData.sounds.explosion == -1 ||
+        gameData.sounds.enemyHit == -1
+    ) {
+        platform_userMessage("Unable to register all audio.");
+    }
+
+    platform_playSound(gameData.sounds.music, true); 
 }
 
 ////////////////////////////////////////////////////////////
@@ -1059,9 +1083,9 @@ void game_draw(void) {
 }
 
 void game_close(void) {
-    data_freeBuffer(&gameData.sounds.music);
-    data_freeBuffer(&gameData.sounds.playerBullet);
-    data_freeBuffer(&gameData.sounds.enemyBullet);
-    data_freeBuffer(&gameData.sounds.explosion);
-    data_freeBuffer(&gameData.sounds.enemyHit);
+    data_freeBuffer(&gameData.soundData.music);
+    data_freeBuffer(&gameData.soundData.playerBullet);
+    data_freeBuffer(&gameData.soundData.enemyBullet);
+    data_freeBuffer(&gameData.soundData.explosion);
+    data_freeBuffer(&gameData.soundData.enemyHit);
 }
