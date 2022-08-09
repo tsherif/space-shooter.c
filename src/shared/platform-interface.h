@@ -94,6 +94,7 @@ void game_close(void);
 // each platform layer.
 //
 // - platform_getInput(): Get current input state.
+// - platform_loadSound(): Load a wave file into the audio system.
 // - platform_playSound(): Output sound to an audio device.
 // - platform_debugMessage(): Output a message intended for the developer 
 //      while debugging.
@@ -105,7 +106,7 @@ void game_close(void);
 ////////////////////////////////////////////////////////////////////////////
 
 void platform_getInput(Game_Input* input);
-int32_t platform_registerSound(Data_Buffer* sound);
+int32_t platform_loadSound(const char* fileName);
 void platform_playSound(int32_t id, bool loop);
 void platform_debugMessage(const char* message);
 void platform_userMessage(const char* message);

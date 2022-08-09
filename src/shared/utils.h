@@ -25,7 +25,7 @@
 #define _GAME_UTILS_H_
 #include <stdint.h>
 #include <stdbool.h>
-#include "../shared/data.h"
+#include "data.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // Collection of smaller utility functions.
@@ -50,6 +50,6 @@ float utils_randomRange(float min, float max);
 bool utils_boxCollision(float min1[2], float max1[2], float min2[2], float max2[2], float scale);
 void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength); 
 bool utils_bmpToImage(Data_Buffer* imageData, Data_Image* image);
-bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound);
+bool utils_loadWavData(const char* fileName, Data_Buffer* sound);
 
 #endif

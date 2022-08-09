@@ -24,9 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "../shared/constants.h"
-#include "../shared/platform-interface.h"
-#include "../shared/debug.h"
+#include "constants.h"
+#include "platform-interface.h"
+#include "debug.h"
 #include "utils.h"
 
 #define BMP_SIGNATURE 0x4d42
@@ -152,7 +152,7 @@ bool utils_bmpToImage(Data_Buffer* imageData, Data_Image* image) {
 }
 
 // NOTE(Tarek): Hardcoded to load 2-channel 44.1kHz 16-bit data, with RIFF, fmt and data chunks sequential.
-bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
+static bool wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
     uint32_t fmtSize = *(uint32_t *) (soundData->data + 16);
     int32_t dataOffset = fmtSize + 20;
         
@@ -200,4 +200,12 @@ bool utils_wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
     memcpy(sound->data, soundData->data + dataOffset + 8, dataSize);
 
     return true;
+}
+
+bool utils_loadWavData(const char* fileName, Data_Buffer* sound) {
+    Data_Buffer soundData = { 0 };
+    bool result = platform_loadFile(fileName, &soundData, false) && wavToSound(&soundData, sound);
+    data_freeBuffer(&soundData);
+
+    return result;
 }

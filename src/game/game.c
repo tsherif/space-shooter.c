@@ -28,7 +28,7 @@
 #include "../../lib/simple-opengl-loader.h"
 #include "../shared/data.h"
 #include "../shared/platform-interface.h"
-#include "utils.h"
+#include "../shared/utils.h"
 #include "renderer.h"
 #include "sprites.h"
 #include "entities.h"
@@ -210,14 +210,6 @@ static struct {
 //////////////////////////////////
 //  Data load helpers
 //////////////////////////////////
-
-static bool loadSound(const char* fileName, Data_Buffer* sound) {
-    Data_Buffer soundData = { 0 };
-    bool result = platform_loadFile(fileName, &soundData, false) && utils_wavToSound(&soundData, sound);
-    data_freeBuffer(&soundData);
-
-    return result;
-}
 
 static bool loadTexture(const char* fileName, uint32_t *texture) {
     Data_Buffer imageData = { 0 };
@@ -1002,21 +994,11 @@ bool game_init(Game_InitOptions* opts) {
 }
 
 void game_initAudio(void) {
-    if (
-        !loadSound("assets/audio/music.wav", &gameData.soundData.music) ||
-        !loadSound("assets/audio/Laser_002.wav", &gameData.soundData.playerBullet) ||
-        !loadSound("assets/audio/Hit_Hurt2.wav", &gameData.soundData.enemyBullet) ||
-        !loadSound("assets/audio/Explode1.wav", &gameData.soundData.explosion) ||
-        !loadSound("assets/audio/Jump1.wav", &gameData.soundData.enemyHit)
-    ) {
-        platform_userMessage("Unable to load all audio.");
-    }
-
-    gameData.sounds.music = platform_registerSound(&gameData.soundData.music);
-    gameData.sounds.playerBullet = platform_registerSound(&gameData.soundData.playerBullet);
-    gameData.sounds.enemyBullet = platform_registerSound(&gameData.soundData.enemyBullet);
-    gameData.sounds.explosion = platform_registerSound(&gameData.soundData.explosion);
-    gameData.sounds.enemyHit = platform_registerSound(&gameData.soundData.enemyHit);
+    gameData.sounds.music = platform_loadSound("assets/audio/music.wav");
+    gameData.sounds.playerBullet = platform_loadSound("assets/audio/Laser_002.wav");
+    gameData.sounds.enemyBullet = platform_loadSound("assets/audio/Hit_Hurt2.wav");
+    gameData.sounds.explosion = platform_loadSound("assets/audio/Explode1.wav");
+    gameData.sounds.enemyHit = platform_loadSound("assets/audio/Jump1.wav");
 
     if (
         gameData.sounds.music == -1 ||
@@ -1025,7 +1007,7 @@ void game_initAudio(void) {
         gameData.sounds.explosion == -1 ||
         gameData.sounds.enemyHit == -1
     ) {
-        platform_userMessage("Unable to register all audio.");
+        platform_userMessage("Unable to load all audio.");
     }
 
     platform_playSound(gameData.sounds.music, true); 

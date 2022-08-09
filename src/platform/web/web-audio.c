@@ -2,6 +2,7 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include "../../shared/constants.h"
+#include "../../shared/utils.h"
 #include "../../shared/debug.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
@@ -15,11 +16,15 @@ typedef struct {
 } AudioStream;
 
 static struct {
+    Data_Buffer data[SPACE_SHOOTER_AUDIO_MAX_SOUNDS];
+    ALuint buffers[SPACE_SHOOTER_AUDIO_MAX_SOUNDS];
+    int32_t count;
+} sounds;
+
+static struct {
     ALCdevice *device;
     ALCcontext *ctx;
     AudioStream channels[SPACE_SHOOTER_AUDIO_MIXER_CHANNELS];
-    ALuint soundBuffers[SPACE_SHOOTER_AUDIO_MAX_SOUNDS];
-    int32_t soundBufferCount;
 } audio;
 
 bool web_initAudio(void) {
@@ -81,43 +86,47 @@ void web_updateAudio(void) {
     }
 }
 
-int32_t platform_registerSound(Data_Buffer* sound) {
-    DEBUG_ASSERT(audio.soundBufferCount < SPACE_SHOOTER_AUDIO_MAX_SOUNDS, "Attempting to register too many sounds.");
+int32_t platform_loadSound(const char* fileName) {
+    DEBUG_ASSERT(sounds.count < SPACE_SHOOTER_AUDIO_MAX_SOUNDS, "Attempting to load too many sounds.");
+
+    int32_t id = sounds.count;
+    
+    if (!utils_loadWavData(fileName, sounds.data + id)) {
+        goto ERROR_NO_RESOURCES;
+    }
 
     alGetError();
-
-    int32_t id = audio.soundBufferCount;
-    alGenBuffers(1, audio.soundBuffers + id);
+    alGenBuffers(1, sounds.buffers + id);
 
     if (alGetError() != AL_NO_ERROR) {
         goto ERROR_NO_RESOURCES;
     }
 
-    alBufferData(audio.soundBuffers[id], AL_FORMAT_STEREO16, sound->data, sound->size, SPACE_SHOOTER_AUDIO_SAMPLE_RATE);
+    alBufferData(sounds.buffers[id], AL_FORMAT_STEREO16, sounds.data[id].data, sounds.data[id].size, SPACE_SHOOTER_AUDIO_SAMPLE_RATE);
 
     if (alGetError() != AL_NO_ERROR) {
         goto ERROR_BUFFER;
     }
 
-    ++audio.soundBufferCount;
+    ++sounds.count;
 
     return id;
 
     ERROR_BUFFER:
-    alDeleteBuffers(1, audio.soundBuffers + id);
+    alDeleteBuffers(1, sounds.buffers + id);
 
     ERROR_NO_RESOURCES:
     return -1;
 }
 
 void platform_playSound(int32_t id, bool loop) {
-    if (!audio.device) {
+    if (!audio.device || id < 0) {
         return;
     }
 
-    DEBUG_ASSERT(id >= 0 && id < audio.soundBufferCount, "Invalid sound ID.");
+    DEBUG_ASSERT(id < sounds.count, "Invalid sound ID.");
 
-    ALuint buffer = audio.soundBuffers[id];
+    ALuint buffer = sounds.buffers[id];
 
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
