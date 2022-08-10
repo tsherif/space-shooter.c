@@ -1,5 +1,5 @@
 - [ ] Web support
-    - [ ] Bug? Seems like I have to press space twice to start game
+    - [x] Bug? Seems like I have to press space twice to start game
     - [ ] Preload audio data to avoid creating buffers unnecessarily 
     - [x] Share posix utils with linux
     - [x] Error handling

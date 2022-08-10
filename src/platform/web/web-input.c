@@ -174,6 +174,14 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
 }
 
 static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
+
+    // NOTE(Tarek): Audio initialization occasionally causes frames to be skipped and
+    // input to be missed. This is to ensure the input to start the game is captured.
+    // Should I be using a more complex system that tracks all inputs between frames?
+    if (!initState.game) {
+        return EM_FALSE;
+    }
+
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
