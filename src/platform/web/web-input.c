@@ -30,10 +30,7 @@ static struct {
     bool down;
 } keyboardDirections;
 
-static struct {
-    bool audio;
-    bool game;
-} initState;
+static bool audioInitialized = false;
 
 static bool strEquals(const char* s1, const char* s2, int32_t n) {
     for (int32_t i = 0; i < n; ++i) {
@@ -50,10 +47,12 @@ static bool strEquals(const char* s1, const char* s2, int32_t n) {
 }
 
 static void initializeAudio(void) {
-    if (!web_initAudio()) {
+    if (web_initAudio()) {
+        game_initAudio();
+    } else {
         platform_userMessage("Failed to initialize audio.");
     }
-    initState.audio = true; // Don't want to keep trying if it fails.
+    audioInitialized = true; // Don't want to keep trying if it fails.
 }
 
 static void findGamepad(void) {
@@ -119,7 +118,7 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
     }
 
     if (strEquals(keyEvent->code, "Space", 32)) {
-        if (!initState.audio) {
+        if (!audioInitialized) {
             initializeAudio();
         }
         gamepad.aButton = true;
@@ -166,7 +165,7 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
         gamepad.stickY = 0.0f;
     }
 
-    if (keyProcessed == EM_TRUE && !gamepad.fKey && initState.game) {
+    if (keyProcessed == EM_TRUE && !gamepad.fKey && audioInitialized) {
         gamepad.keyboard = true;
     }
 
@@ -174,14 +173,6 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
 }
 
 static EM_BOOL onKeyUp(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
-
-    // NOTE(Tarek): Audio initialization occasionally causes frames to be skipped and
-    // input to be missed. This is to ensure the input to start the game is captured.
-    // Should I be using a more complex system that tracks all inputs between frames?
-    if (!initState.game) {
-        return EM_FALSE;
-    }
-
     EM_BOOL keyProcessed = EM_FALSE;
 
     if (strEquals(keyEvent->code, "ArrowLeft", 32)) {
@@ -247,17 +238,6 @@ void web_initInputHandlers(void) {
 }
 
 void platform_getInput(Game_Input* input) {
-    if (!initState.game) {
-        input->shoot = gamepad.aButton;
-
-        if (input->shoot) {
-            game_initAudio();
-            initState.game = true;
-        }
-
-        return;
-    }
-
     if (gamepad.index > -1) {
         EmscriptenGamepadEvent gamepadState = { 0 };
         if (

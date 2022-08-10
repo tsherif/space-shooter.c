@@ -752,10 +752,6 @@ static void inputToStartScreen(float elapsedTime) {
         .scale = 0.3f
     });
 
-    if (gameState.input.shoot && !gameState.input.lastShoot) {
-        gameState.state = TITLE_SCREEN;
-    }
-
     updateAnimations();
     filterDeadEntities();
 }
@@ -1010,7 +1006,9 @@ void game_initAudio(void) {
         platform_userMessage("Unable to load all audio.");
     }
 
-    platform_playSound(gameData.sounds.music, true); 
+    platform_playSound(gameData.sounds.music, true);
+
+    gameState.state = TITLE_SCREEN;
 }
 
 ////////////////////////////////////////////////////////////
