@@ -31,6 +31,8 @@
 #include <xaudio2.h>
 #include <stdbool.h>
 #include "../../shared/constants.h"
+#include "../../shared/utils.h"
+#include "../../shared/debug.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
 #include "windows-audio.h"
@@ -62,6 +64,11 @@ void WINAPI OnVoiceProcessingPassStart(IXAudio2VoiceCallback* This, UINT32 Sampl
 void WINAPI OnBufferStart(IXAudio2VoiceCallback* This, void* pBufferContext) { }
 void WINAPI OnLoopEnd(IXAudio2VoiceCallback* This, void* pBufferContext) { }
 void WINAPI OnVoiceError(IXAudio2VoiceCallback* This, void* pBufferContext, HRESULT Error) { }
+
+static struct {
+    Data_Buffer data[SPACE_SHOOTER_AUDIO_MAX_SOUNDS];
+    int32_t count;
+} sounds;
 
 static struct {
     IXAudio2* xaudio;
@@ -148,17 +155,33 @@ bool windows_initAudio(void) {
     return false;
 }
 
-void platform_playSound(Data_Buffer* sound, bool loop) {
-    if (!audio.xaudio) {
+int32_t platform_loadSound(const char* fileName) {
+    DEBUG_ASSERT(sounds.count < SPACE_SHOOTER_AUDIO_MAX_SOUNDS, "Attempting to load too many sounds.");
+
+    int32_t id = sounds.count;
+    
+    if (!utils_loadWavData(fileName, sounds.data + id)) {
+        return -1;
+    }
+
+    ++sounds.count;
+
+    return id;
+}
+
+void platform_playSound(int32_t id, bool loop) {
+    if (!audio.xaudio || id < 0) {
         return;
     }
+
+    DEBUG_ASSERT(id < sounds.count, "Invalid sound ID.");
 
     for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audio.channels[i].buffer;
             buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
-            buffer->AudioBytes = sound->size;
-            buffer->pAudioData = sound->data;
+            buffer->AudioBytes = sounds.data[id].size;
+            buffer->pAudioData = sounds.data[id].data;
             IXAudio2SourceVoice_Start(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
             IXAudio2SourceVoice_SubmitSourceBuffer(audio.channels[i].voice, buffer, NULL);
             audio.channels[i].inUse = true;
