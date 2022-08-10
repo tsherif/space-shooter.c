@@ -25,6 +25,7 @@
 #include <alsa/asoundlib.h>
 #include <pthread.h>
 #include "../../shared/constants.h"
+#include "../../shared/utils.h"
 #include "../../shared/debug.h"
 #include "../../shared/data.h"
 #include "../../shared/platform-interface.h"
@@ -44,6 +45,11 @@ typedef struct {
     int32_t cursor;
     bool loop;
 } AudioStream;
+
+static struct {
+    Data_Buffer data[SPACE_SHOOTER_AUDIO_MAX_SOUNDS];
+    int32_t count;
+} sounds;
 
 static struct {
     pthread_t handle;
@@ -248,12 +254,26 @@ bool linux_initAudio(void) {
     return false;
 }
 
-void platform_playSound(Data_Buffer* sound, bool loop) {
+int32_t platform_loadSound(const char* fileName) {
+    DEBUG_ASSERT(sounds.count < SPACE_SHOOTER_AUDIO_MAX_SOUNDS, "Attempting to load too many sounds.");
+
+    int32_t id = sounds.count;
+    
+    if (!utils_loadWavData(fileName, sounds.data + id)) {
+        return -1;
+    }
+
+    ++sounds.count;
+
+    return id;
+}
+
+void platform_playSound(int32_t id, bool loop) {
     if (!threadInterface.initialized) {
         return;
     }
 
-    if (!sound->data) {
+    if (!sounds.data[id].data) {
         return;
     }
 
@@ -265,8 +285,8 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 
     if (threadInterface.queue.count < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS) {
         int32_t soundIndex = threadInterface.queue.count;
-        threadInterface.queue.sounds[soundIndex].data = (int16_t *) sound->data;
-        threadInterface.queue.sounds[soundIndex].count = sound->size / 2;
+        threadInterface.queue.sounds[soundIndex].data = (int16_t *) sounds.data[id].data;
+        threadInterface.queue.sounds[soundIndex].count = sounds.data[id].size / 2;
         threadInterface.queue.sounds[soundIndex].cursor = 0;
         threadInterface.queue.sounds[soundIndex].loop = loop;
 
