@@ -72,8 +72,8 @@ typedef struct {
 // implemented by the game layer.
 //
 // - game_init(): Initialize game resources.
-// - game_initAudio(): Initialize audio, if not done in init
-//      (i.e. for web after user interation).
+// - game_initAudio(): Initialize audio, if not done in game_init()
+//      (e.g. for web after user interaction).
 // - game_update(): Update game state based on time elapsed since
 //      last frame.
 // - game_draw(): Draw current frame.

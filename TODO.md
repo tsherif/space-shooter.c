@@ -1,6 +1,6 @@
 - [ ] Web support
     - [x] Bug? Seems like I have to press space twice to start game
-    - [ ] Preload audio data to avoid creating buffers unnecessarily 
+    - [x] Preload audio data to avoid creating buffers unnecessarily 
     - [x] Share posix utils with linux
     - [x] Error handling
         - [x] WebGL
@@ -16,6 +16,7 @@
     - [x] ~~Separate GameInput.startButton to handle start screen~~ Fix start screen logic
     - [x] Move fullscreen toggle instructions to start screen
     - [x] Figure out min memory requirements
+    - [ ] Set up site
 - [x] Document design
 - [x] Audio format constants should be in constants.h
 - [x] More comments

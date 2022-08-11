@@ -135,9 +135,7 @@ static struct {
     float animationTime;
     bool hideSystemInstructions;
     char scoreText[SCORE_TEXT_LENGTH];
-} gameState = {
-    .state = TITLE_SCREEN
-};
+} gameState;
 
 static struct {
     Player player;
@@ -917,6 +915,8 @@ static void simulate(float elapsedTime) {
 //////////////////////////////////
 
 bool game_init(Game_InitOptions* opts) {
+
+    gameState.state = TITLE_SCREEN;
 
     if (opts) {
         gameState.hideSystemInstructions = opts->hideSystemInstructions;

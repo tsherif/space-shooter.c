@@ -26,7 +26,7 @@ Development on Windows and Linux was to a great extent similar. On Windows, I us
 
 The Web, on the other hand, brought with it some challenges that weren't present on the native platforms. I use [emcc](https://emscripten.org/docs/tools_reference/emcc.html) to compile and [make](https://www.gnu.org/software/make/) again to build. I debug using Chrome as described in this [blog post](https://developer.chrome.com/blog/wasm-debugging-2020/), which takes a few steps to set up. The first is to install the [C/C++ DevTools Support Extension](https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb) and to enable **WebAssembly Debugging: Enable DWARF support** in the dev tools settings. Additionally, to ensure the extension could find the files on my system, I had to set the compilation flag `-fdebug-compilation-dir=".."` (i.e. the root of the repository relative to the build directory) and remap the file paths as outlined in this [bug report](https://github.com/emscripten-core/emscripten/issues/13486#issuecomment-779117827). With all that done, I can step through the C source files in the Chrome dev tools!
 
-In addition to the debugging challenges, the Web involves constraints that required changes to the control flow of `space-shooter.c`, the most prominent of these being the requirement that certain operations only be performed in user input callbacks, namely playing audio and entering fullscreen mode. This challenge is further compounded by the fact that the Web Gamepad API uses a polling system rather than events and callbacks, meaning Gamepad input, as specced, isn't considered user input for the purpose of enabling the above-mentioned operations! Chrome implements [its own workaround](https://bugs.chromium.org/p/chromium/issues/detail?id=381596) for this problem, but since it's non-standard (and not supported [in Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1740573)), I only support toggling fullscreen via the keyboard, even if a gamepad is connected. Furthermore, I implement the logic to toggle fullscreen directly in the keyboard input handler, rather than in the game loop as is done on the other platforms. Finally, to ensure audio is initialized correctly, I implement a start screen (and `INPUT_TO_START_SCREEN` game state) that only appears on the Web and asks the user for keyboard input to start that game so that it can do so within a keyboard input callback.
+In addition to the debugging challenges, the Web involves constraints that required changes to the control flow of `space-shooter.c`, the most prominent of these being the requirement that certain operations only be performed in user input callbacks, namely playing audio and entering fullscreen mode. This challenge is further compounded by the fact that the Web Gamepad API uses a polling system rather than events and callbacks, meaning Gamepad input, as specced, isn't considered user input for the purpose of enabling the above-mentioned operations. Chrome implements [its own workaround](https://bugs.chromium.org/p/chromium/issues/detail?id=381596) for this problem, but since it's non-standard (and not supported [in Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1740573)), I only support toggling fullscreen via the keyboard, even if a gamepad is connected. Furthermore, I implement the logic to toggle fullscreen directly in the keyboard input handler, rather than in the game loop as is done on the other platforms. Finally, to ensure audio is initialized correctly, I implement a start screen (and `INPUT_TO_START_SCREEN` game state) that only appears on the Web and asks the user for keyboard input to start the game so that it can do so within a keyboard input callback.
 
 
 Architectural Overview
@@ -52,14 +52,15 @@ At a high level, the architecture of `space-shooter.c` is composed of 3 layers:
 
 The platform layer interacts with the game and rendering layers using an API inspired by [Handmade Hero](https://handmadehero.org/) and defined in [platform-interface.h](./src/shared/platform-interface.h). The platform layer implements the following functions used by the game and rendering layers:
 - `platform_getInput(Game_Input* input)`: Get current input state.
-- `platform_playSound(Data_Buffer* sound, bool loop)`: Output sound to an audio device.
+- `platform_loadSound(const char* fileName)`: Load a wave file into the audio system and return an id to reference it.
+- `platform_playSound(int32_t id, bool loop)`: Output sound to an audio device.
 - `platform_debugMessage(const char* message)`: Output a message intended for the developer while debugging.
 - `platform_userMessage(const char* message)`: Output a message intended for the end user.
 - `platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate)`: Load contents of a file into memory. Optionally, null-terminate if the data will be used as a string.
 
-Once the platform layer initializes system resources, it calls into the game layer using the following lifecycle functions:
-- `game_init()`: Initialize game resources.
-- `game_startMusic()`: Start playing background music.
+Once the platform layer initializes system resources, it calls into the game layer using the following life cycle functions:
+- `game_init(Game_InitOptions* opts)`: Initialize game resources. Options allow customizations for specific platforms (e.g. don't immediately initialize audio on the Web).
+- `game_initAudio()`: Initialize audio, if not done in `game_init` (e.g. for the Web after user interaction).
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw()`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match the current window size.
@@ -297,7 +298,7 @@ XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedi
 
 #### Web
 
-Hiding the cursor on the Web is straightforward using the [CSS cursor property](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor) on the canvas elevent.
+Hiding the cursor on the Web is straightforward using the [CSS cursor property](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor) on the canvas element.
 
 Entering fullscreen mode on the Web is somewhat awkward for a few reasons:
 - Browser policy that fullscreen can only be entered a user input callback. 
@@ -482,16 +483,16 @@ This struct is also used as the context for the associated buffer, so it can be 
 audioStrean.buffer.pContext = &audioStream;
 ```
 
-When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. 
+Loading a sound involves loading the WAVE file and parsing out the PCM data, but otherwise no intermediate processing is required before it's submitted to a source voice. When a sound is played, the first available source voice is found and marked as in-use, and the audio buffer is submitted. 
 
 ```c
-void platform_playSound(Data_Buffer* sound, bool loop) {
-    for (int32_t i = 0; i < 32; ++i) {
+void platform_playSound(int32_t id, bool loop) {
+    for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
             XAUDIO2_BUFFER* buffer = &audio.channels[i].buffer;
             buffer->LoopCount = loop ? XAUDIO2_LOOP_INFINITE : 0;
-            buffer->AudioBytes = sound->size;
-            buffer->pAudioData = sound->data;
+            buffer->AudioBytes = sounds.data[id].size;
+            buffer->pAudioData = sounds.data[id].data;
             IXAudio2SourceVoice_Start(audio.channels[i].voice, 0, XAUDIO2_COMMIT_NOW);
             IXAudio2SourceVoice_SubmitSourceBuffer(audio.channels[i].voice, buffer, NULL);
             audio.channels[i].inUse = true;
@@ -512,7 +513,7 @@ void WINAPI OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
 
 #### Linux
 
-I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread.
+I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. As on Windows, after the PCM data is parsed out of a file, no intermediate processing is required before it is submitted to the sound queue. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread.
 
 ```c
 for (int32_t i = 0; i < numSamples; ++i) {
@@ -558,14 +559,30 @@ snd_pcm_writei(device, mixer.buffer, 2048)
 
 #### Web
 
-I implement audio for the Web using [OpenAL](https://www.openal.org/), which models audio as a graph similar to XAudio2. I create 32 sources, each with an associated buffer, and all connected to the default listener. Similarly to the XAudio2 implementation, when a sound is played, the first available source is found and marked as in-use, and the audio data is submitted to the associated buffer.
+I implement audio for the Web using [OpenAL](https://www.openal.org/), which models audio as a graph similar to XAudio2. I create 32 sources, all connected to the default listener. Unlike Windows and Linux PCM data isn't directly submitted to a source, but rather has to be copied into a buffer. To avoid continually copying data into a buffer when a sound is played, I create a buffer for each sound once when it is loaded.
 
 ```c
-void platform_playSound(Data_Buffer* sound, bool loop) {
-    for (int32_t i = 0; i < 32; ++i) {
+int32_t platform_loadSound(const char* fileName) {
+    int32_t id = sounds.count;
+    utils_loadWavData(fileName, sounds.data + id);
+    alGenBuffers(1, sounds.buffers + id);
+    alBufferData(sounds.buffers[id], AL_FORMAT_STEREO16, sounds.data[id].data, sounds.data[id].size, 44100);
+    ++sounds.count;
+
+    return id;
+}
+```
+
+Similarly to the XAudio2 implementation, when a sound is played, the first available source is found and marked as in-use, but instead of submitting audio data to it directly, the source is simply connected to the sound's buffer that was created `platform_loadSound`.
+
+```c
+void platform_playSound(int32_t id, bool loop) {
+    ALuint buffer = sounds.buffers[id];
+
+    for (int32_t i = 0; i < SPACE_SHOOTER_AUDIO_MIXER_CHANNELS; ++i) {
         if (!audio.channels[i].inUse) {
             AudioStream* channel = audio.channels + i; 
-            alBufferData(channel->buffer, AL_FORMAT_STEREO16, sound->data, sound->size, 44100);
+            alSourcei(channel->source, AL_BUFFER, buffer);
             alSourcei(channel->source, AL_LOOPING, loop ? AL_TRUE : AL_FALSE); 
             alSourcePlay(channel->source);
             channel->inUse = true;
@@ -575,7 +592,7 @@ void platform_playSound(Data_Buffer* sound, bool loop) {
 }
 ```
 
-However, since OpenAL provides no callback API to signal when a sound has finished playing, I created a function `web_updateAudio`, called on each frame, that queries state of each source currently marked as in-use and makes it available if it is no longer playing.
+Since OpenAL provides no callback API to signal when a sound has finished playing, I created a function `web_updateAudio`, called on each frame, that queries the state of each source currently marked as in-use and makes it available if it is no longer playing.
 
 ```c
 void web_updateAudio(void) {
