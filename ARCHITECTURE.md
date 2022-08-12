@@ -2,6 +2,7 @@ The Architecture of space-shooter.c
 ===================================
 
 - [Introduction](#introduction)
+- [Notes on Cross-platform Development](#notes-on-cross-platform-development)
 - [Architectural Overview](#architectural-overview)
 - [Data Model](#data-model)
 - [The Platform Layer](#the-platform-layer)
@@ -22,11 +23,11 @@ Throughout the text, I link to the references I used in building `space-shooter.
 ### Notes on Cross-platform Development
 ---------------------------------------
 
-Development on Windows and Linux was to a great extent similar. On Windows, I use [cl](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160) to compile, [Visual Studio 2019](https://visualstudio.microsoft.com/) to debug and simple batch files as the build system. On Linux, I use [gcc](https://gcc.gnu.org/) to compile, [gdb](https://sourceware.org/gdb/) to debug, [make](https://www.gnu.org/software/make/) to build. The development experience on Windows was somewhat smoother due to the thorough documentation on [MSDN](https://docs.microsoft.com/en-us/windows/win32/desktop-programming) and the more pleasant debugging experience with Visual Studio, but I never had to change any parts of the design of `space-shooter.c` to fit constraints on one platform or the other.
+Development on Windows and Linux is to a great extent similar. On Windows, I use [cl](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160) to compile, [Visual Studio 2019](https://visualstudio.microsoft.com/) to debug and simple batch files as the build system. On Linux, I use [gcc](https://gcc.gnu.org/) to compile, [gdb](https://sourceware.org/gdb/) to debug, [make](https://www.gnu.org/software/make/) to build. The development experience on Windows is generally smoother due to the thorough API documentation on [MSDN](https://docs.microsoft.com/en-us/windows/win32/desktop-programming) and a more pleasant debugging experience with Visual Studio, but I've never had to change any parts of the design of `space-shooter.c` to fit constraints on one platform or the other.
 
-The Web, on the other hand, brought with it some challenges that weren't present on the native platforms. I use [emcc](https://emscripten.org/docs/tools_reference/emcc.html) to compile and [make](https://www.gnu.org/software/make/) again to build. I debug using Chrome as described in this [blog post](https://developer.chrome.com/blog/wasm-debugging-2020/), which takes a few steps to set up. The first is to install the [C/C++ DevTools Support Extension](https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb) and to enable **WebAssembly Debugging: Enable DWARF support** in the dev tools settings. Additionally, to ensure the extension could find the files on my system, I had to set the compilation flag `-fdebug-compilation-dir=".."` (i.e. the root of the repository relative to the build directory) and remap the file paths as outlined in this [bug report](https://github.com/emscripten-core/emscripten/issues/13486#issuecomment-779117827). With all that done, I can step through the C source files in the Chrome dev tools!
+The Web, on the other hand, brings with it some challenges that weren't present on the native platforms. I use [emcc](https://emscripten.org/docs/tools_reference/emcc.html) to compile and [make](https://www.gnu.org/software/make/) again to build. I debug using Chrome DevTools as described in this [blog post](https://developer.chrome.com/blog/wasm-debugging-2020/), which takes a few steps to set up. The first is to install the [C/C++ DevTools Support Extension](https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb) and to enable **WebAssembly Debugging: Enable DWARF support** in the DevTools settings. Additionally, to ensure the extension could find the files on my system, I had to set the compilation flag `-fdebug-compilation-dir=".."` (i.e. the root of the repository relative to the build directory) and remap the file paths as outlined in this [bug report](https://github.com/emscripten-core/emscripten/issues/13486#issuecomment-779117827). 
 
-In addition to the debugging challenges, the Web involves constraints that required changes to the control flow of `space-shooter.c`, the most prominent of these being the requirement that certain operations only be performed in user input callbacks, namely playing audio and entering fullscreen mode. This challenge is further compounded by the fact that the Web Gamepad API uses a polling system rather than events and callbacks, meaning Gamepad input, as specced, isn't considered user input for the purpose of enabling the above-mentioned operations. Chrome implements [its own workaround](https://bugs.chromium.org/p/chromium/issues/detail?id=381596) for this problem, but since it's non-standard (and not supported [in Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1740573)), I only support toggling fullscreen via the keyboard, even if a gamepad is connected. Furthermore, I implement the logic to toggle fullscreen directly in the keyboard input handler, rather than in the game loop as is done on the other platforms. Finally, to ensure audio is initialized correctly, I implement a start screen (and `INPUT_TO_START_SCREEN` game state) that only appears on the Web and asks the user for keyboard input to start the game so that it can do so within a keyboard input callback.
+In addition to the debugging challenges, the Web involves constraints that required changes to the control flow of `space-shooter.c`, the most prominent of these being the requirement that certain operations only be performed in user input callbacks, namely playing audio and entering fullscreen mode. This challenge is further compounded by the fact that the Web Gamepad API uses a polling system rather than events and callbacks, meaning Gamepad input, as specced, isn't considered user input for the purpose of enabling the above-mentioned operations. Chrome implements [its own workaround](https://bugs.chromium.org/p/chromium/issues/detail?id=381596) for this problem, but since it's non-standard (and not supported [in Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1740573)), I only support toggling fullscreen via the keyboard, even if a gamepad is connected. Furthermore, I implement the logic to toggle fullscreen directly in the keyboard input handler, rather than in the game loop as is done on the other platforms. Finally, to ensure audio is initialized correctly, I implement a start screen that only appears on the Web and asks the user for keyboard input to start the game so that it can do so within a keyboard input callback.
 
 
 Architectural Overview
@@ -56,11 +57,11 @@ The platform layer interacts with the game and rendering layers using an API ins
 - `platform_playSound(int32_t id, bool loop)`: Output sound to an audio device.
 - `platform_debugMessage(const char* message)`: Output a message intended for the developer while debugging.
 - `platform_userMessage(const char* message)`: Output a message intended for the end user.
-- `platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate)`: Load contents of a file into memory. Optionally, null-terminate if the data will be used as a string.
+- `platform_loadFile(const char* fileName, Data_Buffer* buffer, bool nullTerminate)`: Load contents of a file into memory. Optionally, null-terminate it if the data will be used as a string.
 
 Once the platform layer initializes system resources, it calls into the game layer using the following life cycle functions:
 - `game_init(Game_InitOptions* opts)`: Initialize game resources. Options allow customizations for specific platforms (e.g. don't immediately initialize audio on the Web).
-- `game_initAudio()`: Initialize audio, if not done in `game_init` (e.g. for the Web after user interaction).
+- `game_initAudio()`: Initialize audio, if not done in `game_init` (e.g. for the Web after a user interaction).
 - `game_update(float elapsedTime)`: Update game state based on time elapsed since last frame.
 - `game_draw()`: Draw current frame.
 - `game_resize(int width, int height)`: Update rendering state to match the current window size.
@@ -79,9 +80,9 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c](./src/shared/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c](./src/game/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the audio data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c](./src/shared/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the audio data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
@@ -720,7 +721,7 @@ if (bytesRead >= 0) {
 
 ```
 
-Raphael De Vasconcelos Nascimento provides a more detailed description of the entire process [here](https://ourmachinery.com/post/gamepad-implementation-on-linux/).
+Raphael De Vasconcelos Nascimento provides a more detailed description of the entire process [here](https://web.archive.org/web/20210518003010/https://ourmachinery.com/post/gamepad-implementation-on-linux/).
 
 #### Web
 
