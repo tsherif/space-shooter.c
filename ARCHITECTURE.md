@@ -722,6 +722,62 @@ if (bytesRead >= 0) {
 
 Raphael De Vasconcelos Nascimento provides a more detailed description of the entire process [here](https://ourmachinery.com/post/gamepad-implementation-on-linux/).
 
+#### Web
+
+Gamepad support for the Web uses the relevant emscripten API functions. Connections are detected by setting the following callback via `emscripten_set_gamepadconnected_callback`, which simply tracks the index of the connected gamepad.
+
+```c
+EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+    if (gamepad.index == -1) {
+        gamepad.index = gamepadEvent->index;
+    }
+
+    return EM_TRUE;
+}
+```
+
+It's important to note that this function will only be called after the first user interaction with a gamepad while the page is visible, rather when a gamepad is actually connected. See [here](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API#connecting_to_a_gamepad) for details.
+
+The logic for capturing gamepad input is similar to that of XInput.
+
+```c
+EmscriptenGamepadEvent gamepadState = { 0 };
+emscripten_sample_gamepad_data();
+emscripten_get_gamepad_status(gamepad.index, &gamepadState);
+
+float x = (float) gamepadState.axis[GAMEPAD_HORIZONTAL_AXIS];
+float y = (float) gamepadState.axis[GAMEPAD_VERTICAL_AXIS];
+bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
+
+// Process input
+```
+
+Unlike gamepad input for Windows and Linux, the Back and Start buttons aren't captured, which are the quit and fullscreen toggle inputs respectively. The latter was left out as "quitting" the web page didn't seem like a meaningful interaction to me. The latter was left out because, as mentioned above, gamepad inputs don't trigger input events which are required by the standard fullscreen API's security model. See [here](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide#when_a_fullscreen_request_fails) for details.
+
+Gamepad disconnections are detected in a callback set using `emscripten_set_gamepaddisconnected_callback`. If the currently-active gamepad was disconnected, the function will attempt to find another.
+
+```c
+EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
+    if (gamepad.index == gamepadEvent->index) {
+        gamepad.index = -1;
+        
+        emscripten_sample_gamepad_data()
+        int32_t numGamepads = emscripten_get_num_gamepads();
+        for (int32_t i = 0; i < numGamepads; ++i) {
+            EmscriptenGamepadEvent gamepadState = { 0 };
+            emscripten_get_gamepad_status(i, &gamepadState);
+            if (gamepadState.connected) {
+                gamepad.index = i;
+                break;
+            }
+        }
+    }
+
+    return EM_TRUE;
+}
+```
+
+
 ### High-resolution Time
 
 #### Windows
@@ -771,6 +827,21 @@ while (running) {
 }
 ```
 
+#### Web
+
+The Web did not require any high-resolution timing as high-resolution timestamps are passed directly to game loop callback bassed to `emscripten_request_animation_frame_loop`.
+
+```c
+EM_BOOL loop(double time, void *userData) {
+
+    float dt = time - state.lastFrameTime;
+    state.lastFrameTime = time;
+
+    game_update(dt);
+}
+```
+
+
 ### High-resolution Sleep
 
 `space-shooter.c` uses vsync, if available, to control the frequency of the game loop. To avoid busy-looping when vsync isn't available, `space-shooter.c` will sleep if a frame runs under a minimum frame time of 3ms using the high-resolution sleep function available on each platform.
@@ -815,6 +886,11 @@ if (SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLISECOND) {
     elapsedTime = time - lastTime;
 }
 ```
+
+#### Web
+
+The Web did not require any sleep logic as suspending execution is handled by `emscripten_request_animation_frame_loop`.
+
 
 The Game Layer
 --------------
