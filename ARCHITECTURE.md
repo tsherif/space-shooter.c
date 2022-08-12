@@ -80,9 +80,9 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are parsed by the function `utils_bmpToImage()` ([utils.c](./src/shared/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are loaded and parsed by the function `utils_loadBmpData` ([utils.c](./src/shared/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
-Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are parsed by the function `utils_wavToSound()` ([utils.c](./src/shared/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that the audio data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
+Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are loaded and parsed by the function `utils_loadWavData` ([utils.c](./src/shared/utils.c)), which is called in the platform audio layers. To minimize the complexity of the parser, I impose a requirement that audio data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
 Failure to load image data will cause the game to abort. Failure to load audio data will allow the game to run without the missing sounds. In debug builds, invalid data will cause the game to abort.
 
@@ -123,7 +123,7 @@ objects[deletedIndex].y = objects[lastIndex].y;
 
 All operations on objects are run in batches on `objects[0 .. count - 1]`.
 
-Note that the implementation in most cases doesn't look exactly like the above depending on how the objects will be manipulated by a given system. For example, game entity properties are stored as parallel arrays, rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
+Note that the implementation in most cases doesn't look exactly like the above depending on how the objects will be manipulated by a given system. For example, game entity properties are stored in [structs of arrays](https://en.wikipedia.org/wiki/AoS_and_SoA#Structure_of_arrays), rather than in per-object structs, to simplify submitting them to the GPU as attribute buffers.
 
 ### Error Handling
 
