@@ -90,7 +90,7 @@ void utils_uintToString(uint32_t n, char* buffer, int32_t bufferLength) {
 }
 
 // NOTE(Tarek): Hardcoded to load 32bpp BGRA  
-bool utils_bmpToImage(Data_Buffer* imageData, Data_Image* image) {
+static bool bmpToImage(Data_Buffer* imageData, Data_Image* image) {
     uint32_t imageOffset   = *(uint32_t *) (imageData->data + 10);
     int32_t width          = *(int32_t *)  (imageData->data + 18);
     int32_t height         = *(int32_t *)  (imageData->data + 22);
@@ -200,6 +200,14 @@ static bool wavToSound(Data_Buffer* soundData, Data_Buffer* sound) {
     memcpy(sound->data, soundData->data + dataOffset + 8, dataSize);
 
     return true;
+}
+
+bool utils_loadBmpData(const char* fileName, Data_Image* image) {
+    Data_Buffer imageData = { 0 };
+    bool result = platform_loadFile(fileName, &imageData, false) && bmpToImage(&imageData, image);
+    data_freeBuffer(&imageData);
+
+    return result;
 }
 
 bool utils_loadWavData(const char* fileName, Data_Buffer* sound) {

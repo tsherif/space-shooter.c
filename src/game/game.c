@@ -210,13 +210,11 @@ static struct {
 //////////////////////////////////
 
 static bool loadTexture(const char* fileName, uint32_t *texture) {
-    Data_Buffer imageData = { 0 };
     Data_Image image = { 0 };
 
-    bool result = platform_loadFile(fileName, &imageData, false) && utils_bmpToImage(&imageData, &image);
+    bool result = utils_loadBmpData(fileName, &image);
     
     *texture = renderer_createTexture(image.data, image.width, image.height);
-    data_freeBuffer(&imageData);
     data_freeImage(&image);
 
     return result;
