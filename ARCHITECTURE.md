@@ -128,11 +128,11 @@ Note that the implementation in most cases doesn't look exactly like the above d
 ### Error Handling
 
 My primary concern in managing errors in `space-shooter.c` is to structure interactions with platform APIs, since they're the only operations for which success or failure is outside my control. My strategy is to run these operations during initialization, so the rest of the game doesn't have to worry about them:
-- Acquire all platform and hardware resources during initialization. This includes opening windows, getting device handles, starting threads, loading asset data, allocating GPU resources.
+- Acquire all platform and hardware resources during initialization. This includes preparing the drawing surface, getting device handles, starting threads, loading asset data, allocating GPU resources.
 - Validate asset data during initialization.
 - Use static memory for game objects so allocations aren't required while the game is running.
 
-The platform operations themselves require structure in situations where a sequence of dependent resources is acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL:
+The platform operations themselves require structure in situations where a sequence of dependent resources is acquired one after the other, and on failure, successfully-acquired resources have to be released. For example, consider the following simplified version of opening a window and initializing OpenGL.
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -148,7 +148,7 @@ GL* gl = initializeOpenGL(window);
 return SUCCESS;
 ```
 
-I manage these sequences using [goto chains](https://wiki.sei.cmu.edu/confluence/display/c/MEM12-C.+Consider+using+a+goto+chain+when+leaving+a+function+on+error+when+using+and+releasing+resources) with labels based on the resources have been acquired and running in reverse order of the acquisitions:
+I manage these sequences using [goto chains](https://wiki.sei.cmu.edu/confluence/display/c/MEM12-C.+Consider+using+a+goto+chain+when+leaving+a+function+on+error+when+using+and+releasing+resources) with labels based on the resources have been acquired and running in reverse order of the acquisitions.
 
 ```c
 // NOTE: This is not the actual implementation!
@@ -187,7 +187,7 @@ return FAILURE;
 
 ### Mixin Structs
 
-To simplify passing of game data between the different layers, I implement a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows: 
+To simplify passing of game data between the different layers, I implement a struct "mixin" model using anonymous structs and unions. A struct that is to be used as a mixin is defined as follows:
 
 ```c
 #define MY_STRUCT_BODY { int32_t x; int32_t y }
@@ -195,7 +195,7 @@ typedef struct MY_STRUCT_BODY MyStruct;
 #define MY_STRUCT_MIXIN(name) union { struct MY_STRUCT_BODY; MyStruct name; }
 ```
 
-This struct can then be mixed into another struct:
+This struct can then be mixed into another struct.
 
 ```c
 typedef {
@@ -204,7 +204,7 @@ typedef {
 } MixedStruct;
 ```
 
-This allows the members of the mixin struct to be used directly, or the mixin struct can be referenced as a whole by name:
+This allows the members of the mixin struct to be used directly, or the mixin struct can be referenced as a whole by name.
 
 ```c
 void myStructFunction(MyStruct ms) {
@@ -247,7 +247,7 @@ Managing the drawing surface in `space-shooter.c` involves standard usage of the
 
 #### Windows
 
-Hiding the cursor on Windows is straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I open a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen:
+Hiding the cursor on Windows is straightforward using the [ShowCursor](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showcursor) function, with the only subtlety being to make sure it only does so when the mouse is in the client area. I open a fullscreen window using [this technique](https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353) described by Raymond Chen.
 
 ```c
 HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
@@ -263,7 +263,7 @@ SetWindowPos(window, HWND_TOP, x, y, width, height, SWP_NOCOPYBITS | SWP_FRAMECH
 
 #### Linux
 
-I hide the cursor on Linux by creating a "blank" cursor:
+I hide the cursor on Linux by creating a "blank" cursor.
 
 ```c
 char hiddenCursorData = 0;
@@ -273,7 +273,7 @@ Cursor hiddenCursor = XCreatePixmapCursor(display, hiddenCursorPixmap, hiddenCur
 XDefineCursor(display, window, hiddenCursor);
 ```
 
-I open a fullscreen window by sending the relevant [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window: 
+I open a fullscreen window by sending the relevant [Extended Window Manager Hint](https://specifications.freedesktop.org/wm-spec/1.3/index.html) events to the root window.
 
 ```c
 #define NET_WM_STATE_ADD    1
@@ -302,15 +302,14 @@ XSendEvent(display, rootWindow, False, SubstructureNotifyMask | SubstructureRedi
 Hiding the cursor on the Web is straightforward using the [CSS cursor property](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor) on the canvas element.
 
 Entering fullscreen mode on the Web is somewhat awkward for a few reasons:
-- Browser policy that fullscreen can only be entered a user input callback. 
-- The [Web Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API) uses polling (see below), so there are no user input callbacks that can be used for this purpose.
-- Implementations of the Web Fullscreen API vary across browsers.
+- Browsers enforce a policy that [fullscreen mode](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide#when_a_fullscreen_request_fails) can only be entered in a user input callback. 
+- The [Web Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API) uses polling (see below), so there are no user input callbacks that can be used to comply with this policy.
 
-I addressed these problems by making the following design and architectural changes specific to the Web:
-- Keyboard input is used to toggle fullscreen even when a gamepad is being used to play.
+I addressed these problems by making the following design and architectural changes specific to the Web version of `space-shooter.c`:
+- Only keyboard input is used to toggle fullscreen, even when a gamepad is being used to play.
 - The logic for entering/exiting fullscreen is run in the keyboard event handler, rather than in the game loop as it is for the other platforms.
 
-With those constraints in mind, I implemented the fullscreen controls using the relevant [emscripten API](https://emscripten.org/docs/api_reference/html5.h.html#fullscreen) calls:
+With those constraints in mind, I implement the fullscreen controls using the relevant [emscripten API](https://emscripten.org/docs/api_reference/html5.h.html#fullscreen) calls.
 
 ```c
 // NOTE: error checks removed for clarity!
@@ -341,7 +340,7 @@ Creating a modern OpenGL context on Windows is a [convoluted process](https://ww
 4. Destroy the dummy window and context (they cannot be reused because the pixel format can only be [set once for a window](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat#remarks)).
 5. Create the real window and context using the extension functions.
 
-I extracted this functionality into a single-header library, [create-opengl-window.h](./lib/create-opengl-window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows):
+I extracted this functionality into a single-header library, [create-opengl-window.h](./lib/create-opengl-window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows).
 
 ```c
 void *fn = (void *) wglGetProcAddress(openGLFunctionName);
@@ -354,7 +353,7 @@ I also extracted the logic for loading OpenGL functions on Windows and Linux int
 
 #### Linux
 
-OpenGL context creation on Linux is also convoluted but doesn't require dummy context creation. The first step is to find a framebuffer configuration that satisfies the rendering requirements:
+OpenGL context creation on Linux is also convoluted but doesn't require dummy context creation. The first step is to find a framebuffer configuration that satisfies the rendering requirements.
 
 ```c
 int32_t numFBC = 0;
@@ -373,7 +372,7 @@ GLXFBConfig framebufferConfig = fbcList[0];
 XVisualInfo *visualInfo = glXGetVisualFromFBConfig(display, framebufferConfig);
 ```
 
-This configuration is then used to create a window:
+This configuration is then used to create a window.
 
 ```c
 Window rootWindow = XRootWindow(display, visualInfo->screen);
@@ -396,7 +395,7 @@ Window window = XCreateWindow(
 );
 ```
 
-Finally, an OpenGL context is created with a matching framebuffer configuration: 
+Finally, an OpenGL context is created with a matching framebuffer configuration. 
 
 ```c
 GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, True, (int32_t []) {
@@ -407,7 +406,7 @@ GLXContext gl = glXCreateContextAttribsARB(display, framebufferConfig, NULL, Tru
 });
 ```
 
-A complete example of the process is available [here](https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows):
+A complete example of the process is available [here](https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)). Again, once the context is created, loading functions is straightforward using the process described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Linux_and_X-Windows).
 
 ```c
 void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
@@ -418,7 +417,7 @@ As mentioned above, I extracted the logic for loading OpenGL functions on Window
 
 #### Web
 
-For the Web, WebGL context creation is straightforward using the appropriate emscripten API calls:
+For the Web, WebGL context creation is straightforward using the appropriate emscripten API calls.
 
 ```c
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", & (EmscriptenWebGLContextAttributes) {
@@ -429,7 +428,7 @@ EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", 
 emscripten_webgl_make_context_current(gl);
 ```
 
-I require a WebGL 2 context because the GLSL 3.3 versions of the shaders compile as GLSL ES 3.0 with almost no changes, while compiling to GLSL ES 1.0 would require, for example, changes to keywords and additional logic to determine attribute locations. The only modifications required to the compile the shaders as GLSL ES 3.0 were the version directives and precision qualifiers:
+I require a WebGL 2 context because the GLSL 3.3 versions of the shaders compile as GLSL ES 3.0 with almost no changes, while compiling to GLSL ES 1.0 would require, for example, changes to keywords and additional logic to determine attribute locations. The only modifications required to the compile the shaders as GLSL ES 3.0 were the version directives and precision qualifiers.
 
 ```c
 #version 300 es
@@ -753,7 +752,7 @@ bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
 // Process input
 ```
 
-Unlike gamepad input for Windows and Linux, the Back and Start buttons aren't captured, which are the quit and fullscreen toggle inputs respectively. The latter was left out as "quitting" the web page didn't seem like a meaningful interaction to me. The latter was left out because, as mentioned above, gamepad inputs don't trigger input events which are required by the standard fullscreen API's security model. See [here](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide#when_a_fullscreen_request_fails) for details.
+Unlike gamepad input for Windows and Linux, the Back and Start buttons aren't captured, which are the quit and fullscreen toggle inputs respectively. The latter was left out as "quitting" the web page didn't seem like a meaningful interaction to me. The latter was left out because, as mentioned above, gamepad inputs don't trigger input events which are required by the standard fullscreen API's security model.
 
 Gamepad disconnections are detected in a callback set using `emscripten_set_gamepaddisconnected_callback`. If the currently-active gamepad was disconnected, the function will attempt to find another.
 
