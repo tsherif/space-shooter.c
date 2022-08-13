@@ -319,7 +319,7 @@ if (strEquals(keyEvent->code, "KeyF", 32)) {
     if (status.isFullscreen) {
         emscripten_exit_fullscreen();
     } else {
-        emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, & (EmscriptenFullscreenStrategy) {
+        emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, &(EmscriptenFullscreenStrategy) {
             .scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
             .canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF,
             .filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_NEAREST
@@ -420,7 +420,7 @@ As mentioned above, I extracted the logic for loading OpenGL functions on Window
 For the Web, WebGL context creation is straightforward using the appropriate emscripten API calls.
 
 ```c
-EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", & (EmscriptenWebGLContextAttributes) {
+EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", &(EmscriptenWebGLContextAttributes) {
     .majorVersion = 2,
     .minorVersion = 0
 });
@@ -439,19 +439,19 @@ precision highp float;
 
 #### Windows
 
-I implement Windows audio ([windows-audio.c](./src/platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that), but the process is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object:
+I implement Windows audio ([windows-audio.c](./src/platform/windows/windows-audio.c)) using [Xaudio2](https://docs.microsoft.com/en-us/windows/win32/xaudio2/xaudio2-introduction), which structures mixing as an audio graph and handles creating a separate audio thread. Documentation on how to use Xaudio2 in C is scarce (I created a [demo application](https://github.com/tsherif/xaudio2-c-demo) to help with that), but the process is mostly straightforward using provided macros that map to the C++ methods described in the documentation, e.g. instead calling a method on an object,
 
 ```c++
 xaudio->CreateMasteringVoice(xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
 ```
 
-one passes the object to a similarly-named macro:
+one passes the object to a similarly-named macro.
 
 ```c
 IXAudio2_CreateMasteringVoice(xaudio, xaudioMasterVoice, 2, 44100, 0, NULL, NULL, AudioCategory_GameEffects);
 ```
 
-One subtlety is defining the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover that in C, this requires setting the `lpVtbl` member in the `IXAudio2VoiceCallback` struct:
+One subtlety is defining the callbacks for a source voice, which in C++ is done by inheriting from `IXAudio2VoiceCallback` and overriding the relevant methods. I had to read the preprocessor output from `xaudio2.h` to discover that in C, this requires setting the `lpVtbl` member in the `IXAudio2VoiceCallback` struct.
 
 ```c
 IXAudio2VoiceCallback callbacks = {
@@ -467,7 +467,7 @@ IXAudio2VoiceCallback callbacks = {
 };
 ```
 
-The `space-shooter.c` audio graph is composed of 32 source voices connected directly to a single master voice. A source voice, its buffer and whether it's in use are managed by a simple `AudioStream` struct:
+The `space-shooter.c` audio graph is composed of 32 source voices connected directly to a single master voice. A source voice, its buffer and whether it's in use are managed by a simple `AudioStream` struct.
 
 ```c
 typedef struct {
@@ -513,7 +513,18 @@ void WINAPI OnBufferEnd(IXAudio2VoiceCallback* This, void* pBufferContext)    {
 
 #### Linux
 
-I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. As on Windows, after the PCM data is parsed out of a file, no intermediate processing is required before it is submitted to the sound queue. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread.
+I implement Linux audio ([linux-audio.c](./src/platform/linux/linux-audio.c)) using [ALSA](https://www.alsa-project.org/alsa-doc/alsa-lib/) to submit data to the audio device and [pthread](https://en.wikipedia.org/wiki/Pthreads) to create a separate audio thread. As on Windows, after the PCM data is parsed out of a file, no intermediate processing is required before it is submitted to the sound queue. Playing a sound involves adding the sound to a queue on the main thread, and sounds are copied from the queue into the mixer on each loop of the audio thread. ALSA only handles submission of audio data to the device so I implement a 32-channel additive mixer explicitly on the audio thread. Each channel of the mixer is represented by an `AudioStream` struct (defined differently than in the Windows audio layer) that keeps track of the data playing on the channel, how much of the data has already been played, and whether the channel is looping.
+
+```c
+typedef struct {
+    int16_t* data;
+    int32_t count;
+    int32_t cursor;
+    bool loop;
+} AudioStream;
+```
+
+Mixing is performed by piecewise addition of corresponding samples from each channel. Results are [hard-clipped](https://www.hackaudio.com/digital-signal-processing/distortion-effects/hard-clipping/) to the 16-bit signed integer range.
 
 ```c
 for (int32_t i = 0; i < numSamples; ++i) {
@@ -551,7 +562,7 @@ for (int32_t i = 0; i < mixer.count; ++i) {
 At the end of the audio thread loop, mixed audio is submitted to the device with a buffer size of 2048 frames (~50ms of audio).
 
 ```c
-snd_pcm_writei(device, mixer.buffer, 2048)
+snd_pcm_writei(device, mixer.buffer, 2048);
 ```
 
 `snd_pcm_writei` blocks until the device requires data, so the audio thread will wake up approximately once every 50ms.
@@ -559,7 +570,7 @@ snd_pcm_writei(device, mixer.buffer, 2048)
 
 #### Web
 
-I implement audio for the Web using [OpenAL](https://www.openal.org/), which models audio as a graph similar to XAudio2. I create 32 sources, all connected to the default listener. Unlike Windows and Linux PCM data isn't directly submitted to a source, but rather has to be copied into a buffer. To avoid continually copying data into a buffer when a sound is played, I create a buffer for each sound once when it is loaded.
+I implement audio for the Web using [OpenAL](https://www.openal.org/), which models audio as a graph similar to XAudio2. I create 32 sources, all connected to the default listener. Unlike Windows and Linux PCM data isn't directly submitted to a source, but must instead be copied into a buffer. To avoid continually copying data into a buffer when a sound is played, I create a buffer for each sound once when it is loaded.
 
 ```c
 int32_t platform_loadSound(const char* fileName) {
@@ -573,7 +584,7 @@ int32_t platform_loadSound(const char* fileName) {
 }
 ```
 
-Similarly to the XAudio2 implementation, when a sound is played, the first available source is found and marked as in-use, but instead of submitting audio data to it directly, the source is simply connected to the sound's buffer that was created `platform_loadSound`.
+Similarly to the XAudio2 implementation, when a sound is played, the first available source is found and marked as in-use, but instead of submitting audio data to it directly, the source is simply connected to the sound's buffer which was created `platform_loadSound`.
 
 ```c
 void platform_playSound(int32_t id, bool loop) {
@@ -612,7 +623,7 @@ void web_updateAudio(void) {
 
 #### Windows
 
-[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) is by far the simplest OS API I worked with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop:
+[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) is by far the simplest OS API I worked with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop.
 
 ```c
 XINPUT_STATE xInputState;
@@ -625,7 +636,7 @@ for (int32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
 }
 ```
 
-The current state of the gamepad is provided in the `XINPUT_STATE` struct:
+The current state of the gamepad is provided in the `XINPUT_STATE` struct.
 
 ```c
 if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
@@ -641,7 +652,7 @@ if (XInputGetState(gamepadIndex, &xInputState) == ERROR_SUCCESS) {
 
 #### Linux
 
-I implement Gamepad support on Linux using the [evdev](https://www.kernel.org/doc/html/v4.13/input/input.html#evdev) interface of the [Linux Input Subsystem](https://www.kernel.org/doc/html/v4.13/input/input.html). The first step is detecting whether a gamepad is connected by looking for files ending with ["-event-joystick"](https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems) in `/dev/input/by-id`: 
+I implement Gamepad support on Linux using the [evdev](https://www.kernel.org/doc/html/v4.13/input/input.html#evdev) interface of the [Linux Input Subsystem](https://www.kernel.org/doc/html/v4.13/input/input.html). The first step is detecting whether a gamepad is connected by looking for files ending with ["-event-joystick"](https://wiki.archlinux.org/title/Gamepad#Gamepad_input_systems) in `/dev/input/by-id`.
 
 ```c
 struct dirent* entry = readdir(inputDir);
@@ -687,7 +698,7 @@ if (!testBit(keyBits, BTN_A) || !testBit(keyBits, BTN_START) || !testBit(keyBits
 // Success!
 ```
 
-Capturing gamepad input involves reading from the gamepad input file into [input_event](https://www.kernel.org/doc/html/v4.13/input/input.html#event-interface) structs and parsing them: 
+Capturing gamepad input involves reading from the gamepad input file into [input_event](https://www.kernel.org/doc/html/v4.13/input/input.html#event-interface) structs and parsing them.
 
 ```c
 struct input_event events[32];
@@ -752,9 +763,9 @@ bool aButton = gamepadState.digitalButton[GAMEPAD_A_BUTTON];
 // Process input
 ```
 
-Unlike gamepad input for Windows and Linux, the Back and Start buttons aren't captured, which are the quit and fullscreen toggle inputs respectively. The latter was left out as "quitting" the web page didn't seem like a meaningful interaction to me. The latter was left out because, as mentioned above, gamepad inputs don't trigger input events which are required by the standard fullscreen API's security model.
+Unlike gamepad input for Windows and Linux, I don't capture the Back and Start buttons, which are the quit and fullscreen toggle inputs respectively. The latter was left out as "quitting" the web page didn't seem like a meaningful interaction. The latter was left out because, as mentioned above, gamepad inputs don't trigger input events which are required by the standard fullscreen API's security model.
 
-Gamepad disconnections are detected in a callback set using `emscripten_set_gamepaddisconnected_callback`. If the currently-active gamepad was disconnected, the function will attempt to find another.
+Gamepad disconnections are detected in a callback set using `emscripten_set_gamepaddisconnected_callback`. If the currently-active gamepad is disconnected, the function will attempt to find another.
 
 ```c
 EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
@@ -829,10 +840,10 @@ while (running) {
 
 #### Web
 
-The Web did not require any high-resolution timing as high-resolution timestamps are passed directly to game loop callback bassed to `emscripten_request_animation_frame_loop`.
+The Web does not require any high-resolution timing as high-resolution timestamps are passed directly to game loop callback passed to `emscripten_request_animation_frame_loop`.
 
 ```c
-EM_BOOL loop(double time, void *userData) {
+EM_BOOL gameLoop(double time, void *userData) {
 
     float dt = time - state.lastFrameTime;
     state.lastFrameTime = time;
@@ -848,13 +859,13 @@ EM_BOOL loop(double time, void *userData) {
 
 #### Windows
 
-On Windows, the first step is to ensure the scheduler supports a granularity of 1ms using [timeBeginPeriod()](https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod):
+On Windows, the first step is to ensure the scheduler supports a granularity of 1ms using [timeBeginPeriod](https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod):
 
 ```
 bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
 ```
 
-If so, the game sleeps using [Sleep()](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
+If so, the game sleeps using [Sleep](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
 
 ```c
 // Sleep if 1ms granularity is supported and the frame ran 
@@ -871,7 +882,7 @@ if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLI
 
 #### Linux
 
-On Linux, `space-shooter.c` sleeps using [nanosleep()](https://linux.die.net/man/2/nanosleep):
+On Linux, `space-shooter.c` sleeps using [nanosleep](https://linux.die.net/man/2/nanosleep):
 
 ```c
 // Sleep if the frame ran at least 1ms less than the minimum.

@@ -13,7 +13,7 @@ static struct {
     float lastFrameTime;
 } state = {};
 
-static EM_BOOL loop(double time, void *userData) {
+static EM_BOOL gameLoop(double time, void *userData) {
     if (state.lastFrameTime == 0.0f) {
         state.lastFrameTime = (float) time;
     }
@@ -53,7 +53,7 @@ int32_t main() {
     result = emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
     DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
 
-    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", & (EmscriptenWebGLContextAttributes) {
+    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", &(EmscriptenWebGLContextAttributes) {
         .majorVersion = 2,
         .minorVersion = 0
     });
@@ -69,7 +69,7 @@ int32_t main() {
     web_initInputHandlers();
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
 
-    if (!game_init(& (Game_InitOptions) {
+    if (!game_init(&(Game_InitOptions) {
         .showInputToStartScreen = true,
         .hideSystemInstructions = true,
         .noAudio = true
@@ -78,7 +78,7 @@ int32_t main() {
     }
 
     game_resize(state.windowWidth, state.windowHeight);
-    emscripten_request_animation_frame_loop(loop, NULL);
+    emscripten_request_animation_frame_loop(gameLoop, NULL);
 
     return 0;
 }

@@ -957,7 +957,7 @@ bool game_init(Game_InitOptions* opts) {
     }
 
     // Init game
-    entities_spawn(&entities.player.entity, & (Entities_InitOptions) {
+    entities_spawn(&entities.player.entity, &(Entities_InitOptions) {
         .x = (GAME_WIDTH - entities.player.sprite->panelDims[0]) / 2,
         .y = GAME_HEIGHT - entities.player.sprite->panelDims[1] * 2.0f
     });

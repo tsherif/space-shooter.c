@@ -133,7 +133,7 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
             if (status.isFullscreen) {
                 emscripten_exit_fullscreen();
             } else {
-                result = emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, & (EmscriptenFullscreenStrategy) {
+                result = emscripten_request_fullscreen_strategy("#canvas", EM_FALSE, &(EmscriptenFullscreenStrategy) {
                     .scaleMode = EMSCRIPTEN_FULLSCREEN_SCALE_STRETCH,
                     .canvasResolutionScaleMode = EMSCRIPTEN_FULLSCREEN_CANVAS_SCALE_HIDEF,
                     .filteringMode = EMSCRIPTEN_FULLSCREEN_FILTERING_NEAREST
