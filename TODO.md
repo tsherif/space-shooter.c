@@ -12,11 +12,11 @@
     - [x] In game "Press key to start" screen
     - [x] Check that C assert function works (maybe abort would be better?)
     - [x] Figure out proper gamepad deadzone
-    - [ ] Update architecture doc
+    - [x] Update architecture doc
     - [x] ~~Separate GameInput.startButton to handle start screen~~ Fix start screen logic
     - [x] Move fullscreen toggle instructions to start screen
     - [x] Figure out min memory requirements
-    - [ ] Set up site
+    - [x] Set up site
 - [x] Document design
 - [x] Audio format constants should be in constants.h
 - [x] More comments

@@ -33,25 +33,18 @@ static EM_BOOL onResize(int eventType, const EmscriptenUiEvent *uiEvent, void *u
     state.windowHeight = uiEvent->windowInnerHeight;
     game_resize(state.windowWidth, state.windowHeight);
 
-    EMSCRIPTEN_RESULT result = emscripten_set_canvas_element_size("#canvas", (double) state.windowWidth, (double) state.windowHeight);
-    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
-
+    emscripten_set_canvas_element_size("#canvas", (double) state.windowWidth, (double) state.windowHeight);
+    
     return EM_TRUE;
 }
 
-int32_t main() {
-    EMSCRIPTEN_RESULT result = EMSCRIPTEN_RESULT_SUCCESS;
-    
+int32_t main() {    
     double windowWidth = 0.0;
     double windowHeight = 0.0;
-    result = emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
-    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to get window size.");
-
+    emscripten_get_element_css_size("#canvas", &windowWidth, &windowHeight);
+    emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
     state.windowWidth = (int32_t) windowWidth;
     state.windowHeight = (int32_t) windowHeight;
-
-    result = emscripten_set_canvas_element_size("#canvas", windowWidth, windowHeight);
-    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to set canvas size.");
 
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE gl = emscripten_webgl_create_context("#canvas", &(EmscriptenWebGLContextAttributes) {
         .majorVersion = 2,
@@ -63,9 +56,8 @@ int32_t main() {
         return 1;
     }
 
-    result = emscripten_webgl_make_context_current(gl);
-    DEBUG_ASSERT(result == EMSCRIPTEN_RESULT_SUCCESS, "Failed to activate WebGL context.");
-
+    emscripten_webgl_make_context_current(gl);
+    
     web_initInputHandlers();
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_FALSE, onResize);
 

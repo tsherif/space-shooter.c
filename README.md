@@ -35,7 +35,7 @@ Linux
 Web
 - Make sure [make](https://www.gnu.org/software/make/) and [emscripten](https://emscripten.org/) are installed.  
 - Run `make web-debug` for a debug build or `make web-release` for an optimized build.
-- Serve the `build/` directory from a local web server (e.g. `python -m SimpleHTTPServer`) and open the page in Chrome or Firefox.
+- Serve the `build/` directory for debug builds or the `site/` directory for release builds from a local web server (e.g. `python -m SimpleHTTPServer`), and open the page in Chrome or Firefox.
 
 What About Mac?
 ---------------
