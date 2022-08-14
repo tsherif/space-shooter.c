@@ -125,8 +125,8 @@ typedef struct {
 static struct {
     Game_Input input;
     enum {
-        TITLE_SCREEN,
         INPUT_TO_START_SCREEN,
+        TITLE_SCREEN,
         LEVEL_TRANSITION,
         MAIN_GAME,
         GAME_OVER
@@ -620,6 +620,31 @@ static void simPlayer(float elapsedTime) {
 //  Game state functions
 //////////////////////////////////
 
+static void inputToStartScreen(float elapsedTime) {
+    platform_getInput(&gameState.input);
+    
+    updateStars(elapsedTime);
+
+    entities.text.count = 0;
+
+    float yBase = 62.0f;
+
+    entities_fromText(&entities.text, "Press 'Space' key to start", &(Entities_FromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 87.0f,
+        .y = yBase, 
+        .scale = 0.3f
+    });
+
+    entities_fromText(&entities.text, "'F' to toggle fullscreen", &(Entities_FromTextOptions) {
+        .x = GAME_WIDTH / 2.0f - 82.0f,
+        .y = yBase + 13.0f, 
+        .scale = 0.3f
+    });
+
+    updateAnimations();
+    filterDeadEntities();
+}
+
 static void titleScreen(float elapsedTime) {
     events_beforeFrame(&events_titleControlSequence, elapsedTime);
     events_beforeFrame(&events_titleSequence, elapsedTime);
@@ -722,31 +747,6 @@ static void titleScreen(float elapsedTime) {
         entities.text.count = 0;
         transitionLevel();
     }
-
-    updateAnimations();
-    filterDeadEntities();
-}
-
-static void inputToStartScreen(float elapsedTime) {
-    platform_getInput(&gameState.input);
-    
-    updateStars(elapsedTime);
-
-    entities.text.count = 0;
-
-    float yBase = 62.0f;
-
-    entities_fromText(&entities.text, "Press 'Space' key to start", &(Entities_FromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 87.0f,
-        .y = yBase, 
-        .scale = 0.3f
-    });
-
-    entities_fromText(&entities.text, "'F' to toggle fullscreen", &(Entities_FromTextOptions) {
-        .x = GAME_WIDTH / 2.0f - 82.0f,
-        .y = yBase + 13.0f, 
-        .scale = 0.3f
-    });
 
     updateAnimations();
     filterDeadEntities();
@@ -896,8 +896,8 @@ static void simulate(float elapsedTime) {
     gameState.animationTime += elapsedTime;
 
     switch(gameState.state) {
-        case TITLE_SCREEN: titleScreen(elapsedTime); break;
         case INPUT_TO_START_SCREEN: inputToStartScreen(elapsedTime); break;
+        case TITLE_SCREEN: titleScreen(elapsedTime); break;
         case LEVEL_TRANSITION: levelTransition(elapsedTime); break;
         case MAIN_GAME: mainGame(elapsedTime); break;
         case GAME_OVER: gameOver(elapsedTime); break;

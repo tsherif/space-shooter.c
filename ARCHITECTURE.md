@@ -80,7 +80,7 @@ Data Model
 
 ### Loading Assets
 
-Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are loaded and parsed by the function `utils_loadBmpData` ([utils.c](./src/shared/utils.c)), which is called in `game_init()`. To minimize the complexity of the parser, I impose a requirement that image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
+Image assets for `space-shooter.c` are stored as [BMP files](https://en.wikipedia.org/wiki/BMP_file_format). They are loaded and parsed by the function `utils_loadBmpData` ([utils.c](./src/shared/utils.c)), which is called in `game_init`. To minimize the complexity of the parser, I impose a requirement that image data must be 32bpp, uncompressed BGRA data (the format exported by [GIMP](https://www.gimp.org/)).
 
 Audio assets are stored as [WAVE files](http://soundfile.sapp.org/doc/WaveFormat/). They are loaded and parsed by the function `utils_loadWavData` ([utils.c](./src/shared/utils.c)), which is called in the platform audio layers. To minimize the complexity of the parser, I impose a requirement that audio data must be 44.1kHz, 16-bit stereo data, and the chunks must be in the order `RIFF`, `fmt` then `data`. This is the chunk order I found in all the assets I use (but it isn't imposed by the WAVE format), and I used [Audacity](https://www.audacityteam.org/) to fix the sample rate and number of channels where necessary.
 
@@ -623,7 +623,7 @@ void web_updateAudio(void) {
 
 #### Windows
 
-[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) is by far the simplest OS API I worked with on `space-shooter.c`. The function `XInputGetState()` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop.
+[XInput](https://docs.microsoft.com/en-us/windows/win32/xinput/getting-started-with-xinput) is by far the simplest OS API I worked with on `space-shooter.c`. The function `XInputGetState` queries the current state at a gamepad index and returns `ERROR_SUCCESS` if it's successful, so detecting a gamepad can be done with a simple loop.
 
 ```c
 XINPUT_STATE xInputState;
@@ -793,7 +793,7 @@ EM_BOOL onGamepadDisconnected(int eventType, const EmscriptenGamepadEvent *gamep
 
 #### Windows
 
-On Windows, time deltas for the game simulation are calculated using [QueryPerformanceCounter()](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and [QueryPerformanceFrequency()](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancefrequency) in the following manner:
+On Windows, time deltas for the game simulation are calculated using [QueryPerformanceCounter](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and [QueryPerformanceFrequency](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancefrequency) in the following manner:
 
 ```c
 LARGE_INTEGER lastPerfCount, tickFrequency;
@@ -818,7 +818,7 @@ while (running) {
 
 #### Linux
 
-On Linux, time deltas for the game simulation are calculated using [clock_gettime()](https://linux.die.net/man/3/clock_gettime):
+On Linux, time deltas for the game simulation are calculated using [clock_gettime](https://linux.die.net/man/3/clock_gettime).
 
 ```c
 struct timespec timeSpec = { 0 };
@@ -859,13 +859,13 @@ EM_BOOL gameLoop(double time, void *userData) {
 
 #### Windows
 
-On Windows, the first step is to ensure the scheduler supports a granularity of 1ms using [timeBeginPeriod](https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod):
+On Windows, the first step is to ensure the scheduler supports a granularity of 1ms using [timeBeginPeriod](https://docs.microsoft.com/en-us/windows/win32/api/timeapi/nf-timeapi-timebeginperiod).
 
 ```
 bool useSleep = timeBeginPeriod(1) == TIMERR_NOERROR;
 ```
 
-If so, the game sleeps using [Sleep](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time:
+If so, the game sleeps using [Sleep](https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep) and updates the calculated elapsed time.
 
 ```c
 // Sleep if 1ms granularity is supported and the frame ran 
@@ -882,7 +882,7 @@ if (useSleep && SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLI
 
 #### Linux
 
-On Linux, `space-shooter.c` sleeps using [nanosleep](https://linux.die.net/man/2/nanosleep):
+On Linux, `space-shooter.c` sleeps using [nanosleep](https://linux.die.net/man/2/nanosleep).
 
 ```c
 // Sleep if the frame ran at least 1ms less than the minimum.
@@ -908,7 +908,7 @@ The Game Layer
 
 ### The Update Loop
 
-The platform layer calls `game_update()` in a loop, passing in the elapsed time in milliseconds since the last call. The behavior of the update depends on which of four states the game is in: `TITLE_SCREEN`, `MAIN_GAME`, `LEVEL_TRANSITION` or `GAME_OVER`. I implement each state as a single function and make the updates framerate-independent using [this technique](https://www.gafferongames.com/post/fix_your_timestep/) described by Glenn Fiedler: 
+The platform layer calls `game_update` in a loop, passing in the elapsed time in milliseconds since the last call. The behavior of the update depends on which of five states the game is in: `INPUT_TO_START_SCREEN`, `TITLE_SCREEN`, `LEVEL_TRANSITION`, `MAIN_GAME` or `GAME_OVER`. I implement each state as a single function and make the updates framerate-independent using [this technique](https://www.gafferongames.com/post/fix_your_timestep/) described by Glenn Fiedler. 
 
 ```c
 #define TICK_DURATION 16.6667f
@@ -930,7 +930,7 @@ Essentially, the update functions "consume" the elapsed time in fixed time steps
 
 ### Events
 
-`space-shooter.c` uses an event system inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c) but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct:
+`space-shooter.c` uses an event system inspired by the one used in [pacman.c](https://github.com/floooh/pacman.c) but driven by time rather than frame ticks. An event is represented by the `Events_Event` struct.
 
 ```c
 typedef struct {
@@ -1001,7 +1001,7 @@ Sequences also have a `complete` member that is set when the sequence finishes r
 ```c
 events_beforeFrame(&sequence, elapsedTime);
 
-if (sequence->complete) {
+if (sequence.complete) {
     // ... Do something
 }
 ```
@@ -1013,11 +1013,11 @@ The Rendering Layer
 
 #### Interface
 
-To simplify calculations in the game layer, I define coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with the origin at the top-left corner. Mapping this space to the window's dimensions is done in `renderer_beforeFrame()` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change when the window is resized. `game_draw()` calls `renderer_beforeFrame()` once and then passes the `Renderer_List` mixin of each `Entity_List` to the rendering layer in calls to `renderer_draw()`.
+To simplify calculations in the game layer, I define coordinates in `space-shooter.c` in terms of a rectangular canvas of 320 x 180 pixels, with the origin at the top-left corner. Mapping this space to the window's dimensions is done in `renderer_beforeFrame` via `glScissor` and `glViewport` calls which draw gray bars around the game canvas to ensure the aspect ratio doesn't change when the window is resized. `game_draw` calls `renderer_beforeFrame` once and then passes the `Renderer_List` mixin of each `Entity_List` to the rendering layer in calls to `renderer_draw`.
 
 ### OpenGL Primitives
 
-In `renderer_draw()`, the arrays of the `Renderer_List` are submitted to the GL in buffers that are used as instance attributes, and the dimensions and texture handle for each `Renderer_List`'s sprite are submitted as uniforms. All objects represented in a given `Renderer_List` are drawn in a single, instanced draw call, with each object represented as a quad sized to match the sprite panel. The values in `Renderer_List.positions` are interpreted as the top-left corner of the quad. The transformation between game and clip coordinates is done in the [vertex shader](./assets/shaders/vs.glsl):
+In `renderer_draw`, the arrays of the `Renderer_List` are submitted to the GL in buffers that are used as instance attributes, and the dimensions and texture handle for each `Renderer_List`'s sprite are submitted as uniforms. All objects represented in a given `Renderer_List` are drawn in a single, instanced draw call, with each object represented as a quad sized to match the sprite panel. The values in `Renderer_List.positions` are interpreted as the top-left corner of the quad. The transformation between game and clip coordinates is done in the [vertex shader](./assets/shaders/vs.glsl).
 
 ```c
 vec2 clipOffset = pixelOffset * pixelClipSize - 1.0;
