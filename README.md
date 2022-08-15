@@ -29,12 +29,12 @@ Windows
 Linux
 - Make sure development headers for the Linux kernel, Xlib, glx and ALSA are installed.
     - E.g. on Ubuntu, run the following: `sudo apt install linux-libc-dev libx11-dev mesa-common-dev libasound2-dev`  
-- Run `make linux-debug` for a debug build or `make linux-release` for an optimized build.
+- Run `make linux` for a debug build or `make linux-release` for an optimized build.
 - Run `./space-shooter` from the `build/` directory.
 
 Web
 - Make sure [make](https://www.gnu.org/software/make/) and [emscripten](https://emscripten.org/) are installed.  
-- Run `make web-debug` for a debug build or `make web-release` for an optimized build.
+- Run `make web` for a debug build or `make web-release` for an optimized build.
 - Serve the `build/` directory for debug builds or the `site/` directory for release builds from a local web server (e.g. `python -m SimpleHTTPServer`), and open the page in Chrome or Firefox.
 
 What About Mac?

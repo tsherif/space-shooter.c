@@ -16,13 +16,13 @@ WEB_LDLIBS=-lopenal
 WEB_DEBUG_DIR=build
 WEB_RELEASE_DIR=site
 
-linux-debug: assets
+linux: assets
 	$(LINUX_CC) $(DEBUG_FLAGS) $(CFLAGS) $(LINUX_CFLAGS) $(SOURCE_FILES) $(LINUX_SOURCE_FILES) $(LINUX_LDLIBS)
 
 linux-release: assets 
 	$(LINUX_CC) $(RELEASE_FLAGS) $(CFLAGS) $(LINUX_CFLAGS) $(SOURCE_FILES) $(LINUX_SOURCE_FILES) $(LINUX_LDLIBS)
 
-web-debug: clean
+web: clean
 	$(WEB_CC) $(DEBUG_FLAGS) $(WEB_DEBUG_FLAGS) $(CFLAGS) $(WEB_CFLAGS) $(SOURCE_FILES) $(WEB_SOURCE_FILES) $(WEB_LDLIBS) -o $(WEB_DEBUG_DIR)/space-shooter.js
 	cp src/platform/web/index.html $(WEB_DEBUG_DIR)/index.html
 
