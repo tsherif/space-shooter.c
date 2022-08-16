@@ -305,7 +305,7 @@ Entering fullscreen mode on the Web is somewhat awkward for a few reasons:
 - Browsers enforce a policy that [fullscreen mode](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide#when_a_fullscreen_request_fails) can only be entered in a user input callback. 
 - The [Web Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API) uses polling (see below), so there are no user input callbacks that can be used to comply with this policy.
 
-I addressed these problems by making the following design and architectural changes specific to the Web version of `space-shooter.c`:
+I address these problems by making the following design and architectural changes specific to the Web version of `space-shooter.c`:
 - Only keyboard input is used to toggle fullscreen, even when a gamepad is being used to play.
 - The logic for entering/exiting fullscreen is run in the keyboard event handler, rather than in the game loop as it is for the other platforms.
 
@@ -343,9 +343,10 @@ Creating a modern OpenGL context on Windows is a [convoluted process](https://ww
 I extracted this functionality into a single-header library, [create-opengl-window.h](./lib/create-opengl-window.h). Once the context is created, OpenGL functions are loaded in the manner described [here](https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions#Windows).
 
 ```c
+HMODULE libHandle = LoadLibraryA("opengl32.dll");
 void *fn = (void *) wglGetProcAddress(openGLFunctionName);
 if(fn == 0 || (fn == (void *) 0x1) || (fn == (void *) 0x2) || (fn == (void*) 0x3) || (fn == (void *) -1)) {
-    fn = (void *) GetProcAddress(sogl_libHandle, openGLFunctionName);
+    fn = (void *) GetProcAddress(libHandle, openGLFunctionName);
 }
 ```
 
@@ -410,7 +411,7 @@ A complete example of the process is available [here](https://www.khronos.org/op
 
 ```c
 void* libHandle = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
-void *fn = dlsym(sogl_libHandle, openGLFunctionName);
+void *fn = dlsym(libHandle, openGLFunctionName);
 ```
 
 As mentioned above, I extracted the logic for loading OpenGL functions on Windows and Linux into a single-header library, [simple-opengl-loader.h](./lib/simple-opengl-loader.h).
@@ -565,7 +566,7 @@ At the end of the audio thread loop, mixed audio is submitted to the device with
 snd_pcm_writei(device, mixer.buffer, 2048);
 ```
 
-`snd_pcm_writei` blocks until the device requires data, so the audio thread will wake up approximately once every 50ms.
+`snd_pcm_writei` blocks until the device requires data, so the audio thread wakes up approximately once every 50ms.
 
 
 #### Web
@@ -900,7 +901,7 @@ if (SPACE_SHOOTER_MIN_FRAME_TIME - elapsedTime > SPACE_SHOOTER_MILLISECOND) {
 
 #### Web
 
-The Web did not require any sleep logic as suspending execution is handled by `emscripten_request_animation_frame_loop`.
+The Web does not require any sleep logic as suspending execution is handled by `emscripten_request_animation_frame_loop`.
 
 
 The Game Layer
