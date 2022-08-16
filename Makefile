@@ -23,14 +23,14 @@ linux-release: assets
 	$(LINUX_CC) $(RELEASE_FLAGS) $(CFLAGS) $(LINUX_CFLAGS) $(SOURCE_FILES) $(LINUX_SOURCE_FILES) $(LINUX_LDLIBS)
 
 web: clean
+	cp src/platform/web/page/* $(WEB_DEBUG_DIR)/
 	$(WEB_CC) $(DEBUG_FLAGS) $(WEB_DEBUG_FLAGS) $(CFLAGS) $(WEB_CFLAGS) $(SOURCE_FILES) $(WEB_SOURCE_FILES) $(WEB_LDLIBS) -o $(WEB_DEBUG_DIR)/space-shooter.js
-	cp src/platform/web/index.html $(WEB_DEBUG_DIR)/index.html
 
 web-release:
 	rm -rf $(WEB_RELEASE_DIR)
 	mkdir $(WEB_RELEASE_DIR)
+	cp src/platform/web/page/* $(WEB_RELEASE_DIR)/
 	$(WEB_CC) $(RELEASE_FLAGS) $(CFLAGS) $(WEB_CFLAGS) $(SOURCE_FILES) $(WEB_SOURCE_FILES) $(WEB_LDLIBS) -o $(WEB_RELEASE_DIR)/space-shooter.js
-	cp src/platform/web/index.html $(WEB_RELEASE_DIR)/index.html
 
 assets: clean
 	cp -r assets build/assets

@@ -75,7 +75,7 @@ static void findGamepad(void) {
         }
     }
 
-    gamepad.keyboard = gamepad.index = -1;
+    gamepad.keyboard = gamepad.index == -1;
 }
 
 static EM_BOOL onGamepadConnected(int eventType, const EmscriptenGamepadEvent *gamepadEvent, void *userData) {
@@ -120,6 +120,7 @@ static EM_BOOL onKeyDown(int eventType, const EmscriptenKeyboardEvent *keyEvent,
     if (strEquals(keyEvent->code, "Space", 32)) {
         if (!audioInitialized) {
             initializeAudio();
+            return EM_TRUE;
         }
         gamepad.aButton = true;
         keyProcessed = EM_TRUE;
