@@ -23,7 +23,7 @@ I am not a professional game developer, nor a professional C programmer, so the 
 Building
 --------
 Windows
-- In a shell with [cl](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160) set up, run `build.bat` for a debug build or `build.bat release` for an optimized build.
+- In a shell with 64-bit [cl](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160#developer_command_prompt_shortcuts) set up, run `build.bat` for a debug build or `build.bat release` for an optimized build.
 - Run `space-shooter.exe` from the `build/` directory.
 
 Linux
