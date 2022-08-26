@@ -5998,7 +5998,7 @@ SOGL_FUNCTIONS_OVR_multiview
 static HMODULE sogl_libHandle = NULL;
 
 void *sogl_loadOpenGLFunction(const char *name) {
-    typedef PROC (*wglGetProcAddressFP)(LPCSTR Arg1);
+    typedef PROC (WINAPI *wglGetProcAddressFP)(LPCSTR Arg1);
     static wglGetProcAddressFP wglGetProcAddress = NULL;
 
     if (!sogl_libHandle) {
