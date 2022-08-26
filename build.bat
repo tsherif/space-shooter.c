@@ -9,7 +9,7 @@
 @if %arg1%==release (
 	@set build_args=/O2
 ) else (
-	@set build_args=/Zi /D SPACE_SHOOTER_DEBUG
+	@set build_args=/Zi /RTCcsu /D SPACE_SHOOTER_DEBUG
 )
 @rmdir /s /q build
 @mkdir build
